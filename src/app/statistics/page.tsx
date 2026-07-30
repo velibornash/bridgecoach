@@ -20,7 +20,7 @@ export default function StatisticsPage() {
   if (!stats) return null;
 
   const statCards = [
-    { label: "Hours Learned", value: stats.hoursLearned, suffix: "h", icon: "⏱", color: "text-blue-400" },
+    { label: "Hours Learned", value: stats.hoursLearned, suffix: "h", icon: "⏱", color: "text-indigo-400" },
     { label: "Lessons Finished", value: stats.lessonsFinished, icon: "📖", color: "text-emerald-400" },
     { label: "Quiz Accuracy", value: stats.quizAccuracy, suffix: "%", icon: "🎯", color: "text-amber-400" },
     { label: "Current Streak", value: stats.currentStreak, suffix: " days", icon: "🔥", color: "text-orange-400" },

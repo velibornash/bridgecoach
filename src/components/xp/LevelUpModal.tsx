@@ -96,7 +96,7 @@ export function LevelUpOverlay() {
                 transition={{ duration: 1.5, delay: 0.1 * Math.random(), ease: "easeOut" }}
                 className="absolute w-2 h-2 rounded-full"
                 style={{
-                  background: ["#3B82F6", "#818CF8", "#6366F1", "#A78BFA", "#60A5FA"][i % 5],
+                  background: ["#6366F1", "#818CF8", "#A78BFA", "#22D3EE", "#4F46E5"][i % 5],
                 }}
               />
             ))}

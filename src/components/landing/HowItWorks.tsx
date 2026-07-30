@@ -59,22 +59,24 @@ export function HowItWorks() {
           </p>
         </AnimatedSection>
 
-        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {steps.map((step, i) => (
-            <AnimatedSection key={step.step} delay={i * 0.1} className="flex flex-col">
-              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-bg-secondary ring-1 ring-border">
-                {step.icon}
-              </div>
-              <span className="mb-2 text-sm font-medium text-primary">
-                Step {step.step}
-              </span>
-              <h3 className="text-lg font-semibold text-text-primary">{step.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-text-secondary">
-                {step.description}
-              </p>
-            </AnimatedSection>
-          ))}
-        </div>
+<div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {steps.map((step, i) => (
+                <AnimatedSection key={step.step} delay={i * 0.1}>
+                  <div className="surface surface-hover p-6 group">
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 ring-1 ring-border group-hover:ring-primary/30 transition-all">
+                      <span className="text-primary">{step.icon}</span>
+                    </div>
+                    <span className="mb-2 block text-xs font-semibold tracking-widest text-primary uppercase">
+                      {step.step}
+                    </span>
+                    <h3 className="text-base font-semibold text-text-primary">{step.title}</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-text-secondary">
+                      {step.description}
+                    </p>
+                  </div>
+                </AnimatedSection>
+              ))}
+            </div>
       </Container>
     </section>
   );

@@ -11,7 +11,7 @@ import Link from "next/link";
 import type { BookmarkCategory } from "@/types";
 
 const categoryMeta: Record<string, { icon: string; label: string; color: string }> = {
-  lesson: { icon: "📖", label: "Lessons", color: "from-blue-500 to-indigo-600" },
+  lesson: { icon: "📖", label: "Lessons", color: "from-indigo-500 to-indigo-600" },
   video: { icon: "🎬", label: "Videos", color: "from-rose-500 to-pink-600" },
   article: { icon: "📄", label: "Articles", color: "from-emerald-500 to-teal-600" },
 };

@@ -8,7 +8,7 @@ import Link from "next/link";
 
 const rarityColors: Record<string, string> = {
   common: "border-zinc-500/30",
-  rare: "border-blue-500/40",
+  rare: "border-indigo-500/40",
   epic: "border-purple-500/40",
   legendary: "border-amber-500/40",
 };

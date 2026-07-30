@@ -17,7 +17,7 @@ interface BiddingTimelineProps {
 
 export function BiddingTimeline({ history, currentPlayer, size = 'md' }: BiddingTimelineProps) {
   const playerColors: Record<string, string> = {
-    north: 'text-blue-400',
+    north: 'text-indigo-400',
     east: 'text-emerald-400',
     south: 'text-primary',
     west: 'text-amber-400',

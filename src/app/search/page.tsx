@@ -9,7 +9,7 @@ import { mockSearchResults } from "@/services/mockData";
 import Link from "next/link";
 
 const categoryMeta: Record<string, { icon: string; color: string }> = {
-  lesson: { icon: "📖", color: "text-blue-400" },
+  lesson: { icon: "📖", color: "text-indigo-400" },
   topic: { icon: "📚", color: "text-emerald-400" },
   convention: { icon: "🃏", color: "text-violet-400" },
   video: { icon: "🎬", color: "text-rose-400" },

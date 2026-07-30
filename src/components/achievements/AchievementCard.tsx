@@ -19,7 +19,7 @@ const categoryGradients: Record<AchievementCategory, string> = {
 
 const rarityBorders: Record<string, string> = {
   common: "border-border",
-  rare: "border-blue-500/40",
+  rare: "border-indigo-500/40",
   epic: "border-purple-500/40",
   legendary: "border-amber-500/40",
 };
@@ -91,7 +91,7 @@ export function AchievementCard({ achievement, index = 0 }: AchievementCardProps
             "shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
             achievement.rarity === "legendary" && "bg-amber-500/15 text-amber-400",
             achievement.rarity === "epic" && "bg-purple-500/15 text-purple-400",
-            achievement.rarity === "rare" && "bg-blue-500/15 text-blue-400",
+            achievement.rarity === "rare" && "bg-indigo-500/15 text-indigo-400",
             achievement.rarity === "common" && "bg-zinc-500/15 text-zinc-400",
           )}>
             {achievement.rarity}

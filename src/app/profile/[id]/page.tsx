@@ -103,7 +103,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                     { label: "Lessons Done", value: stats.completedLessons, icon: "📖", color: "text-emerald-400" },
                     { label: "Avg Score", value: `${stats.averageScore}%`, icon: "🎯", color: "text-amber-400" },
                     { label: "Total XP", value: stats.totalXpEarned.toLocaleString(), icon: "⚡", color: "text-primary" },
-                    { label: "Hours Learned", value: stats.totalHours, icon: "⏱", color: "text-blue-400" },
+                    { label: "Hours Learned", value: stats.totalHours, icon: "⏱", color: "text-indigo-400" },
                     { label: "Streak", value: `${stats.longestStreak} days`, icon: "🔥", color: "text-orange-400" },
                     { label: "Cards Played", value: stats.cardsPlayed.toLocaleString(), icon: "🃏", color: "text-violet-400" },
                   ].map((s) => (

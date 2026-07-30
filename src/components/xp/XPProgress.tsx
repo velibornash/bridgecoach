@@ -59,7 +59,7 @@ export function XPProgress() {
           },
           {
             label: "Weekly XP", total: weeklyTotal, goal: weeklyGoal, icon: "📅",
-            gradient: "from-blue-500 to-indigo-600",
+            gradient: "from-indigo-500 to-indigo-600",
           },
           {
             label: "Lifetime XP", total: mockUser.xp, goal: mockUser.xpToNextLevel, icon: "⚡",

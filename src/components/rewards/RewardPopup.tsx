@@ -14,7 +14,7 @@ interface RewardPopupProps {
 
 const config: Record<string, { icon: string; gradient: string; sound: string }> = {
   coins: { icon: "🪙", gradient: "from-yellow-400 to-amber-600", sound: "coin" },
-  xp: { icon: "⚡", gradient: "from-blue-400 to-indigo-600", sound: "xp" },
+  xp: { icon: "⚡", gradient: "from-indigo-400 to-indigo-600", sound: "xp" },
   stars: { icon: "⭐", gradient: "from-yellow-300 to-orange-500", sound: "star" },
   badge: { icon: "🃏", gradient: "from-violet-400 to-purple-600", sound: "badge" },
   mystery_chest: { icon: "🎁", gradient: "from-rose-400 to-pink-600", sound: "chest" },

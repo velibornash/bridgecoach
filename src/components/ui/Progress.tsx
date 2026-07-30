@@ -32,7 +32,7 @@ export function Progress({
       >
         <ProgressPrimitive.Indicator
           className={cn(
-            "h-full w-full flex-1 rounded-full bg-gradient-to-r from-primary to-blue-500 transition-all duration-500 ease-out",
+            "h-full w-full flex-1 rounded-full bg-gradient-to-r from-primary to-indigo-500 transition-all duration-500 ease-out",
             indicatorClassName
           )}
           style={{ transform: `translateX(-${100 - percentage}%)` }}

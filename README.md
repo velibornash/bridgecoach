@@ -146,16 +146,17 @@ npm start
 
 All colors defined in `globals.css` via `@theme inline` with `.light` class overrides:
 
-| Token | Dark | Light |
-|-------|------|-------|
-| `bg-primary` | #0B1020 | #F8FAFC |
-| `bg-card` | #111827 | #FFFFFF |
-| `bg-secondary` | #1F2937 | #F1F5F9 |
-| `primary` | #3B82F6 | #3B82F6 |
-| `text-primary` | #F9FAFB | #0F172A |
-| `text-secondary` | #9CA3AF | #475569 |
-| `text-tertiary` | #6B7280 | #94A3B8 |
-| `border` | rgba(255,255,255,0.08) | rgba(0,0,0,0.08) |
+| Token | Dark | Light | Purpose |
+|-------|------|-------|---------|
+| `bg-primary` | #070B1A | #F8FAFC | Page background |
+| `bg-card` | #0F1629 | #FFFFFF | Card background |
+| `bg-secondary` | #1A2340 | #F1F5F9 | Surface/secondary bg |
+| `primary` | #6366F1 | #4F46E5 | Primary (indigo) |
+| `accent` | #22D3EE | #0891B2 | Accent (cyan) |
+| `text-primary` | #F1F5F9 | #0F172A | Primary text |
+| `text-secondary` | #94A3B8 | #475569 | Secondary text |
+| `text-tertiary` | #64748B | #94A3B8 | Tertiary text |
+| `border` | rgba(255,255,255,0.06) | rgba(0,0,0,0.06) | Borders |
 
 ## Mock Backend
 

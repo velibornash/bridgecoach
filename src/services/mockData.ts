@@ -41,7 +41,7 @@ export const mockUserStats: UserStats = {
 
 export const mockCertificates: Certificate[] = [
   { id: "c1", title: "Bridge Fundamentals", description: "Completed all beginner bridge basics", earnedAt: "2026-02-15", episodeId: "ep1", gradient: "from-emerald-500 to-teal-600" },
-  { id: "c2", title: "Bidding Basics", description: "Mastered the bidding system", earnedAt: "2026-03-01", episodeId: "ep2", gradient: "from-blue-500 to-indigo-600" },
+  { id: "c2", title: "Bidding Basics", description: "Mastered the bidding system", earnedAt: "2026-03-01", episodeId: "ep2", gradient: "from-indigo-500 to-indigo-600" },
 ];
 
 const lessonContent1: LessonContent[] = [
@@ -182,7 +182,7 @@ export const mockEpisodes: Episode[] = [
     id: "ep2", title: "Bidding Basics", description: "Understand how to communicate with your partner through the bidding system.",
     episodeNumber: 2, difficulty: "beginner", xpReward: 150, totalXp: 400,
     duration: "60 min", lessonCount: 8, completedLessons: 3, completion: 38,
-    locked: false, gradient: "from-blue-500 to-indigo-600", icon: "♣",
+    locked: false, gradient: "from-indigo-500 to-indigo-600", icon: "♣",
     lessons: ["NT Opening Bids", "Stayman Convention", "Jacoby Transfers", "Major Suit Openings", "Minor Suit Openings", "Responding to 1NT", "Overcalls", "Takeout Doubles"],
   },
   {
@@ -496,7 +496,7 @@ export const mockAllNotes: LessonNote[] = [
 
 export const mockCatalog: CatalogCourse[] = [
   { id: "c1", title: "Bridge Fundamentals", description: "Learn the basic rules, trick-taking, and how a hand of bridge works.", category: "Basics", difficulty: "beginner", duration: "45 min", lessonCount: 6, completedCount: 6, xpReward: 300, image: "", gradient: "from-emerald-500 to-teal-600", icon: "♠", progress: 100, locked: false, tags: ["rules", "tricks", "scoring"] },
-  { id: "c2", title: "Bidding Basics", description: "Understand how to communicate with your partner through bidding.", category: "Bidding", difficulty: "beginner", duration: "60 min", lessonCount: 8, completedCount: 3, xpReward: 400, image: "", gradient: "from-blue-500 to-indigo-600", icon: "♣", progress: 38, locked: false, tags: ["bidding", "1NT", "majors"] },
+  { id: "c2", title: "Bidding Basics", description: "Understand how to communicate with your partner through bidding.", category: "Bidding", difficulty: "beginner", duration: "60 min", lessonCount: 8, completedCount: 3, xpReward: 400, image: "", gradient: "from-indigo-500 to-indigo-600", icon: "♣", progress: 38, locked: false, tags: ["bidding", "1NT", "majors"] },
   { id: "c3", title: "Declarer Play", description: "Master techniques of playing the hand as declarer.", category: "Play", difficulty: "beginner", duration: "75 min", lessonCount: 8, completedCount: 3, xpReward: 500, image: "", gradient: "from-violet-500 to-purple-600", icon: "♥", progress: 38, locked: false, tags: ["finesse", "trump", "declarer"] },
   { id: "c4", title: "Defensive Play", description: "Learn how to defend effectively and signal with partner.", category: "Defense", difficulty: "intermediate", duration: "80 min", lessonCount: 8, completedCount: 0, xpReward: 550, image: "", gradient: "from-amber-500 to-orange-600", icon: "♦", progress: 0, locked: true, tags: ["defense", "signals", "lead"] },
   { id: "c5", title: "Advanced Bidding", description: "Explore sophisticated bidding conventions and competitive auctions.", category: "Bidding", difficulty: "intermediate", duration: "90 min", lessonCount: 10, completedCount: 0, xpReward: 650, image: "", gradient: "from-rose-500 to-pink-600", icon: "♠", progress: 0, locked: true, tags: ["Blackwood", "splinter", "preempt"] },
@@ -514,7 +514,7 @@ export const mockMissions: Mission[] = [
   {
     id: "m2", title: "Complete Episode 2", description: "Finish all lessons in Bidding Basics",
     type: "main", category: "daily", xpReward: 150, progress: 3, maxProgress: 8, completed: false,
-    icon: "📖", gradient: "from-blue-500 to-indigo-600",
+    icon: "📖", gradient: "from-indigo-500 to-indigo-600",
   },
   {
     id: "m3", title: "Score 90%+ on Quiz", description: "Get a high score on any bidding quiz",
@@ -680,7 +680,7 @@ export const mockPublicProfiles: Record<string, { user: User; stats: UserStats; 
 
 export const mockExtendedCertificates: Certificate[] = [
   { id: "c1", title: "Bridge Fundamentals", description: "Completed all beginner bridge basics — trick-taking, following suit, basic scoring, and partner communication.", earnedAt: "2026-02-15", episodeId: "ep1", gradient: "from-emerald-500 to-teal-600" },
-  { id: "c2", title: "Bidding Basics", description: "Mastered the bidding system including 1NT openings, Stayman, Jacoby Transfers, and major/minor suit openings.", earnedAt: "2026-03-01", episodeId: "ep2", gradient: "from-blue-500 to-indigo-600" },
+  { id: "c2", title: "Bidding Basics", description: "Mastered the bidding system including 1NT openings, Stayman, Jacoby Transfers, and major/minor suit openings.", earnedAt: "2026-03-01", episodeId: "ep2", gradient: "from-indigo-500 to-indigo-600" },
   { id: "c3", title: "Declarer Play", description: "Learned finessing, trump management, establishing long suits, and entry management techniques.", earnedAt: "2026-04-10", episodeId: "ep3", gradient: "from-violet-500 to-purple-600" },
   { id: "c4", title: "Defensive Play", description: "Mastered opening leads, third hand play, defensive signaling, count and attitude signals.", earnedAt: "2026-05-22", episodeId: "ep4", gradient: "from-amber-500 to-orange-600" },
 ];

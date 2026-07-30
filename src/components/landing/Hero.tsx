@@ -8,9 +8,15 @@ import Link from "next/link";
 export function Hero() {
   return (
     <section className="relative min-h-[90vh] overflow-hidden pt-24">
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-      <div className="absolute top-1/4 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-3xl" />
-      <div className="absolute top-1/3 right-1/4 h-64 w-64 rounded-full bg-blue-500/5 blur-3xl" />
+      <div className="absolute inset-0" />
+      <div className="absolute top-1/4 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[100px]" />
+      <div className="absolute top-1/3 right-1/4 h-64 w-64 rounded-full bg-accent/5 blur-[80px]" />
+      <div className="absolute bottom-1/4 left-1/4 h-48 w-48 rounded-full bg-indigo-500/5 blur-[60px]" />
+
+      <div className="absolute inset-0 opacity-[0.03]" style={{
+        backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)`,
+        backgroundSize: '40px 40px',
+      }} />
 
       <Container className="relative flex min-h-[80vh] flex-col items-center justify-center text-center">
         <motion.div
@@ -18,8 +24,8 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-bg-card/50 px-4 py-1.5 text-xs font-medium text-text-secondary">
-            <span className="flex h-2 w-2 rounded-full bg-primary" />
+          <div className="glass gradient-border inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-text-secondary">
+            <span className="flex h-2 w-2 rounded-full bg-success animate-pulse" />
             Now in Beta — Free to join
           </div>
         </motion.div>
@@ -28,13 +34,11 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="max-w-4xl text-4xl font-bold leading-tight tracking-tight text-text-primary sm:text-5xl md:text-6xl lg:text-7xl"
+          className="mt-8 max-w-4xl text-4xl font-bold tracking-tight text-text-primary sm:text-5xl md:text-6xl lg:text-7xl"
         >
           Master Contract Bridge.
           <br />
-          <span className="bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
-            One Trick at a Time.
-          </span>
+          <span className="gradient-text">One Trick at a Time.</span>
         </motion.h1>
 
         <motion.p
@@ -54,7 +58,7 @@ export function Hero() {
           className="mt-10 flex flex-col items-center gap-4 sm:flex-row"
         >
           <Link href="/auth/register">
-            <Button variant="primary" size="xl" className="text-base">
+            <Button variant="primary" size="xl" className="text-base shadow-lg shadow-primary/20">
               Start Learning Free
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -62,7 +66,7 @@ export function Hero() {
             </Button>
           </Link>
           <Link href="#how-it-works">
-            <Button variant="outline" size="xl" className="text-base">
+            <Button variant="outline" size="xl" className="text-base glass">
               See How It Works
             </Button>
           </Link>

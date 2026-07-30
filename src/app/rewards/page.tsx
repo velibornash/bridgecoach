@@ -17,7 +17,7 @@ const typeIcons: Record<string, string> = {
 
 const rarityColors: Record<string, string> = {
   common: "border-border bg-bg-card",
-  rare: "border-blue-500/30 bg-blue-500/5",
+  rare: "border-indigo-500/30 bg-indigo-500/5",
   epic: "border-violet-500/30 bg-violet-500/5",
   legendary: "border-amber-500/30 bg-amber-500/5",
 };

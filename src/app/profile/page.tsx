@@ -76,7 +76,7 @@ export default function ProfilePage() {
             <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Statistics</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "Lessons Done", value: `${mockUserStats.completedLessons}/${mockUserStats.totalLessons}`, icon: "📖", color: "from-blue-500 to-indigo-600" },
+                { label: "Lessons Done", value: `${mockUserStats.completedLessons}/${mockUserStats.totalLessons}`, icon: "📖", color: "from-indigo-500 to-indigo-600" },
                 { label: "Avg Score", value: `${mockUserStats.averageScore}%`, icon: "🎯", color: "from-emerald-500 to-teal-600" },
                 { label: "Total XP", value: mockUserStats.totalXpEarned.toLocaleString(), icon: "⚡", color: "from-amber-500 to-orange-600" },
                 { label: "Streak", value: `${mockUserStats.longestStreak} days`, icon: "🔥", color: "from-rose-500 to-pink-600" },

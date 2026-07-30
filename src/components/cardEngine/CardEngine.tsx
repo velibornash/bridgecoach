@@ -59,7 +59,7 @@ function CardInner({ card, size, interactive, hoverable, onClick, onHover }: {
         width={s.w} height={s.h}
         rx={5} ry={5}
         fill="white"
-        stroke={card.highlighted ? '#F59E0B' : card.selected ? '#3B82F6' : '#E5E7EB'}
+        stroke={card.highlighted ? '#FBBF24' : card.selected ? '#6366F1' : '#E5E7EB'}
         strokeWidth={card.highlighted ? 2.5 : card.selected ? 2 : 0.5}
       />
       {/* Highlighted glow */}
@@ -231,7 +231,7 @@ export function CardBack({ size = 'md' }: { size?: CardSize }) {
       <defs>
         <pattern id={`pattern-${size}`} width="8" height="8" patternUnits="userSpaceOnUse">
           <rect width="8" height="8" fill="#1E3A5F" />
-          <circle cx="4" cy="4" r="1" fill="#2563EB" opacity="0.5" />
+          <circle cx="4" cy="4" r="1" fill="#6366F1" opacity="0.5" />
           <circle cx="0" cy="0" r="1" fill="#7DD3FC" opacity="0.3" />
           <circle cx="8" cy="8" r="1" fill="#7DD3FC" opacity="0.3" />
         </pattern>
@@ -240,7 +240,7 @@ export function CardBack({ size = 'md' }: { size?: CardSize }) {
           <stop offset="100%" stopColor="#1E3A5F" />
         </linearGradient>
       </defs>
-      <rect width={s.w} height={s.h} rx={5} fill={`url(#grad-${size})`} stroke="#3B82F6" strokeWidth="1" />
+      <rect width={s.w} height={s.h} rx={5} fill={`url(#grad-${size})`} stroke="#6366F1" strokeWidth="1" />
       <rect x="3" y="3" width={s.w - 6} height={s.h - 6} rx={3} fill={`url(#pattern-${size})`} />
       <circle cx={s.w / 2} cy={s.h / 2} r={Math.min(s.w, s.h) * 0.2} fill="none" stroke="white" strokeWidth="1.5" opacity="0.4" />
       <text x={s.w / 2} y={s.h / 2} textAnchor="middle" dominantBaseline="central" fontSize={s.suitSize * 0.6} fill="white" fontFamily="serif" opacity="0.6">♠</text>
