@@ -1,8 +1,7 @@
 "use client";
 
 import { Container } from "@/components/ui/Container";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
+import { PremiumHero } from "@/components/dashboard/PremiumHero";
 import { XPBar } from "@/components/dashboard/XPBar";
 import { ContinueLearning } from "@/components/dashboard/ContinueLearning";
 import { TodaysMission } from "@/components/dashboard/TodaysMission";
@@ -11,16 +10,26 @@ import { Achievements } from "@/components/dashboard/Achievements";
 import { Statistics } from "@/components/dashboard/Statistics";
 import { LearningPath } from "@/components/dashboard/LearningPath";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { RecommendationCard } from "@/components/cards/RecommendationCard";
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-bg-primary">
-      <DashboardHeader />
+    <>
+      <PremiumHero />
+
       <main className="py-8 sm:py-12">
         <Container>
-          <WelcomeHeader />
+          <div className="mb-8">
+            <RecommendationCard
+              title="Practice Takeout Doubles"
+              description="Your weakest area — strengthen your competitive bidding with targeted practice."
+              reason="Based on your skill profile"
+              href="/practice"
+              tag="AI Recommendation"
+            />
+          </div>
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-12">
+          <div className="grid gap-6 lg:grid-cols-12">
             <div className="space-y-6 lg:col-span-7">
               <XPBar />
               <div className="grid gap-6 sm:grid-cols-2">
@@ -38,6 +47,6 @@ export default function DashboardPage() {
           </div>
         </Container>
       </main>
-    </div>
+    </>
   );
 }

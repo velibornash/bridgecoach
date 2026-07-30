@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { use, useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -19,14 +19,18 @@ import type { LessonNote } from "@/types";
 export default function LessonPage({
   searchParams,
 }: {
-  searchParams?: { episode?: string };
+  searchParams: Promise<{ episode?: string }>;
 }) {
-  const episodeFilter = searchParams?.episode;
-  const available = mockLessons.filter((l) => !l.locked && (episodeFilter ? l.episodeId === episodeFilter : true));
+  const params = use(searchParams);
+  const episodeFilter = params?.episode;
+  const available = useMemo(
+    () => mockLessons.filter((l) => !l.locked && (episodeFilter ? l.episodeId === episodeFilter : true)),
+    [episodeFilter]
+  );
   const startIndex = useMemo(() => {
     const idx = available.findIndex((l) => l.id === mockUser.currentLessonId);
     return idx >= 0 ? idx : available.findIndex((l) => !l.completed);
-  }, []);
+  }, [available]);
   const [currentIndex, setCurrentIndex] = useState(startIndex >= 0 ? startIndex : 0);
   const [bookmarked, setBookmarked] = useState(available[currentIndex]?.bookmarked ?? false);
   const [notes, setNotes] = useState<LessonNote[]>([]);
@@ -51,7 +55,7 @@ export default function LessonPage({
     setNotes([]);
     setNotesOpen(false);
     setShowCompletion(false);
-  }, [currentIndex]);
+  }, [currentIndex, available]);
 
   const handlePrev = useCallback(() => {
     setCurrentIndex((i) => Math.max(0, i - 1));

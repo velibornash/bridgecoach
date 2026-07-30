@@ -7,6 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Badge } from "@/components/ui/Badge";
 import { showToast } from "@/components/ui/Toast";
 import { mockBookmarks } from "@/services/mockData";
+import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
 import type { BookmarkCategory } from "@/types";
 import { Icon } from "@/components/icons/Icon";
@@ -113,19 +114,10 @@ export default function BookmarksPage() {
 
           {/* Empty */}
           {filtered.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-16"
-            >
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-bg-secondary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-tertiary">
-                  <path d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
-                </svg>
-              </div>
-              <p className="text-sm text-text-tertiary">No bookmarks {filter !== "all" ? `in this category` : "yet"}.</p>
-              <p className="text-xs text-text-tertiary mt-1">Bookmark lessons and videos to find them later.</p>
-            </motion.div>
+            <EmptyState
+              variant="bookmarks"
+              onAction={() => window.location.href = "/catalog"}
+            />
           )}
         </Container>
       </main>

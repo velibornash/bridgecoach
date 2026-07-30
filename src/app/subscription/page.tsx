@@ -61,6 +61,7 @@ export default function SubscriptionPage() {
               <div className="grid gap-3 sm:grid-cols-3 mb-4">
                 {plans.map((p) => (
                   <div
+                    key={p.id}
                     onClick={() => { setPlan(p.id); showToast("success", `Switched to ${p.label} plan`); }}
                     className={`rounded-xl border p-4 text-center transition-all relative cursor-pointer ${
                       plan === p.id ? "border-primary bg-primary/10" : "border-border hover:border-border-hover hover:bg-bg-secondary"
