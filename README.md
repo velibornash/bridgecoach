@@ -111,20 +111,20 @@ src/
 - **Theme Switcher** — Dark, Light, and System modes, persisted to localStorage, smooth CSS variable transitions
 - **Localization Ready** — i18n architecture with `LocaleProvider`, `useTranslation` hook, English-only for now
 - **Learning Statistics** — Hours, lessons, accuracy, streak, average score with weekly & monthly bar charts, category breakdown
-- **Certificates** — Course completion certificates with gradient headers, gold seal, mock PDF download
-- **Leaderboard** — Global, friends, country, weekly & monthly tabs with podium and ranking list
-- **Friends** — Friend list with online indicators, profile preview, stats, challenge & message actions
-- **XP System** — Level tiers (Novice → Legend), daily/weekly/lifetime XP tracking, animated XP popups
-- **Achievements** — 12 achievements across 5 categories, 4 rarity levels, animated unlock overlay
-- **Daily Challenges** — One per day with countdown, bonus XP, history view
-- **AI Coach** — Floating chat interface with mock bridge coaching responses
-- **Farmer Bob Onboarding** — Game-like 8-step onboarding for absolute beginners
-- **Pricing** — Saas-style with Free/Premium/Pro/Elite tiers, comparison table, FAQ
-- **Settings** — Theme, Language, Notifications, Privacy, Account, Subscription, Danger Zone
-- **User Profile** — Avatar, country flag, level/streak badges, stats grid, achievements, certificates, learning history
-- **Dark Mode** — #0B1020 base, consistent design tokens
-- **Mobile First** — Responsive down to 320px wide
-- **Accessibility** — Semantic HTML, ARIA labels, keyboard navigation
+- **Game Engine** — Complete bridge gameplay: SVG Card Engine (shuffle/deal/flip/highlight/hover), 4-player Table Engine, Deal Animation (52 cards clockwise), Trick Engine (play/collect/winner highlight), Bidding Box (PASS/DOUBLE/REDOUBLE/1-7/NT)
+- **Bidding Timeline** — Animated vertical bidding history with player badges and timeline dots
+- **Interactive Hand Viewer** — Sortable hand by suit/rank, suit filtering, hover effects, distribution bar
+- **Practice Mode** — Free exploration with no scoring, deal button, full gameplay loop
+- **Game Demo** — Interactive showcase combining all game engines
+- **Error Pages** — 404 (Not Found), 500 (Server Error), Offline, and Maintenance pages with themed illustrations
+- **Email Preferences** — Newsletter, reminders, marketing, weekly report, and product update toggles
+- **Subscription** — Plan management, upgrade/downgrade, billing info, monthly usage, invoice history
+- **FAQ** — Categorized accordion FAQ with live search and animated expand/collapse
+- **Contact** — Support, feedback, bug report, and feature request forms with type selector
+- **Community Feed** — Social feed with achievement shares, lesson completions, milestones, likes, and comments
+- **Public Profiles** — Dynamic `/profile/[id]` pages with stats, achievements, level, and activity
+- **Theme Switcher** — Dark, Light, and System modes, persisted to localStorage, smooth CSS variable transitions
+- **Localization Ready** — i18n architecture with `LocaleProvider`, `useTranslation` hook, English-only for now
 
 ## Getting Started
 
