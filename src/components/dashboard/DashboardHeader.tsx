@@ -14,12 +14,16 @@ const navLinks = [
   { href: "/quiz", label: "Quiz" },
   { href: "/flashcards", label: "Flashcards" },
   { href: "/missions", label: "Missions" },
+  { href: "/statistics", label: "Stats" },
+  { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/friends", label: "Friends" },
   { href: "/bookmarks", label: "Bookmarks" },
   { href: "/notes", label: "Notes" },
   { href: "/rewards", label: "Rewards" },
   { href: "/xp", label: "XP" },
   { href: "/achievements", label: "Achievements" },
   { href: "/challenges", label: "Challenges" },
+  { href: "/certificates", label: "Certificates" },
 ];
 
 export function DashboardHeader() {

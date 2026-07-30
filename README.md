@@ -24,9 +24,12 @@ src/
 │   ├── auth/               # Login, Register, Forgot Password
 │   ├── bookmarks/          # Bookmarked lessons/videos/articles
 │   ├── catalog/            # Course catalog with filters & sorting
+│   ├── certificates/       # Course completion certificates
 │   ├── challenges/         # Daily challenges
 │   ├── dashboard/          # Main dashboard
 │   ├── flashcards/         # Spaced-repetition flashcards
+│   ├── friends/            # Friends list with profiles & invites
+│   ├── leaderboard/        # Global/friends/country/weekly/monthly rankings
 │   ├── learning-path/      # Episode-based curriculum
 │   ├── lesson/             # Interactive lesson viewer with video player
 │   ├── missions/           # Daily & weekly missions
@@ -39,6 +42,7 @@ src/
 │   ├── rewards/            # Rewards system (coins, XP, stars, badges)
 │   ├── search/             # Full-text search across content
 │   ├── settings/           # User settings
+│   ├── statistics/         # Learning statistics with charts
 │   └── xp/                 # XP & progress tracking
 ├── components/
 │   ├── ui/                 # Reusable design system (17 components)
@@ -84,6 +88,10 @@ src/
 - **Notes** — Cross-lesson notes with inline editing, pinning, search, per-lesson badges
 - **Bookmarks** — Favorite lessons/videos/articles by category, hover-reveal remove
 - **Video Player** — Custom HTML5 video with play/pause, progress seek, volume, captions, 0.5x–2x speed, auto-advance
+- **Learning Statistics** — Hours, lessons, accuracy, streak, average score with weekly & monthly bar charts, category breakdown
+- **Certificates** — Course completion certificates with gradient headers, gold seal, mock PDF download
+- **Leaderboard** — Global, friends, country, weekly & monthly tabs with podium and ranking list
+- **Friends** — Friend list with online indicators, profile preview, stats, challenge & message actions
 - **XP System** — Level tiers (Novice → Legend), daily/weekly/lifetime XP tracking, animated XP popups
 - **Achievements** — 12 achievements across 5 categories, 4 rarity levels, animated unlock overlay
 - **Daily Challenges** — One per day with countdown, bonus XP, history view

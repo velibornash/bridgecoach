@@ -5,6 +5,7 @@ import {
   DailyChallengeData, XpEntry, Mission,
   RewardItem, Reward, AppNotification, SearchResult, CatalogCourse,
   Caption, Flashcard, BookmarkItem, LessonNote,
+  LearningStats, LeaderboardEntry, Friend,
 } from "@/types";
 
 export const mockUser: User = {
@@ -545,4 +546,73 @@ export const mockMissions: Mission[] = [
     type: "main", category: "weekly", xpReward: 180, progress: 0, maxProgress: 8, completed: false,
     icon: "📖", gradient: "from-violet-500 to-purple-600",
   },
+];
+
+export const mockLearningStats: LearningStats = {
+  hoursLearned: 28,
+  lessonsFinished: 12,
+  quizAccuracy: 78,
+  currentStreak: 12,
+  averageScore: 82,
+  weeklyActivity: [
+    { day: "Mon", hours: 1.5 },
+    { day: "Tue", hours: 2.0 },
+    { day: "Wed", hours: 0.5 },
+    { day: "Thu", hours: 1.0 },
+    { day: "Fri", hours: 2.5 },
+    { day: "Sat", hours: 1.0 },
+    { day: "Sun", hours: 0 },
+  ],
+  monthlyProgress: [
+    { month: "Jan", lessons: 4, xp: 300 },
+    { month: "Feb", lessons: 6, xp: 450 },
+    { month: "Mar", lessons: 2, xp: 180 },
+    { month: "Apr", lessons: 8, xp: 620 },
+    { month: "May", lessons: 5, xp: 410 },
+    { month: "Jun", lessons: 7, xp: 530 },
+    { month: "Jul", lessons: 3, xp: 240 },
+  ],
+  categoryBreakdown: [
+    { category: "Basics", completed: 6, total: 6 },
+    { category: "Bidding", completed: 3, total: 8 },
+    { category: "Play", completed: 2, total: 8 },
+    { category: "Defense", completed: 0, total: 8 },
+    { category: "Conventions", completed: 1, total: 4 },
+  ],
+};
+
+export const mockLeaderboard: LeaderboardEntry[] = [
+  { rank: 1, userId: "u1", name: "Sarah Chen", avatar: "", level: 12, xp: 4850, country: "US", isFriend: true },
+  { rank: 2, userId: "u2", name: "James Mitchell", avatar: "", level: 10, xp: 4200, country: "GB", isFriend: false },
+  { rank: 3, userId: "u3", name: "Emma Rodriguez", avatar: "", level: 9, xp: 3850, country: "ES", isFriend: true },
+  { rank: 4, userId: "u4", name: "Alex Kim", avatar: "", level: 8, xp: 3200, country: "KR", isFriend: false },
+  { rank: 5, userId: "u5", name: "Bob Smith", avatar: "", level: 7, xp: 2450, country: "US", isFriend: false, isCurrentUser: true },
+  { rank: 6, userId: "u6", name: "Maria Garcia", avatar: "", level: 7, xp: 2380, country: "ES", isFriend: true },
+  { rank: 7, userId: "u7", name: "Tom Wilson", avatar: "", level: 6, xp: 2100, country: "US", isFriend: false },
+  { rank: 8, userId: "u8", name: "Lisa Wang", avatar: "", level: 6, xp: 1950, country: "CN", isFriend: true },
+  { rank: 9, userId: "u9", name: "David Brown", avatar: "", level: 5, xp: 1700, country: "GB", isFriend: false },
+  { rank: 10, userId: "u10", name: "Anna Novak", avatar: "", level: 5, xp: 1550, country: "HR", isFriend: false },
+  { rank: 11, userId: "u11", name: "Petar Jovanovic", avatar: "", level: 4, xp: 1300, country: "RS", isFriend: true },
+  { rank: 12, userId: "u12", name: "Sophie Martin", avatar: "", level: 4, xp: 1150, country: "FR", isFriend: false },
+  { rank: 13, userId: "u13", name: "Marco Rossi", avatar: "", level: 3, xp: 950, country: "IT", isFriend: false },
+  { rank: 14, userId: "u14", name: "Hana Tanaka", avatar: "", level: 3, xp: 800, country: "JP", isFriend: false },
+  { rank: 15, userId: "u15", name: "Omar Hassan", avatar: "", level: 2, xp: 600, country: "AE", isFriend: false },
+];
+
+export const mockFriends: Friend[] = [
+  { id: "f1", name: "Sarah Chen", avatar: "", level: 12, xp: 4850, country: "US", online: true, lastActive: "now", achievements: 8, mutualFriends: 3 },
+  { id: "f2", name: "Emma Rodriguez", avatar: "", level: 9, xp: 3850, country: "ES", online: true, lastActive: "5 min ago", achievements: 6, mutualFriends: 5 },
+  { id: "f3", name: "Maria Garcia", avatar: "", level: 7, xp: 2380, country: "ES", online: false, lastActive: "2 hours ago", achievements: 4, mutualFriends: 2 },
+  { id: "f4", name: "Lisa Wang", avatar: "", level: 6, xp: 1950, country: "CN", online: true, lastActive: "just now", achievements: 5, mutualFriends: 1 },
+  { id: "f5", name: "Petar Jovanovic", avatar: "", level: 4, xp: 1300, country: "RS", online: false, lastActive: "1 day ago", achievements: 3, mutualFriends: 4 },
+  { id: "f6", name: "Alex Kim", avatar: "", level: 8, xp: 3200, country: "KR", online: false, lastActive: "3 hours ago", achievements: 7, mutualFriends: 0 },
+  { id: "f7", name: "James Mitchell", avatar: "", level: 10, xp: 4200, country: "GB", online: true, lastActive: "1 min ago", achievements: 9, mutualFriends: 2 },
+  { id: "f8", name: "Tom Wilson", avatar: "", level: 6, xp: 2100, country: "US", online: false, lastActive: "Yesterday", achievements: 4, mutualFriends: 1 },
+];
+
+export const mockExtendedCertificates: Certificate[] = [
+  { id: "c1", title: "Bridge Fundamentals", description: "Completed all beginner bridge basics — trick-taking, following suit, basic scoring, and partner communication.", earnedAt: "2026-02-15", episodeId: "ep1", gradient: "from-emerald-500 to-teal-600" },
+  { id: "c2", title: "Bidding Basics", description: "Mastered the bidding system including 1NT openings, Stayman, Jacoby Transfers, and major/minor suit openings.", earnedAt: "2026-03-01", episodeId: "ep2", gradient: "from-blue-500 to-indigo-600" },
+  { id: "c3", title: "Declarer Play", description: "Learned finessing, trump management, establishing long suits, and entry management techniques.", earnedAt: "2026-04-10", episodeId: "ep3", gradient: "from-violet-500 to-purple-600" },
+  { id: "c4", title: "Defensive Play", description: "Mastered opening leads, third hand play, defensive signaling, count and attitude signals.", earnedAt: "2026-05-22", episodeId: "ep4", gradient: "from-amber-500 to-orange-600" },
 ];

@@ -358,6 +358,42 @@ export interface Flashcard {
   timesReviewed: number;
 }
 
+export interface LearningStats {
+  hoursLearned: number;
+  lessonsFinished: number;
+  quizAccuracy: number;
+  currentStreak: number;
+  averageScore: number;
+  weeklyActivity: { day: string; hours: number }[];
+  monthlyProgress: { month: string; lessons: number; xp: number }[];
+  categoryBreakdown: { category: string; completed: number; total: number }[];
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  userId: string;
+  name: string;
+  avatar: string;
+  level: number;
+  xp: number;
+  country: string;
+  isFriend: boolean;
+  isCurrentUser?: boolean;
+}
+
+export interface Friend {
+  id: string;
+  name: string;
+  avatar: string;
+  level: number;
+  xp: number;
+  country: string;
+  online: boolean;
+  lastActive: string;
+  achievements: number;
+  mutualFriends: number;
+}
+
 export type BookmarkCategory = "lesson" | "video" | "article";
 
 export interface BookmarkItem {
