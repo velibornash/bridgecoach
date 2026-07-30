@@ -1,171 +1,158 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { AnimatedSection } from "@/components/ui/AnimatedSection";
+import Link from "next/link";
+import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Progress } from "@/components/ui/Progress";
-import { Button } from "@/components/ui/Button";
 import type { Episode } from "@/types";
-
-const difficultyConfig = {
-  beginner: { label: "Beginner", variant: "success" as const },
-  intermediate: { label: "Intermediate", variant: "warning" as const },
-  advanced: { label: "Advanced", variant: "danger" as const },
-};
 
 interface EpisodeCardProps {
   episode: Episode;
   index: number;
 }
 
+const difficultyColors: Record<string, string> = {
+  beginner: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  intermediate: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  advanced: "bg-rose-500/20 text-rose-400 border-rose-500/30",
+};
+
 export function EpisodeCard({ episode, index }: EpisodeCardProps) {
-  const isComplete = episode.completion === 100;
-  const isAvailable = !episode.locked;
+  const [isHovered, setIsHovered] = useState(false);
+
+  const status = episode.locked
+    ? "locked"
+    : episode.completion === 100
+      ? "completed"
+      : episode.completion > 0
+        ? "in-progress"
+        : "available";
 
   return (
-    <AnimatedSection delay={index * 0.08} direction="up">
-      <div className="group relative flex gap-4 sm:gap-6">
-        {/* Timeline connector */}
-        <div className="flex flex-col items-center">
-          <div
-            className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-bold shadow-lg transition-all duration-150 ${
-              isComplete
-                ? "bg-success text-white shadow-success/30"
-                : episode.locked
-                  ? "bg-bg-secondary text-text-tertiary"
-                  : "bg-gradient-to-br " + episode.gradient + " text-white shadow-primary/20"
-            }`}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.08 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="group"
+    >
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-bg-card transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
+        {/* Top gradient banner */}
+        <div
+          className={`relative h-40 sm:h-48 bg-gradient-to-br ${episode.gradient} flex items-end p-5 overflow-hidden`}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent" />
+
+          {/* Hover play button overlay */}
+          <motion.div
+            initial={false}
+            animate={{ opacity: isHovered ? 1 : 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 z-10 flex items-center justify-center bg-black/40"
           >
-            {isComplete ? (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-            ) : episode.locked ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-              </svg>
-            ) : (
-              episode.episodeNumber
+            {!episode.locked && (
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: isHovered ? 1 : 0.8 }}
+                transition={{ type: "spring", damping: 20 }}
+              >
+                <Link href={`/lesson?episode=${episode.id}`}>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/30 transition-transform hover:scale-105">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white ml-0.5">
+                      <path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                    </svg>
+                  </div>
+                </Link>
+              </motion.div>
             )}
+          </motion.div>
+
+          {/* Episode icon and number */}
+          <div className="relative z-[5] flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+              <span className="text-lg">{episode.icon}</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-white/70">Episode {episode.episodeNumber}</span>
+                {status === "completed" && (
+                  <Badge variant="success">Complete</Badge>
+                )}
+                {status === "in-progress" && (
+                  <Badge variant="primary">In Progress</Badge>
+                )}
+                {status === "locked" && (
+                  <Badge variant="default">Locked</Badge>
+                )}
+              </div>
+              <h3 className="text-lg font-bold text-white">{episode.title}</h3>
+            </div>
           </div>
-          {index < 5 && (
-            <div className={`h-full w-0.5 ${isComplete ? "bg-success/30" : "bg-bg-secondary"}`} />
-          )}
         </div>
 
-        {/* Card */}
-        <div className={`mb-8 flex-1 rounded-2xl border transition-all duration-150 ${
-          episode.locked
-            ? "border-border bg-bg-card/50 opacity-60"
-            : "border-border bg-bg-card hover:border-border-hover hover:shadow-md"
-        }`}>
-          <div className="p-5 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium uppercase tracking-wider text-text-tertiary">
-                    Episode {episode.episodeNumber}
-                  </span>
-                  <Badge variant={difficultyConfig[episode.difficulty].variant}>
-                    {difficultyConfig[episode.difficulty].label}
-                  </Badge>
-                  {isComplete && (
-                    <Badge variant="success">Completed</Badge>
-                  )}
-                </div>
+        {/* Card body */}
+        <div className="p-5">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border ${difficultyColors[episode.difficulty] || "border-border text-text-tertiary"}`}>
+              {episode.difficulty}
+            </span>
+            <span className="text-[11px] text-text-tertiary">{episode.duration}</span>
+            <span className="text-[11px] text-text-tertiary">&middot;</span>
+            <span className="text-[11px] text-text-tertiary">{episode.lessonCount} lessons</span>
+            <span className="text-[11px] text-text-tertiary">&middot;</span>
+            <span className="text-[11px] text-warning font-medium">+{episode.xpReward} XP</span>
+          </div>
 
-                <h3 className={`text-lg font-bold mt-1 ${
-                  episode.locked ? "text-text-tertiary" : "text-text-primary"
-                }`}>
-                  {episode.title}
-                </h3>
-                <p className="mt-1 text-sm text-text-secondary line-clamp-2">
-                  {episode.description}
-                </p>
-              </div>
+          <p className="text-sm text-text-secondary leading-relaxed mb-4 line-clamp-2">
+            {episode.description}
+          </p>
 
-              {/* Gradient icon/visual */}
-              <div className={`hidden sm:flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${episode.gradient} shadow-lg`}>
-                <span className="text-2xl font-black text-white/90">{episode.icon}</span>
+          {/* Progress bar for unlocked episodes */}
+          {!episode.locked && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="text-text-tertiary">{episode.completedLessons}/{episode.lessonCount} lessons</span>
+                <span className="text-text-secondary font-medium">{episode.completion}%</span>
               </div>
+              <Progress value={episode.completion} />
             </div>
+          )}
 
-            {/* Metadata row */}
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-text-tertiary">
-              <span className="flex items-center gap-1">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          {/* Action button */}
+          <div className="flex items-center gap-3">
+            {status === "locked" ? (
+              <div className="flex items-center gap-2 text-xs text-text-tertiary">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                 </svg>
-                {episode.duration}
-              </span>
-              <span className="flex items-center gap-1">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                </svg>
-                {episode.lessonCount} lessons
-              </span>
-              <span className="flex items-center gap-1 text-warning">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-                </svg>
-                {episode.totalXp} XP
-              </span>
-            </div>
-
-            {/* Progress bar */}
-            {isAvailable && (
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <span className="text-text-tertiary">
-                    {episode.completedLessons}/{episode.lessonCount} lessons
-                  </span>
-                  <span className="text-text-secondary font-medium">
-                    {episode.completion}%
-                  </span>
-                </div>
-                <Progress
-                  value={episode.completion}
-                  max={100}
-                  indicatorClassName={
-                    isComplete
-                      ? "bg-gradient-to-r from-success to-emerald-400"
-                      : undefined
-                  }
-                />
+                Complete previous episode to unlock
               </div>
-            )}
-
-            {/* Action */}
-            <div className="mt-5">
-              {episode.locked ? (
-                <div className="flex items-center gap-2 text-xs text-text-tertiary">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            ) : status === "completed" ? (
+              <Link href={`/lesson?episode=${episode.id}`}>
+                <Button variant="outline" size="sm">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1.5">
+                    <path d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
                   </svg>
-                  Complete previous episode to unlock
-                </div>
-              ) : isComplete ? (
-                <div className="flex items-center gap-3">
-                  <Badge variant="success">Episode Complete</Badge>
-                  <span className="flex items-center gap-1 text-xs text-warning font-medium">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-                    </svg>
-                    +{episode.xpReward} XP earned
-                  </span>
-                </div>
-              ) : (
+                  Review
+                </Button>
+              </Link>
+            ) : (
+              <Link href={`/lesson?episode=${episode.id}`}>
                 <Button variant="primary" size="sm">
-                  {episode.completion > 0 ? "Continue Episode" : "Start Episode"}
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  {status === "in-progress" ? "Continue" : "Start"}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="ml-1.5">
+                    <path d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                   </svg>
                 </Button>
-              )}
-            </div>
+              </Link>
+            )}
           </div>
         </div>
       </div>
-    </AnimatedSection>
+    </motion.div>
   );
 }

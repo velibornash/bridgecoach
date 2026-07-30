@@ -13,6 +13,8 @@ const MOCK_USER: User = {
   joinedAt: new Date().toISOString(),
   country: "US",
   experienceLevel: "new",
+  completedLessonIds: [],
+  currentLessonId: null,
 };
 
 function delay(ms: number) {
@@ -112,6 +114,8 @@ export const countries = [
   { value: "SG", label: "Singapore" },
   { value: "NZ", label: "New Zealand" },
   { value: "IE", label: "Ireland" },
+  { value: "RS", label: "Serbia" },
+  { value: "HR", label: "Croatia" },
 ];
 
 export const experienceLevels = [

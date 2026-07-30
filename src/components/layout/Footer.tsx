@@ -5,33 +5,33 @@ const footerLinks = [
   {
     title: "Product",
     links: [
-      { label: "Features", href: "#features" },
-      { label: "Pricing", href: "#pricing" },
-      { label: "How It Works", href: "#how-it-works" },
+      { label: "Features", href: "/#features" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "How It Works", href: "/#how-it-works" },
     ],
   },
   {
-    title: "Company",
+    title: "Learning",
+    links: [
+      { label: "Learning Path", href: "/learning-path" },
+      { label: "Quizzes", href: "/quiz" },
+      { label: "Daily Challenge", href: "/challenges" },
+    ],
+  },
+  {
+    title: "Account",
+    links: [
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Profile", href: "/profile" },
+      { label: "Settings", href: "/settings" },
+    ],
+  },
+  {
+    title: "Resources",
     links: [
       { label: "About", href: "/about" },
-      { label: "Blog", href: "#" },
-      { label: "Careers", href: "#" },
-    ],
-  },
-  {
-    title: "Support",
-    links: [
-      { label: "Help Center", href: "#" },
-      { label: "Contact", href: "#" },
-      { label: "Status", href: "#" },
-    ],
-  },
-  {
-    title: "Legal",
-    links: [
-      { label: "Privacy", href: "#" },
-      { label: "Terms", href: "#" },
-      { label: "Cookies", href: "#" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "XP & Progress", href: "/xp" },
     ],
   },
 ];

@@ -4,12 +4,19 @@ import { useState } from "react";
 import { Container } from "@/components/ui/Container";
 import { Avatar } from "@/components/ui/Avatar";
 import { mockUser } from "@/services/mockData";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import Link from "next/link";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/learning-path", label: "Learn" },
+  { href: "/catalog", label: "Catalog" },
   { href: "/quiz", label: "Quiz" },
+  { href: "/flashcards", label: "Flashcards" },
+  { href: "/missions", label: "Missions" },
+  { href: "/bookmarks", label: "Bookmarks" },
+  { href: "/notes", label: "Notes" },
+  { href: "/rewards", label: "Rewards" },
   { href: "/xp", label: "XP" },
   { href: "/achievements", label: "Achievements" },
   { href: "/challenges", label: "Challenges" },
@@ -44,7 +51,16 @@ export function DashboardHeader() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <Link
+              href="/search"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary hover:text-text-primary hover:bg-bg-secondary transition-all"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+            </Link>
+            <NotificationBell />
             <div className="hidden items-center gap-2 sm:flex">
               <Link href="/xp" className="flex items-center gap-1.5 rounded-full bg-bg-secondary px-3 py-1.5 hover:bg-bg-secondary/80 transition-colors">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">

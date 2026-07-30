@@ -49,6 +49,8 @@ export async function registerUser(data: RegisterFormData) {
     joinedAt: new Date().toISOString().split("T")[0],
     country: data.country,
     experienceLevel: data.experienceLevel,
+    completedLessonIds: [],
+    currentLessonId: null,
   };
   storeUser(user);
   return { data: user, error: null, status: 201 };

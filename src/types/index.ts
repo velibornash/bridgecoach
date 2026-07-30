@@ -11,6 +11,8 @@ export interface User {
   joinedAt: string;
   country: string;
   experienceLevel: ExperienceLevel;
+  completedLessonIds: string[];
+  currentLessonId: string | null;
 }
 
 export type ExperienceLevel = "new" | "beginner" | "intermediate" | "advanced";
@@ -24,12 +26,15 @@ export interface Lesson {
   completed: boolean;
   locked: boolean;
   category: string;
+  subcategory: string;
   episodeId: string;
   content: LessonContent[];
   hasCards: boolean;
   cards?: CardHand[];
   bookmarked?: boolean;
   notes?: LessonNote[];
+  sectionsCompleted: string[];
+  currentSectionIndex: number;
 }
 
 export interface LessonContent {
@@ -49,6 +54,9 @@ export interface LessonNote {
   id: string;
   text: string;
   timestamp: number;
+  pinned: boolean;
+  lessonId?: string;
+  lessonTitle?: string;
 }
 
 export type XpSource = "lesson" | "quiz" | "challenge" | "achievement" | "streak_bonus" | "daily_bonus";
@@ -229,4 +237,136 @@ export interface LoginFormData {
   email: string;
   password: string;
   rememberMe: boolean;
+}
+
+export type MissionType = "main" | "side" | "bonus";
+export type MissionCategory = "daily" | "weekly";
+
+export interface Mission {
+  id: string;
+  title: string;
+  description: string;
+  type: MissionType;
+  category: MissionCategory;
+  xpReward: number;
+  progress: number;
+  maxProgress: number;
+  completed: boolean;
+  icon: string;
+  gradient: string;
+}
+
+export interface ChapterProgress {
+  episodeId: string;
+  completedLessons: number;
+  totalLessons: number;
+  currentLessonId: string | null;
+  completedLessonIds: string[];
+}
+
+export type RewardType = "coins" | "xp" | "stars" | "badge" | "mystery_chest";
+
+export interface Reward {
+  id: string;
+  type: RewardType;
+  label: string;
+  description: string;
+  amount: number;
+  icon: string;
+  earnedAt: string;
+  rarity: "common" | "rare" | "epic" | "legendary";
+}
+
+export interface RewardItem {
+  id: string;
+  type: RewardType;
+  label: string;
+  description: string;
+  amount: number;
+  icon: string;
+  rarity: "common" | "rare" | "epic" | "legendary";
+}
+
+export type NotificationType = "xp" | "achievement" | "reminder" | "lesson" | "friend";
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  description: string;
+  timestamp: string;
+  read: boolean;
+  icon: string;
+  actionLabel?: string;
+  actionHref?: string;
+}
+
+export interface SearchResult {
+  id: string;
+  title: string;
+  description: string;
+  category: "lesson" | "topic" | "convention" | "video" | "faq";
+  href: string;
+  match: string;
+}
+
+export type CourseLevel = "beginner" | "intermediate" | "advanced" | "all";
+
+export interface CatalogCourse {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  difficulty: CourseLevel;
+  duration: string;
+  lessonCount: number;
+  completedCount: number;
+  xpReward: number;
+  image: string;
+  gradient: string;
+  icon: string;
+  progress: number;
+  locked: boolean;
+  tags: string[];
+}
+
+export interface VideoState {
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  volume: number;
+  playbackRate: number;
+  isMuted: boolean;
+  captionsEnabled: boolean;
+}
+
+export interface Caption {
+  id: string;
+  start: number;
+  end: number;
+  text: string;
+}
+
+export interface Flashcard {
+  id: string;
+  front: string;
+  back: string;
+  category: string;
+  difficulty: "easy" | "medium" | "hard";
+  status: "known" | "unknown" | "review_later";
+  lastReviewed: string | null;
+  timesReviewed: number;
+}
+
+export type BookmarkCategory = "lesson" | "video" | "article";
+
+export interface BookmarkItem {
+  id: string;
+  title: string;
+  description: string;
+  href: string;
+  category: BookmarkCategory;
+  icon: string;
+  addedAt: string;
+  episodeId?: string;
 }

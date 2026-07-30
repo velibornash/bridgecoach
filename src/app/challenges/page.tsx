@@ -15,8 +15,7 @@ export default function ChallengesPage() {
       <main className="py-4 sm:py-6">
         <Container className="max-w-2xl">
           <div className="mb-5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">SPRINT 10</span>
-            <h1 className="text-xl font-bold text-text-primary mt-0.5">Daily Challenges</h1>
+            <h1 className="text-xl font-bold text-text-primary">Daily Challenges</h1>
             <p className="text-sm text-text-tertiary mt-1">Complete today's challenge and track your history.</p>
           </div>
 

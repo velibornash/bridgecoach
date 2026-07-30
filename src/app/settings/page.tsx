@@ -68,8 +68,7 @@ export default function SettingsPage() {
       <main className="py-4 sm:py-6">
         <Container className="max-w-4xl">
           <div className="mb-5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">SPRINT 11</span>
-            <h1 className="text-xl font-bold text-text-primary mt-0.5">Settings</h1>
+            <h1 className="text-xl font-bold text-text-primary">Settings</h1>
             <p className="text-sm text-text-tertiary mt-1">Manage your preferences and account.</p>
           </div>
 

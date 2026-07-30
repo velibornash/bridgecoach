@@ -16,9 +16,9 @@ interface NavbarProps {
 }
 
 const defaultLinks: NavLink[] = [
-  { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Pricing", href: "#pricing" },
+  { label: "Features", href: "/#features" },
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Pricing", href: "/pricing" },
 ];
 
 export function Navbar({ links = defaultLinks }: NavbarProps) {

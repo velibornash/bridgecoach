@@ -13,8 +13,7 @@ export default function XPPage() {
       <main className="py-4 sm:py-6">
         <Container className="max-w-2xl">
           <div className="mb-5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">SPRINT 8</span>
-            <h1 className="text-xl font-bold text-text-primary mt-0.5">XP & Progress</h1>
+            <h1 className="text-xl font-bold text-text-primary">XP & Progress</h1>
             <p className="text-sm text-text-tertiary mt-1">Track your experience, daily goals, and learning activity.</p>
           </div>
           <XPProgress />

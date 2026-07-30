@@ -12,8 +12,7 @@ export default function AchievementsPage() {
       <main className="py-4 sm:py-6">
         <Container className="max-w-2xl">
           <div className="mb-5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">SPRINT 9</span>
-            <h1 className="text-xl font-bold text-text-primary mt-0.5">Achievements</h1>
+            <h1 className="text-xl font-bold text-text-primary">Achievements</h1>
             <p className="text-sm text-text-tertiary mt-1">Track your progress, earn badges, and unlock rewards.</p>
           </div>
           <AchievementGrid />

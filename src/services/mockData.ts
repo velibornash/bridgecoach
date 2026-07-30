@@ -2,7 +2,9 @@ import {
   User, Lesson, Achievement, Testimonial, Feature,
   Activity, Episode, DailyMission, UserStats,
   QuizQuestion, Certificate, CardHand, LessonContent,
-  DailyChallengeData, XpEntry,
+  DailyChallengeData, XpEntry, Mission,
+  RewardItem, Reward, AppNotification, SearchResult, CatalogCourse,
+  Caption, Flashcard, BookmarkItem, LessonNote,
 } from "@/types";
 
 export const mockUser: User = {
@@ -18,6 +20,8 @@ export const mockUser: User = {
   joinedAt: "2026-01-15",
   country: "US",
   experienceLevel: "intermediate",
+  completedLessonIds: ["l1", "l2"],
+  currentLessonId: "l3",
 };
 
 export const mockUserStats: UserStats = {
@@ -88,40 +92,48 @@ const lessonContent5: LessonContent[] = [
 export const mockLessons: Lesson[] = [
   {
     id: "l1", title: "Trick-Taking Fundamentals", description: "Learn how tricks work in bridge",
-    duration: "8 min", xpReward: 50, completed: true, locked: false, category: "Basics", episodeId: "ep1",
+    duration: "8 min", xpReward: 50, completed: true, locked: false, category: "Basics", subcategory: "Fundamentals", episodeId: "ep1",
     content: lessonContent1, hasCards: true, cards: mockHand1(), bookmarked: true,
+    sectionsCompleted: lessonContent1.map(c => c.id), currentSectionIndex: lessonContent1.length,
   },
   {
     id: "l2", title: "Opening Leads", description: "Master the art of the first card",
-    duration: "10 min", xpReward: 60, completed: true, locked: false, category: "Basics", episodeId: "ep1",
+    duration: "10 min", xpReward: 60, completed: true, locked: false, category: "Basics", subcategory: "Fundamentals", episodeId: "ep1",
     content: lessonContent2, hasCards: true, cards: mockHand2(), bookmarked: false,
+    sectionsCompleted: lessonContent2.map(c => c.id), currentSectionIndex: lessonContent2.length,
   },
   {
     id: "l3", title: "NT Opening Bids", description: "When and how to open 1NT",
-    duration: "12 min", xpReward: 70, completed: false, locked: false, category: "Bidding", episodeId: "ep2",
+    duration: "12 min", xpReward: 70, completed: false, locked: false, category: "Bidding", subcategory: "Notrump", episodeId: "ep2",
     content: lessonContent3, hasCards: true, cards: mockHand3(), bookmarked: false,
+    sectionsCompleted: ["ln1", "ln2"], currentSectionIndex: 2,
   },
   {
     id: "l4", title: "Stayman Convention", description: "Find major suit fits after 1NT",
-    duration: "15 min", xpReward: 80, completed: false, locked: false, category: "Bidding", episodeId: "ep2",
+    duration: "15 min", xpReward: 80, completed: false, locked: false, category: "Bidding", subcategory: "Conventions", episodeId: "ep2",
     content: lessonContent4, hasCards: true, cards: mockHand4(), bookmarked: true,
+    sectionsCompleted: [], currentSectionIndex: 0,
   },
   {
     id: "l5", title: "Transfers", description: "Jacoby transfers explained",
-    duration: "14 min", xpReward: 75, completed: false, locked: false, category: "Bidding", episodeId: "ep2",
+    duration: "14 min", xpReward: 75, completed: false, locked: false, category: "Bidding", subcategory: "Conventions", episodeId: "ep2",
     content: lessonContent5, hasCards: true, cards: mockHand5(), bookmarked: false,
+    sectionsCompleted: [], currentSectionIndex: 0,
   },
   { id: "l6", title: "Finessing Techniques", description: "Win tricks with finesses",
-    duration: "11 min", xpReward: 65, completed: false, locked: true, category: "Play", episodeId: "ep3",
+    duration: "11 min", xpReward: 65, completed: false, locked: true, category: "Play", subcategory: "Declarer", episodeId: "ep3",
     content: [], hasCards: false, bookmarked: false,
+    sectionsCompleted: [], currentSectionIndex: 0,
   },
   { id: "l7", title: "Defensive Signals", description: "Communicate with partner",
-    duration: "13 min", xpReward: 70, completed: false, locked: true, category: "Defense", episodeId: "ep4",
+    duration: "13 min", xpReward: 70, completed: false, locked: true, category: "Defense", subcategory: "Signals", episodeId: "ep4",
     content: [], hasCards: false, bookmarked: false,
+    sectionsCompleted: [], currentSectionIndex: 0,
   },
   { id: "l8", title: "Trump Management", description: "Handle trump suits effectively",
-    duration: "16 min", xpReward: 85, completed: false, locked: true, category: "Play", episodeId: "ep3",
+    duration: "16 min", xpReward: 85, completed: false, locked: true, category: "Play", subcategory: "Declarer", episodeId: "ep3",
     content: [], hasCards: false, bookmarked: false,
+    sectionsCompleted: [], currentSectionIndex: 0,
   },
 ];
 
@@ -379,3 +391,158 @@ export const mockDailyChallengeHistory: DailyChallengeData[] = (() => {
     { id: "h7", date: fmt(new Date(now - 13 * day)), title: "Hand Analysis", description: "Analyze 3 bridge hands correctly.", xpReward: 45, bonusXp: 15, completed: true, type: "puzzle", difficulty: "medium" },
   ];
 })();
+
+export const mockRewards: Reward[] = [
+  { id: "r1", type: "xp", label: "Lesson XP", description: "Completed 'NT Opening Bids'", amount: 70, icon: "⚡", earnedAt: "2 hours ago", rarity: "common" },
+  { id: "r2", type: "stars", label: "Perfect Quiz", description: "Scored 100% on Bidding Quiz", amount: 5, icon: "⭐", earnedAt: "Yesterday", rarity: "rare" },
+  { id: "r3", type: "coins", label: "Daily Bonus", description: "Daily login reward", amount: 50, icon: "🪙", earnedAt: "Today", rarity: "common" },
+  { id: "r4", type: "badge", label: "Bidder Badge", description: "Completed all bidding basics", amount: 1, icon: "🃏", earnedAt: "2 days ago", rarity: "rare" },
+  { id: "r5", type: "mystery_chest", label: "Mystery Chest", description: "3-day streak reward", amount: 1, icon: "🎁", earnedAt: "3 days ago", rarity: "epic" },
+  { id: "r6", type: "xp", label: "Challenge XP", description: "Completed daily bridge puzzle", amount: 40, icon: "⚡", earnedAt: "4 days ago", rarity: "common" },
+  { id: "r7", type: "stars", label: "Achievement Stars", description: "Unlocked 'Streak Starter'", amount: 10, icon: "⭐", earnedAt: "5 days ago", rarity: "epic" },
+  { id: "r8", type: "coins", label: "Weekly Reward", description: "Weekly challenge completion", amount: 200, icon: "🪙", earnedAt: "6 days ago", rarity: "rare" },
+  { id: "r9", type: "badge", label: "First Trick Badge", description: "Completed your first lesson", amount: 1, icon: "🎯", earnedAt: "7 days ago", rarity: "common" },
+  { id: "r10", type: "mystery_chest", label: "Mystery Chest", description: "7-day streak reward", amount: 1, icon: "🎁", earnedAt: "8 days ago", rarity: "legendary" },
+];
+
+export const rewardItems: RewardItem[] = [
+  { id: "ri1", type: "coins", label: "Coins", description: "Spend on customization and perks", amount: 1250, icon: "🪙", rarity: "common" },
+  { id: "ri2", type: "stars", label: "Stars", description: "Earned from quizzes and achievements", amount: 47, icon: "⭐", rarity: "rare" },
+  { id: "ri3", type: "badge", label: "Badges", description: "Unlocked achievements", amount: 3, icon: "🃏", rarity: "rare" },
+];
+
+export const mockNotifications: AppNotification[] = [
+  { id: "n1", type: "xp", title: "XP Earned!", description: "You earned 70 XP for completing 'NT Opening Bids'", timestamp: "2 min ago", read: false, icon: "⚡", actionLabel: "View Lesson", actionHref: "/lesson" },
+  { id: "n2", type: "achievement", title: "Achievement Unlocked!", description: "You unlocked 'Bidder' — Complete all bidding basics", timestamp: "1 hour ago", read: false, icon: "🎯", actionLabel: "View Achievements", actionHref: "/achievements" },
+  { id: "n3", type: "reminder", title: "Daily Reminder", description: "Don't forget to complete today's challenge!", timestamp: "3 hours ago", read: false, icon: "🔔", actionLabel: "Go to Challenges", actionHref: "/challenges" },
+  { id: "n4", type: "lesson", title: "New Lesson Available", description: "'Finessing Techniques' is now unlocked for you", timestamp: "Yesterday", read: true, icon: "📖", actionLabel: "Start Lesson", actionHref: "/lesson" },
+  { id: "n5", type: "friend", title: "Friend Joined!", description: "Sarah Chen has joined Bridge Coach", timestamp: "2 days ago", read: true, icon: "👋" },
+  { id: "n6", type: "xp", title: "Bonus XP!", description: "You earned 50 XP from Daily Challenge", timestamp: "3 days ago", read: true, icon: "⚡" },
+  { id: "n7", type: "achievement", title: "Streak Starter", description: "You earned 'Streak Starter' — 3-day streak!", timestamp: "5 days ago", read: true, icon: "🔥" },
+  { id: "n8", type: "reminder", title: "Streak at Risk!", description: "Complete a lesson today to keep your 12-day streak", timestamp: "6 days ago", read: true, icon: "⚠️" },
+];
+
+export const mockSearchResults: Record<string, SearchResult[]> = {
+  lessons: [
+    { id: "s1", title: "NT Opening Bids", description: "When and how to open 1NT with 15-17 HCP", category: "lesson", href: "/lesson", match: "1NT, opening, balanced hand, 15-17 HCP" },
+    { id: "s2", title: "Stayman Convention", description: "Find 4-4 major suit fits after 1NT", category: "lesson", href: "/lesson", match: "Stayman, 2C, major suit, convention" },
+    { id: "s3", title: "Jacoby Transfers", description: "Transfer responses to 1NT opening", category: "lesson", href: "/lesson", match: "transfer, Jacoby, 2D, 2H, responder" },
+    { id: "s4", title: "Opening Leads", description: "Master the art of the first card", category: "lesson", href: "/lesson", match: "lead, opening, defense, notrump" },
+  ],
+  topics: [
+    { id: "s5", title: "Balanced Hands", description: "Understanding balanced hand patterns (4-3-3-3, 4-4-3-2, 5-3-3-2)", category: "topic", href: "/learning-path", match: "balanced, distribution, HCP, notrump" },
+    { id: "s6", title: "Trick-Taking", description: "How tricks work and how to win them", category: "topic", href: "/learning-path", match: "trick, win, lead, follow suit, trump" },
+    { id: "s7", title: "Point Counting", description: "Counting high card points and distribution points", category: "topic", href: "/learning-path", match: "HCP, points, counting, valuation" },
+  ],
+  conventions: [
+    { id: "s8", title: "Stayman Convention", description: "Asks opener for a 4-card major after 1NT", category: "convention", href: "/lesson", match: "Stayman, 2C, major, 1NT, convention" },
+    { id: "s9", title: "Jacoby Transfer", description: "Transfers to show 5+ card major after 1NT", category: "convention", href: "/lesson", match: "transfer, Jacoby, 2D, 2H, 5-card" },
+    { id: "s10", title: "Blackwood Convention", description: "Ace-asking convention using 4NT", category: "convention", href: "/learning-path", match: "Blackwood, 4NT, aces, slam, convention" },
+    { id: "s11", title: "Gerber Convention", description: "Ace-asking using 4C", category: "convention", href: "/learning-path", match: "Gerber, 4C, aces, notrump, convention" },
+  ],
+  videos: [
+    { id: "s12", title: "How to Count Points", description: "Video tutorial on counting HCP", category: "video", href: "/lesson", match: "video, count, points, HCP, tutorial" },
+    { id: "s13", title: "1NT Opening Explained", description: "Complete guide to 1NT openings", category: "video", href: "/lesson", match: "video, 1NT, opening, notrump, guide" },
+  ],
+  faq: [
+    { id: "s14", title: "What is a balanced hand?", description: "A hand with no void/singleton and at most one doubleton", category: "faq", href: "/learning-path", match: "balanced hand, distribution, FAQ" },
+    { id: "s15", title: "How many points for 1NT?", description: "15-17 high card points", category: "faq", href: "/quiz", match: "1NT, points, HCP, opening, FAQ" },
+    { id: "s16", title: "What is Stayman?", description: "A convention to find major suit fits after 1NT", category: "faq", href: "/quiz", match: "Stayman, convention, major, 1NT, FAQ" },
+  ],
+};
+
+export const mockCaptions: Caption[] = [
+  { id: "cap1", start: 0, end: 5, text: "Welcome to this lesson on NT Opening Bids." },
+  { id: "cap2", start: 5, end: 12, text: "Today we'll learn when and how to open 1NT with a balanced hand." },
+  { id: "cap3", start: 12, end: 20, text: "A 1NT opening shows exactly 15-17 high card points." },
+  { id: "cap4", start: 20, end: 28, text: "Your hand must also be balanced — no voids or singletons." },
+  { id: "cap5", start: 28, end: 35, text: "The balanced patterns are 4-3-3-3, 4-4-3-2, and 5-3-3-2." },
+  { id: "cap6", start: 35, end: 45, text: "With 5-3-3-2 distribution and 15-17 HCP, always open 1NT." },
+  { id: "cap7", start: 45, end: 55, text: "Do not open your 5-card major — describe your balanced hand first." },
+  { id: "cap8", start: 55, end: 62, text: "Let's look at a few example hands to practice." },
+];
+
+export const mockFlashcards: Flashcard[] = [
+  { id: "fc1", front: "What is a balanced hand?", back: "No void or singleton, at most one doubleton. Patterns: 4-3-3-3, 4-4-3-2, 5-3-3-2", category: "Basics", difficulty: "easy", status: "known", lastReviewed: "2026-07-28", timesReviewed: 5 },
+  { id: "fc2", front: "What HCP range does 1NT opening show?", back: "15-17 high card points", category: "Bidding", difficulty: "easy", status: "known", lastReviewed: "2026-07-28", timesReviewed: 4 },
+  { id: "fc3", front: "What is Stayman?", back: "2♣ response to 1NT asking opener for a 4-card major", category: "Conventions", difficulty: "medium", status: "unknown", lastReviewed: null, timesReviewed: 0 },
+  { id: "fc4", front: "What does opener bid with both majors after Stayman?", back: "Bid 2♥ first. This allows responder to correct to 2♠ if needed.", category: "Conventions", difficulty: "hard", status: "unknown", lastReviewed: null, timesReviewed: 0 },
+  { id: "fc5", front: "What is a Jacoby Transfer?", back: "A bid of 2♦ (for hearts) or 2♥ (for spades) after partner's 1NT, showing 5+ cards in the major", category: "Conventions", difficulty: "medium", status: "review_later", lastReviewed: "2026-07-25", timesReviewed: 2 },
+  { id: "fc6", front: "How many points for 2NT opening?", back: "20-21 HCP, balanced hand", category: "Bidding", difficulty: "easy", status: "known", lastReviewed: "2026-07-27", timesReviewed: 3 },
+  { id: "fc7", front: "What is the opening lead against notrump?", back: "Lead your longest and strongest suit. With honor sequences, lead the top card.", category: "Defense", difficulty: "medium", status: "unknown", lastReviewed: null, timesReviewed: 0 },
+  { id: "fc8", front: "What is Blackwood?", back: "4NT asks for aces. Responses: 5♣=0 or 4, 5♦=1, 5♥=2, 5♠=3", category: "Conventions", difficulty: "hard", status: "review_later", lastReviewed: "2026-07-20", timesReviewed: 1 },
+  { id: "fc9", front: "What does a double of 1NT show?", back: "Typically 15+ HCP, balanced, suggesting penalty", category: "Bidding", difficulty: "hard", status: "unknown", lastReviewed: null, timesReviewed: 0 },
+  { id: "fc10", front: "What is a finesse?", back: "Leading toward an honor to trap the opponent's higher honor", category: "Play", difficulty: "medium", status: "known", lastReviewed: "2026-07-26", timesReviewed: 3 },
+];
+
+export const mockBookmarks: BookmarkItem[] = [
+  { id: "bm1", title: "NT Opening Bids", description: "When and how to open 1NT with 15-17 HCP", href: "/lesson", category: "lesson", icon: "📖", addedAt: "2 days ago", episodeId: "ep2" },
+  { id: "bm2", title: "Stayman Convention", description: "Find 4-4 major suit fits after 1NT", href: "/lesson", category: "lesson", icon: "📖", addedAt: "3 days ago", episodeId: "ep2" },
+  { id: "bm3", title: "How to Count Points", description: "Video tutorial on counting HCP", href: "/lesson", category: "video", icon: "🎬", addedAt: "5 days ago" },
+  { id: "bm4", title: "1NT Opening Explained", description: "Complete guide to 1NT openings", href: "/lesson", category: "video", icon: "🎬", addedAt: "1 week ago" },
+  { id: "bm5", title: "Understanding Balanced Hands", description: "A deep dive into hand patterns", href: "/learning-path", category: "article", icon: "📄", addedAt: "1 week ago" },
+  { id: "bm6", title: "Trick-Taking Fundamentals", description: "Learn how tricks work in bridge", href: "/lesson", category: "lesson", icon: "📖", addedAt: "2 weeks ago", episodeId: "ep1" },
+  { id: "bm7", title: "Defensive Signals Guide", description: "How to communicate with partner", href: "/learning-path", category: "article", icon: "📄", addedAt: "2 weeks ago" },
+];
+
+export const mockAllNotes: LessonNote[] = [
+  { id: "mn1", text: "Remember: 1NT = 15-17 HCP, balanced. This is the most important rule for opening bids.", timestamp: Date.now() - 3600000, pinned: true, lessonId: "l3", lessonTitle: "NT Opening Bids" },
+  { id: "mn2", text: "Stayman only works with 8+ HCP. With fewer points and a long major, use transfers instead.", timestamp: Date.now() - 7200000, pinned: true, lessonId: "l4", lessonTitle: "Stayman Convention" },
+  { id: "mn3", text: "Balanced patterns: 4-3-3-3, 4-4-3-2, 5-3-3-2. Anything else is unbalanced.", timestamp: Date.now() - 86400000, pinned: false, lessonId: "l3", lessonTitle: "NT Opening Bids" },
+  { id: "mn4", text: "Transfer then bid again shows 8+ HCP. Transfer and pass shows 0-7 HCP.", timestamp: Date.now() - 172800000, pinned: false, lessonId: "l5", lessonTitle: "Transfers" },
+  { id: "mn5", text: "Opening leads against NT: lead longest and strongest suit.", timestamp: Date.now() - 259200000, pinned: false, lessonId: "l2", lessonTitle: "Opening Leads" },
+];
+
+export const mockCatalog: CatalogCourse[] = [
+  { id: "c1", title: "Bridge Fundamentals", description: "Learn the basic rules, trick-taking, and how a hand of bridge works.", category: "Basics", difficulty: "beginner", duration: "45 min", lessonCount: 6, completedCount: 6, xpReward: 300, image: "", gradient: "from-emerald-500 to-teal-600", icon: "♠", progress: 100, locked: false, tags: ["rules", "tricks", "scoring"] },
+  { id: "c2", title: "Bidding Basics", description: "Understand how to communicate with your partner through bidding.", category: "Bidding", difficulty: "beginner", duration: "60 min", lessonCount: 8, completedCount: 3, xpReward: 400, image: "", gradient: "from-blue-500 to-indigo-600", icon: "♣", progress: 38, locked: false, tags: ["bidding", "1NT", "majors"] },
+  { id: "c3", title: "Declarer Play", description: "Master techniques of playing the hand as declarer.", category: "Play", difficulty: "beginner", duration: "75 min", lessonCount: 8, completedCount: 3, xpReward: 500, image: "", gradient: "from-violet-500 to-purple-600", icon: "♥", progress: 38, locked: false, tags: ["finesse", "trump", "declarer"] },
+  { id: "c4", title: "Defensive Play", description: "Learn how to defend effectively and signal with partner.", category: "Defense", difficulty: "intermediate", duration: "80 min", lessonCount: 8, completedCount: 0, xpReward: 550, image: "", gradient: "from-amber-500 to-orange-600", icon: "♦", progress: 0, locked: true, tags: ["defense", "signals", "lead"] },
+  { id: "c5", title: "Advanced Bidding", description: "Explore sophisticated bidding conventions and competitive auctions.", category: "Bidding", difficulty: "intermediate", duration: "90 min", lessonCount: 10, completedCount: 0, xpReward: 650, image: "", gradient: "from-rose-500 to-pink-600", icon: "♠", progress: 0, locked: true, tags: ["Blackwood", "splinter", "preempt"] },
+  { id: "c6", title: "Expert Techniques", description: "Fine-tune your game with advanced plays and coups.", category: "Play", difficulty: "advanced", duration: "100 min", lessonCount: 10, completedCount: 0, xpReward: 800, image: "", gradient: "from-red-500 to-rose-600", icon: "♥", progress: 0, locked: true, tags: ["squeeze", "coup", "expert"] },
+  { id: "c7", title: "Notrump Play", description: "Specialized techniques for playing notrump contracts.", category: "Play", difficulty: "intermediate", duration: "50 min", lessonCount: 6, completedCount: 0, xpReward: 350, image: "", gradient: "from-cyan-500 to-blue-600", icon: "♣", progress: 0, locked: true, tags: ["notrump", "entries", "hold-up"] },
+  { id: "c8", title: "Slam Bidding", description: "Learn how to bid and make slam contracts.", category: "Bidding", difficulty: "advanced", duration: "70 min", lessonCount: 8, completedCount: 0, xpReward: 600, image: "", gradient: "from-yellow-500 to-amber-600", icon: "♦", progress: 0, locked: true, tags: ["slam", "Blackwood", "grand slam"] },
+];
+
+export const mockMissions: Mission[] = [
+  {
+    id: "m1", title: "Complete Episode 1", description: "Finish all lessons in Bridge Fundamentals",
+    type: "main", category: "daily", xpReward: 120, progress: 6, maxProgress: 6, completed: true,
+    icon: "📖", gradient: "from-emerald-500 to-teal-600",
+  },
+  {
+    id: "m2", title: "Complete Episode 2", description: "Finish all lessons in Bidding Basics",
+    type: "main", category: "daily", xpReward: 150, progress: 3, maxProgress: 8, completed: false,
+    icon: "📖", gradient: "from-blue-500 to-indigo-600",
+  },
+  {
+    id: "m3", title: "Score 90%+ on Quiz", description: "Get a high score on any bidding quiz",
+    type: "side", category: "daily", xpReward: 80, progress: 1, maxProgress: 1, completed: true,
+    icon: "🎯", gradient: "from-violet-500 to-purple-600",
+  },
+  {
+    id: "m4", title: "3-Day Streak", description: "Maintain a 3-day learning streak",
+    type: "side", category: "daily", xpReward: 50, progress: 3, maxProgress: 3, completed: true,
+    icon: "🔥", gradient: "from-amber-500 to-orange-600",
+  },
+  {
+    id: "m5", title: "5 Lessons This Week", description: "Complete 5 lessons this week",
+    type: "bonus", category: "weekly", xpReward: 200, progress: 4, maxProgress: 5, completed: false,
+    icon: "⚡", gradient: "from-rose-500 to-pink-600",
+  },
+  {
+    id: "m6", title: "10 Quiz Questions", description: "Answer 10 quiz questions correctly",
+    type: "side", category: "weekly", xpReward: 100, progress: 7, maxProgress: 10, completed: false,
+    icon: "🧠", gradient: "from-cyan-500 to-blue-600",
+  },
+  {
+    id: "m7", title: "Daily Login Streak (7 days)", description: "Log in for 7 consecutive days",
+    type: "bonus", category: "weekly", xpReward: 300, progress: 7, maxProgress: 7, completed: true,
+    icon: "🌟", gradient: "from-yellow-500 to-amber-600",
+  },
+  {
+    id: "m8", title: "Complete Episode 3", description: "Finish all lessons in Declarer Play",
+    type: "main", category: "weekly", xpReward: 180, progress: 0, maxProgress: 8, completed: false,
+    icon: "📖", gradient: "from-violet-500 to-purple-600",
+  },
+];

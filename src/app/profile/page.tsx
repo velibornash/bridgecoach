@@ -11,6 +11,7 @@ import { mockUser, mockUserStats, mockAchievements, mockCertificates, mockLesson
 
 const countryFlags: Record<string, string> = {
   US: "🇺🇸", GB: "🇬🇧", CA: "🇨🇦", AU: "🇦🇺", NZ: "🇳🇿", IE: "🇮🇪",
+  RS: "🇷🇸", HR: "🇭🇷",
 };
 
 const experienceLabels: Record<string, string> = {
