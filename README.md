@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bridge Coach
+
+A modern, interactive learning platform for Contract Bridge. Built with Next.js, TypeScript, Tailwind CSS, and Framer Motion.
+
+**Live demo:** [https://bridgecoach.vercel.app](https://bridgecoach.vercel.app)
+
+## Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| UI Animation | Framer Motion |
+| Icons | Lucide React |
+| Fonts | Geist (Sans + Mono) |
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js pages
+│   ├── achievements/       # Achievement system
+│   ├── auth/               # Login, Register, Forgot Password
+│   ├── challenges/         # Daily challenges
+│   ├── dashboard/          # Main dashboard
+│   ├── learning-path/      # Episode-based curriculum
+│   ├── lesson/             # Interactive lesson viewer
+│   ├── onboarding/         # Farmer Bob MVP onboarding
+│   ├── pricing/            # SaaS pricing page
+│   ├── profile/            # User profile
+│   ├── quiz/               # Quiz engine
+│   ├── settings/           # User settings
+│   └── xp/                 # XP & progress tracking
+├── components/
+│   ├── ui/                 # Reusable design system (17 components)
+│   ├── dashboard/          # Dashboard widgets
+│   ├── landing/            # Marketing page sections
+│   ├── layout/             # Navbar, Footer
+│   ├── lesson/             # Lesson-specific components
+│   ├── quiz/               # Question type components
+│   ├── xp/                 # XP animations & progress
+│   ├── achievements/       # Achievement cards & unlocks
+│   ├── challenge/          # Daily challenge components
+│   └── coach/              # AI Coach chat interface
+├── services/               # Mock backend services
+│   ├── api.ts              # API abstraction layer
+│   ├── authService.ts      # Authentication
+│   ├── lessonService.ts    # Lessons API
+│   ├── quizService.ts      # Quiz API
+│   ├── challengeService.ts # Challenges API
+│   ├── achievementService.ts
+│   ├── aiCoachService.ts   # AI Coach mock responses
+│   └── mockData.ts         # All mock data
+├── types/                  # TypeScript interfaces
+└── lib/                    # Utilities
+```
+
+## Features
+
+- **Interactive Lessons** — Split-screen viewer with card tables, bookmarking, and notes
+- **Quiz Engine** — Single/Multiple choice, Card Select, Drag & Drop question types
+- **XP System** — Level tiers (Novice → Legend), daily/weekly/lifetime XP tracking, animated XP popups
+- **Achievements** — 12 achievements across 5 categories, 4 rarity levels, animated unlock
+- **Daily Challenges** — One per day with countdown, bonus XP, history view
+- **AI Coach** — Floating chat interface with mock bridge coaching responses
+- **Farmer Bob Onboarding** — Game-like 8-step onboarding for absolute beginners
+- **Learning Path** — 6 episodes with graded difficulty
+- **Pricing** — Saas-style with Free/Premium/Pro/Elite tiers, comparison table, FAQ
+- **Settings** — Theme, Language, Notifications, Privacy, Account, Danger Zone
+- **Dark Mode** — #0B1020 base, consistent design tokens
+- **Mobile First** — Responsive down to 320px wide
+- **Accessibility** — Semantic HTML, ARIA labels, keyboard navigation
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Design Tokens
 
-To learn more about Next.js, take a look at the following resources:
+All colors defined in `globals.css` via `@theme inline`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `bg-primary`: #0B1020
+- `bg-card`: #111827
+- `bg-secondary`: #1F2937
+- `primary`: #3B82F6
+- `text-primary`: #F9FAFB
+- `text-secondary`: #9CA3AF
+- `text-tertiary`: #6B7280
+- `border`: rgba(255, 255, 255, 0.08)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Mock Backend
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+All data is mocked. The `src/services/` layer provides a clean API abstraction with simulated network delays (200–800ms), making it straightforward to swap in a real backend.
