@@ -25,6 +25,10 @@ const navLinks = [
   { href: "/achievements", label: "Achievements" },
   { href: "/challenges", label: "Challenges" },
   { href: "/certificates", label: "Certificates" },
+  { href: "/subscription", label: "Subscription" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/contact", label: "Contact" },
+  { href: "/email-preferences", label: "Emails" },
   { href: "/settings", label: "Settings" },
 ];
 

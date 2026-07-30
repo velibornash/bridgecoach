@@ -27,7 +27,10 @@ src/
 │   ├── certificates/       # Course completion certificates
 │   ├── challenges/         # Daily challenges
 │   ├── community/          # Community feed with posts, likes, comments
+│   ├── contact/            # Contact/support form with type selector
 │   ├── dashboard/          # Main dashboard
+│   ├── email-preferences/  # Email notification preferences
+│   ├── faq/                # FAQ with accordion, categories, search
 │   ├── flashcards/         # Spaced-repetition flashcards
 │   ├── friends/            # Friends list with profiles & invites
 │   ├── leaderboard/        # Global/friends/country/weekly/monthly rankings
@@ -41,9 +44,10 @@ src/
 │   ├── profile/            # User profile + [id] public profile
 │   ├── quiz/               # Quiz engine
 │   ├── rewards/            # Rewards system (coins, XP, stars, badges)
-│   ├── search/             # Full-text search across content
+│   ├── search/              # Full-text search across content
 │   ├── settings/           # User settings (with live theme switcher)
 │   ├── statistics/         # Learning statistics with charts
+│   ├── subscription/       # Plan, billing, invoices, usage
 │   └── xp/                 # XP & progress tracking
 ├── components/
 │   ├── ui/                 # Reusable design system (17 components)
@@ -96,6 +100,10 @@ src/
 - **Notes** — Cross-lesson notes with inline editing, pinning, search, per-lesson badges
 - **Bookmarks** — Favorite lessons/videos/articles by category, hover-reveal remove
 - **Video Player** — Custom HTML5 video with play/pause, progress seek, volume, captions, 0.5x–2x speed, auto-advance
+- **Email Preferences** — Newsletter, reminders, marketing, weekly report, and product update toggles
+- **Subscription** — Plan management, upgrade/downgrade, billing info, monthly usage, invoice history
+- **FAQ** — Categorized accordion FAQ with live search and animated expand/collapse
+- **Contact** — Support, feedback, bug report, and feature request forms with type selector
 - **Community Feed** — Social feed with achievement shares, lesson completions, milestones, likes, and comments
 - **Public Profiles** — Dynamic `/profile/[id]` pages with stats, achievements, level, and activity
 - **Theme Switcher** — Dark, Light, and System modes, persisted to localStorage, smooth CSS variable transitions
