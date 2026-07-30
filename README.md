@@ -27,6 +27,7 @@ src/
 │   ├── certificates/       # Course completion certificates
 │   ├── challenges/         # Daily challenges
 │   ├── community/          # Community feed with posts, likes, comments
+├── error.tsx             # Global error boundary (500)
 │   ├── contact/            # Contact/support form with type selector
 │   ├── dashboard/          # Main dashboard
 │   ├── email-preferences/  # Email notification preferences
@@ -104,6 +105,7 @@ src/
 - **Subscription** — Plan management, upgrade/downgrade, billing info, monthly usage, invoice history
 - **FAQ** — Categorized accordion FAQ with live search and animated expand/collapse
 - **Contact** — Support, feedback, bug report, and feature request forms with type selector
+- **Error Pages** — 404 (Not Found), 500 (Server Error), Offline, and Maintenance pages with themed illustrations
 - **Community Feed** — Social feed with achievement shares, lesson completions, milestones, likes, and comments
 - **Public Profiles** — Dynamic `/profile/[id]` pages with stats, achievements, level, and activity
 - **Theme Switcher** — Dark, Light, and System modes, persisted to localStorage, smooth CSS variable transitions
