@@ -26,6 +26,7 @@ src/
 │   ├── catalog/            # Course catalog with filters & sorting
 │   ├── certificates/       # Course completion certificates
 │   ├── challenges/         # Daily challenges
+│   ├── community/          # Community feed with posts, likes, comments
 │   ├── dashboard/          # Main dashboard
 │   ├── flashcards/         # Spaced-repetition flashcards
 │   ├── friends/            # Friends list with profiles & invites
@@ -37,11 +38,11 @@ src/
 │   ├── notifications/      # Notification center with filters
 │   ├── onboarding/         # Farmer Bob MVP onboarding
 │   ├── pricing/            # SaaS pricing page
-│   ├── profile/            # User profile
+│   ├── profile/            # User profile + [id] public profile
 │   ├── quiz/               # Quiz engine
 │   ├── rewards/            # Rewards system (coins, XP, stars, badges)
 │   ├── search/             # Full-text search across content
-│   ├── settings/           # User settings
+│   ├── settings/           # User settings (with live theme switcher)
 │   ├── statistics/         # Learning statistics with charts
 │   └── xp/                 # XP & progress tracking
 ├── components/
@@ -60,6 +61,12 @@ src/
 │   ├── missions/           # Mission cards & groups
 │   ├── video/              # Custom video player
 │   └── flashcards/         # Flashcard components
+├── providers/              # React context providers
+│   ├── index.tsx           # Combined Providers wrapper
+│   └── ThemeProvider.tsx   # Dark/Light/System theme context
+├── i18n/                   # Localization
+│   ├── translations.ts     # Translation keys and English values
+│   └── useTranslation.tsx  # LocaleProvider and useTranslation hook
 ├── services/               # Mock backend services
 │   ├── api.ts              # API abstraction layer
 │   ├── authService.ts      # Authentication
@@ -68,6 +75,7 @@ src/
 │   ├── challengeService.ts # Challenges API
 │   ├── achievementService.ts
 │   ├── aiCoachService.ts   # AI Coach mock responses
+│   ├── statsService.ts     # Learning statistics
 │   └── mockData.ts         # All mock data
 ├── types/                  # TypeScript interfaces
 └── lib/                    # Utilities
@@ -88,6 +96,10 @@ src/
 - **Notes** — Cross-lesson notes with inline editing, pinning, search, per-lesson badges
 - **Bookmarks** — Favorite lessons/videos/articles by category, hover-reveal remove
 - **Video Player** — Custom HTML5 video with play/pause, progress seek, volume, captions, 0.5x–2x speed, auto-advance
+- **Community Feed** — Social feed with achievement shares, lesson completions, milestones, likes, and comments
+- **Public Profiles** — Dynamic `/profile/[id]` pages with stats, achievements, level, and activity
+- **Theme Switcher** — Dark, Light, and System modes, persisted to localStorage, smooth CSS variable transitions
+- **Localization Ready** — i18n architecture with `LocaleProvider`, `useTranslation` hook, English-only for now
 - **Learning Statistics** — Hours, lessons, accuracy, streak, average score with weekly & monthly bar charts, category breakdown
 - **Certificates** — Course completion certificates with gradient headers, gold seal, mock PDF download
 - **Leaderboard** — Global, friends, country, weekly & monthly tabs with podium and ranking list
@@ -122,16 +134,18 @@ npm start
 
 ## Design Tokens
 
-All colors defined in `globals.css` via `@theme inline`:
+All colors defined in `globals.css` via `@theme inline` with `.light` class overrides:
 
-- `bg-primary`: #0B1020
-- `bg-card`: #111827
-- `bg-secondary`: #1F2937
-- `primary`: #3B82F6
-- `text-primary`: #F9FAFB
-- `text-secondary`: #9CA3AF
-- `text-tertiary`: #6B7280
-- `border`: rgba(255, 255, 255, 0.08)
+| Token | Dark | Light |
+|-------|------|-------|
+| `bg-primary` | #0B1020 | #F8FAFC |
+| `bg-card` | #111827 | #FFFFFF |
+| `bg-secondary` | #1F2937 | #F1F5F9 |
+| `primary` | #3B82F6 | #3B82F6 |
+| `text-primary` | #F9FAFB | #0F172A |
+| `text-secondary` | #9CA3AF | #475569 |
+| `text-tertiary` | #6B7280 | #94A3B8 |
+| `border` | rgba(255,255,255,0.08) | rgba(0,0,0,0.08) |
 
 ## Mock Backend
 

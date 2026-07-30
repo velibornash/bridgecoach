@@ -7,8 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
-
-type ThemeMode = "dark" | "light" | "system";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const languages = [
   { code: "en", label: "English" },
@@ -41,8 +40,8 @@ const sections = [
 ];
 
 export default function SettingsPage() {
+  const { theme, setTheme } = useTheme();
   const [activeSection, setActiveSection] = useState("theme");
-  const [theme, setTheme] = useState<ThemeMode>("dark");
   const [language, setLanguage] = useState("en");
   const [notifications, setNotifications] = useState<Record<string, boolean>>({
     lesson_reminder: true,

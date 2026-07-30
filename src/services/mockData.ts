@@ -5,7 +5,7 @@ import {
   DailyChallengeData, XpEntry, Mission,
   RewardItem, Reward, AppNotification, SearchResult, CatalogCourse,
   Caption, Flashcard, BookmarkItem, LessonNote,
-  LearningStats, LeaderboardEntry, Friend,
+  LearningStats, LeaderboardEntry, Friend, CommunityPost,
 } from "@/types";
 
 export const mockUser: User = {
@@ -609,6 +609,74 @@ export const mockFriends: Friend[] = [
   { id: "f7", name: "James Mitchell", avatar: "", level: 10, xp: 4200, country: "GB", online: true, lastActive: "1 min ago", achievements: 9, mutualFriends: 2 },
   { id: "f8", name: "Tom Wilson", avatar: "", level: 6, xp: 2100, country: "US", online: false, lastActive: "Yesterday", achievements: 4, mutualFriends: 1 },
 ];
+
+export const mockCommunityPosts: CommunityPost[] = [
+  {
+    id: "cp1", userId: "u1", userName: "Sarah Chen", userAvatar: "", userLevel: 12,
+    type: "achievement", content: "Just unlocked the 'Iron Mind' achievement — 30-day streak! 🧠🔥",
+    timestamp: "2 hours ago", likes: 24, comments: 5, liked: false, relatedTitle: "Iron Mind", relatedXp: 500,
+  },
+  {
+    id: "cp2", userId: "u3", userName: "Emma Rodriguez", userAvatar: "", userLevel: 9,
+    type: "lesson_completed", content: "Finished 'Finessing Techniques' — finally understand when to finesse!",
+    timestamp: "4 hours ago", likes: 12, comments: 3, liked: true, relatedTitle: "Finessing Techniques", relatedXp: 65,
+  },
+  {
+    id: "cp3", userId: "u6", userName: "Maria Garcia", userAvatar: "", userLevel: 7,
+    type: "milestone", content: "Completed Episode 2: Bidding Basics! 🎉 On to Declarer Play!",
+    timestamp: "Yesterday", likes: 31, comments: 8, liked: false, relatedTitle: "Bidding Basics", relatedXp: 150,
+  },
+  {
+    id: "cp4", userId: "u2", userName: "James Mitchell", userAvatar: "", userLevel: 10,
+    type: "achievement", content: "Earned 'Card Shark' — 100 tricks won! 🦈♠️",
+    timestamp: "Yesterday", likes: 18, comments: 4, liked: true, relatedTitle: "Card Shark", relatedXp: 300,
+  },
+  {
+    id: "cp5", userId: "u8", userName: "Lisa Wang", userAvatar: "", userLevel: 6,
+    type: "lesson_completed", content: "Stayman is starting to click! 2♣ asking for a 4-card major makes so much sense now.",
+    timestamp: "2 days ago", likes: 9, comments: 2, liked: false, relatedTitle: "Stayman Convention", relatedXp: 80,
+  },
+  {
+    id: "cp6", userId: "u5", userName: "Bob Smith", userAvatar: "", userLevel: 7,
+    type: "streak", content: "12-day streak and going strong! Never missed a day of practice. 💪",
+    timestamp: "2 days ago", likes: 15, comments: 6, liked: false, relatedTitle: "12-Day Streak", relatedXp: 50,
+  },
+  {
+    id: "cp7", userId: "u11", userName: "Petar Jovanovic", userAvatar: "", userLevel: 4,
+    type: "milestone", content: "First bridge lesson completed! This is amazing — can't wait to learn more! 🃏",
+    timestamp: "3 days ago", likes: 22, comments: 7, liked: true, relatedTitle: "First Lesson", relatedXp: 50,
+  },
+  {
+    id: "cp8", userId: "u7", userName: "Tom Wilson", userAvatar: "", userLevel: 6,
+    type: "lesson_completed", content: "Opens leads against notrump — lead longest and strongest. Got it!",
+    timestamp: "3 days ago", likes: 7, comments: 1, liked: false, relatedTitle: "Opening Leads", relatedXp: 60,
+  },
+  {
+    id: "cp9", userId: "u4", userName: "Alex Kim", userAvatar: "", userLevel: 8,
+    type: "achievement", content: "Unlocked 'Perfect Score' — 100% on the Bidding Quiz! 💯🎯",
+    timestamp: "4 days ago", likes: 28, comments: 9, liked: false, relatedTitle: "Perfect Score", relatedXp: 250,
+  },
+  {
+    id: "cp10", userId: "u11", userName: "Petar Jovanovic", userAvatar: "", userLevel: 4,
+    type: "streak", content: "3-day streak! The daily challenges are really helping me improve.",
+    timestamp: "4 days ago", likes: 11, comments: 3, liked: true, relatedTitle: "3-Day Streak", relatedXp: 30,
+  },
+];
+
+export const mockPublicProfiles: Record<string, { user: User; stats: UserStats; achievements: Achievement[]; activity: Activity[] }> = {
+  "u1": {
+    user: { ...mockUser, id: "u1", firstName: "Sarah", lastName: "Chen", level: 12, xp: 4850, xpToNextLevel: 6000, streak: 30, country: "US", experienceLevel: "advanced", completedLessonIds: ["l1", "l2", "l3", "l4", "l5"], currentLessonId: "l6" },
+    stats: { ...mockUserStats, completedLessons: 18, totalLessons: 48, averageScore: 91, totalXpEarned: 4850, daysActive: 90, longestStreak: 30, totalHours: 52, cardsPlayed: 8200, correctBids: 412, totalBids: 480 },
+    achievements: mockAchievements.map((a) => a.id === "a4" || a.id === "a8" ? { ...a, unlocked: true, unlockedAt: "2026-06-15" } : a),
+    activity: [...mockActivity],
+  },
+  "u3": {
+    user: { ...mockUser, id: "u3", firstName: "Emma", lastName: "Rodriguez", level: 9, xp: 3850, xpToNextLevel: 4500, streak: 18, country: "ES", experienceLevel: "intermediate", completedLessonIds: ["l1", "l2", "l3"], currentLessonId: "l4" },
+    stats: { ...mockUserStats, completedLessons: 10, totalLessons: 48, averageScore: 85, totalXpEarned: 3850, daysActive: 65, longestStreak: 18, totalHours: 38, cardsPlayed: 5400, correctBids: 278, totalBids: 340 },
+    achievements: mockAchievements.map((a) => a.id === "a6" ? { ...a, unlocked: true, unlockedAt: "2026-05-20" } : a),
+    activity: [...mockActivity.slice(0, 4)],
+  },
+};
 
 export const mockExtendedCertificates: Certificate[] = [
   { id: "c1", title: "Bridge Fundamentals", description: "Completed all beginner bridge basics — trick-taking, following suit, basic scoring, and partner communication.", earnedAt: "2026-02-15", episodeId: "ep1", gradient: "from-emerald-500 to-teal-600" },

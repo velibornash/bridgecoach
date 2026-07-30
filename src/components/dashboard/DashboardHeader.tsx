@@ -11,6 +11,7 @@ const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/learning-path", label: "Learn" },
   { href: "/catalog", label: "Catalog" },
+  { href: "/community", label: "Community" },
   { href: "/quiz", label: "Quiz" },
   { href: "/flashcards", label: "Flashcards" },
   { href: "/missions", label: "Missions" },
@@ -24,6 +25,7 @@ const navLinks = [
   { href: "/achievements", label: "Achievements" },
   { href: "/challenges", label: "Challenges" },
   { href: "/certificates", label: "Certificates" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export function DashboardHeader() {

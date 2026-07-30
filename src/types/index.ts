@@ -358,6 +358,24 @@ export interface Flashcard {
   timesReviewed: number;
 }
 
+export type PostType = "achievement" | "lesson_completed" | "milestone" | "streak";
+
+export interface CommunityPost {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  userLevel: number;
+  type: PostType;
+  content: string;
+  timestamp: string;
+  likes: number;
+  comments: number;
+  liked: boolean;
+  relatedTitle?: string;
+  relatedXp?: number;
+}
+
 export interface LearningStats {
   hoursLearned: number;
   lessonsFinished: number;
