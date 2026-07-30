@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { mockNotifications } from "@/services/mockData";
 import type { NotificationType } from "@/types";
+import { Icon } from "@/components/icons/Icon";
+import { Zap, Target, Bell, BookOpen, Hand, Bell as BellRing } from "lucide-react";
 
-const typeIcons: Record<string, string> = {
-  xp: "⚡", achievement: "🎯", reminder: "🔔", lesson: "📖", friend: "👋",
+const typeIcons: Record<string, typeof Zap> = {
+  xp: Zap, achievement: Target, reminder: Bell, lesson: BookOpen, friend: Hand,
 };
 
 const typeLabels: Record<string, string> = {
@@ -63,7 +65,7 @@ export default function NotificationsPage() {
                       : "bg-bg-secondary text-text-tertiary hover:text-text-secondary"
                   }`}
                 >
-                  {t !== "all" && <span>{typeIcons[t]}</span>}
+                  {t !== "all" && <Icon icon={typeIcons[t]} size={16} />}
                   <span className="capitalize">{t === "all" ? "All" : typeLabels[t]}</span>
                   <Badge variant="default">{count}</Badge>
                 </button>
@@ -106,7 +108,9 @@ export default function NotificationsPage() {
                       <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
                         !n.read ? "bg-primary/10" : "bg-bg-secondary"
                       }`}>
-                        <span className="text-lg">{n.icon}</span>
+                        {typeIcons[n.type] && (
+                          <Icon icon={typeIcons[n.type]} size={18} />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">

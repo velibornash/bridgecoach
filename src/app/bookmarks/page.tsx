@@ -9,11 +9,13 @@ import { showToast } from "@/components/ui/Toast";
 import { mockBookmarks } from "@/services/mockData";
 import Link from "next/link";
 import type { BookmarkCategory } from "@/types";
+import { Icon } from "@/components/icons/Icon";
+import { BookOpen, Play, FileText } from "lucide-react";
 
-const categoryMeta: Record<string, { icon: string; label: string; color: string }> = {
-  lesson: { icon: "📖", label: "Lessons", color: "from-indigo-500 to-indigo-600" },
-  video: { icon: "🎬", label: "Videos", color: "from-rose-500 to-pink-600" },
-  article: { icon: "📄", label: "Articles", color: "from-emerald-500 to-teal-600" },
+const categoryMeta: Record<string, { icon: typeof BookOpen; label: string; color: string }> = {
+  lesson: { icon: BookOpen, label: "Lessons", color: "from-indigo-500 to-indigo-600" },
+  video: { icon: Play, label: "Videos", color: "from-rose-500 to-pink-600" },
+  article: { icon: FileText, label: "Articles", color: "from-emerald-500 to-teal-600" },
 };
 
 export default function BookmarksPage() {
@@ -51,7 +53,9 @@ export default function BookmarksPage() {
                       : "bg-bg-secondary text-text-tertiary hover:text-text-secondary"
                   }`}
                 >
-                  {cat !== "all" && <span>{categoryMeta[cat]?.icon}</span>}
+                  {cat !== "all" && categoryMeta[cat]?.icon && (
+                    <Icon icon={categoryMeta[cat].icon} size={14} />
+                  )}
                   <span className="capitalize">{cat === "all" ? "All" : categoryMeta[cat]?.label || cat}</span>
                   <Badge variant="default">{count}</Badge>
                 </button>
@@ -77,9 +81,9 @@ export default function BookmarksPage() {
                     className="block rounded-xl border border-border bg-bg-card p-4 hover:border-primary/20 transition-all h-full"
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${categoryMeta[bm.category]?.color || "from-primary to-blue-600"}`}>
-                        <span className="text-lg">{bm.icon}</span>
-                      </div>
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${categoryMeta[bm.category]?.color || "from-primary to-blue-600"}`}>
+                          <Icon icon={categoryMeta[bm.category]?.icon || FileText} size={18} className="text-white" />
+                        </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <h3 className="text-sm font-bold text-text-primary truncate">{bm.title}</h3>

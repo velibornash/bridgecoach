@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Progress } from "@/components/ui/Progress";
 import { mockUser, mockUserStats, mockAchievements, mockCertificates, mockLessons, mockActivity } from "@/services/mockData";
+import { Icon } from "@/components/icons/Icon";
 
 const countryFlags: Record<string, string> = {
   US: "🇺🇸", GB: "🇬🇧", CA: "🇨🇦", AU: "🇦🇺", NZ: "🇳🇿", IE: "🇮🇪",
@@ -49,7 +50,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <Badge variant="primary">Level {mockUser.level}</Badge>
-                  <Badge variant="warning">🔥 {mockUser.streak}-day streak</Badge>
+                  <Badge variant="warning"><Icon icon="🔥" size={12} className="mr-1" />{mockUser.streak}-day streak</Badge>
                   <span className="text-xs text-text-tertiary">{experienceLabels[mockUser.experienceLevel]}</span>
                 </div>
                 <p className="mt-1 text-xs text-text-tertiary">
@@ -93,7 +94,7 @@ export default function ProfilePage() {
                   className="rounded-xl border border-border bg-bg-card p-3.5"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-lg">{stat.icon}</span>
+                    <Icon icon={stat.icon} size={20} />
                     <div className={`h-1.5 w-1.5 rounded-full bg-gradient-to-r ${stat.color}`} />
                   </div>
                   <p className="text-lg font-bold text-text-primary">{stat.value}</p>
@@ -118,7 +119,7 @@ export default function ProfilePage() {
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className={`text-xl ${a.unlocked ? "" : "grayscale"}`}>{a.icon}</span>
+                    <Icon icon={a.icon} size={20} className={`${a.unlocked ? "" : "grayscale"}`} />
                     <div className="min-w-0">
                       <p className={`text-xs font-semibold truncate ${a.unlocked ? "text-text-primary" : "text-text-tertiary"}`}>
                         {a.title}

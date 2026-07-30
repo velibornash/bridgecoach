@@ -7,14 +7,16 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
+import { Icon } from "@/components/icons/Icon";
+import { Info, MessageSquare, Bug, Lightbulb } from "lucide-react";
 
 type ContactType = "support" | "feedback" | "bug" | "feature";
 
 const contactTypes: { id: ContactType; label: string; icon: string; desc: string }[] = [
-  { id: "support", label: "Support", icon: "🛟", desc: "Get help with your account, billing, or technical issues." },
-  { id: "feedback", label: "Feedback", icon: "💬", desc: "Share your thoughts on how we can improve." },
+  { id: "support", label: "Support", icon: "💬", desc: "Get help with your account, billing, or technical issues." },
+  { id: "feedback", label: "Feedback", icon: "🎭", desc: "Share your thoughts on how we can improve." },
   { id: "bug", label: "Report Bug", icon: "🐛", desc: "Let us know if something isn't working right." },
-  { id: "feature", label: "Feature Request", icon: "✨", desc: "Suggest a new feature or improvement." },
+  { id: "feature", label: "Feature Request", icon: "💡", desc: "Suggest a new feature or improvement." },
 ];
 
 export default function ContactPage() {

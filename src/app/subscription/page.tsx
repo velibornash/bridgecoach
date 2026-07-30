@@ -60,10 +60,9 @@ export default function SubscriptionPage() {
               <h2 className="text-base font-bold text-text-primary mb-4">Available Plans</h2>
               <div className="grid gap-3 sm:grid-cols-3 mb-4">
                 {plans.map((p) => (
-                  <button
-                    key={p.id}
+                  <div
                     onClick={() => { setPlan(p.id); showToast("success", `Switched to ${p.label} plan`); }}
-                    className={`rounded-xl border p-4 text-center transition-all relative ${
+                    className={`rounded-xl border p-4 text-center transition-all relative cursor-pointer ${
                       plan === p.id ? "border-primary bg-primary/10" : "border-border hover:border-border-hover hover:bg-bg-secondary"
                     }`}
                   >
@@ -72,10 +71,13 @@ export default function SubscriptionPage() {
                     )}
                     <p className="text-xs font-medium text-text-secondary mt-1">{p.label}</p>
                     <p className="text-xl font-bold text-text-primary mt-1">{p.price}<span className="text-xs font-normal text-text-tertiary">{p.period}</span></p>
-                    <Button size="sm" variant={plan === p.id ? "primary" : "outline"} className="mt-3 w-full">
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center whitespace-nowrap rounded-xl border border-border bg-bg-card px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-bg-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 w-full mt-3"
+                    >
                       {plan === p.id ? "Current" : "Upgrade"}
-                    </Button>
-                  </button>
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>

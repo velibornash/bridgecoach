@@ -6,6 +6,8 @@ import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { getLearningStats } from "@/services/statsService";
 import type { LearningStats } from "@/types";
+import { Icon } from "@/components/icons/Icon";
+import { Clock, BookOpen, Target, Flame, Star } from "lucide-react";
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
@@ -20,11 +22,11 @@ export default function StatisticsPage() {
   if (!stats) return null;
 
   const statCards = [
-    { label: "Hours Learned", value: stats.hoursLearned, suffix: "h", icon: "⏱", color: "text-indigo-400" },
-    { label: "Lessons Finished", value: stats.lessonsFinished, icon: "📖", color: "text-emerald-400" },
-    { label: "Quiz Accuracy", value: stats.quizAccuracy, suffix: "%", icon: "🎯", color: "text-amber-400" },
-    { label: "Current Streak", value: stats.currentStreak, suffix: " days", icon: "🔥", color: "text-orange-400" },
-    { label: "Average Score", value: stats.averageScore, suffix: "%", icon: "⭐", color: "text-violet-400" },
+    { label: "Hours Learned", value: stats.hoursLearned, suffix: "h", icon: Clock, color: "text-indigo-400" },
+    { label: "Lessons Finished", value: stats.lessonsFinished, icon: BookOpen, color: "text-emerald-400" },
+    { label: "Quiz Accuracy", value: stats.quizAccuracy, suffix: "%", icon: Target, color: "text-amber-400" },
+    { label: "Current Streak", value: stats.currentStreak, suffix: " days", icon: Flame, color: "text-orange-400" },
+    { label: "Average Score", value: stats.averageScore, suffix: "%", icon: Star, color: "text-violet-400" },
   ];
 
   const maxWeekly = Math.max(...stats.weeklyActivity.map((d) => d.hours), 1);
@@ -44,7 +46,9 @@ export default function StatisticsPage() {
             <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-10">
               {statCards.map((s) => (
                 <div key={s.label} className="rounded-xl border border-border bg-bg-card p-4 text-center">
-                  <div className={`text-2xl mb-1 ${s.color}`}>{s.icon}</div>
+                  <div className={`text-2xl mb-1 ${s.color}`}>
+                    <Icon icon={s.icon} size={28} />
+                  </div>
                   <div className="text-xl font-bold text-text-primary">
                     {s.value}{s.suffix}
                   </div>

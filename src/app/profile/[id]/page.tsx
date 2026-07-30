@@ -9,6 +9,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Progress } from "@/components/ui/Progress";
 import { mockPublicProfiles, mockUser, mockAchievements } from "@/services/mockData";
+import { Icon } from "@/components/icons/Icon";
 
 const countryFlags: Record<string, string> = {
   US: "🇺🇸", GB: "🇬🇧", CA: "🇨🇦", AU: "🇦🇺", NZ: "🇳🇿", IE: "🇮🇪",
@@ -108,7 +109,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                     { label: "Cards Played", value: stats.cardsPlayed.toLocaleString(), icon: "🃏", color: "text-violet-400" },
                   ].map((s) => (
                     <div key={s.label} className="rounded-lg bg-bg-secondary p-3 text-center">
-                      <div className={`text-lg ${s.color}`}>{s.icon}</div>
+                      <div className={`mb-1 ${s.color}`}><Icon icon={s.icon} size={20} /></div>
                       <div className="text-sm font-bold text-text-primary mt-0.5">{s.value}</div>
                       <div className="text-[9px] text-text-tertiary">{s.label}</div>
                     </div>
@@ -149,7 +150,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                 <div className="space-y-2">
                   {activity.slice(0, 5).map((a) => (
                     <div key={a.id} className="flex items-center gap-3 py-1.5">
-                      <span className="text-base">{typeIcons[a.type] || "📌"}</span>
+                      <Icon icon={typeIcons[a.type] || "📌"} size={16} />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-text-primary truncate">{a.description}</p>
                         <p className="text-[10px] text-text-tertiary">{a.timestamp}</p>

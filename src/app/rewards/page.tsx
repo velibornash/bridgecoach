@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/Button";
 import { RewardPopup } from "@/components/rewards/RewardPopup";
 import { mockRewards, rewardItems } from "@/services/mockData";
 import type { RewardType } from "@/types";
+import { Icon } from "@/components/icons/Icon";
+import { Coins, Zap, Star, Medal, Gift } from "lucide-react";
 
-const typeIcons: Record<string, string> = {
-  coins: "🪙", xp: "⚡", stars: "⭐", badge: "🃏", mystery_chest: "🎁",
+const typeIcons: Record<string, typeof Zap> = {
+  coins: Coins, xp: Zap, stars: Star, badge: Medal, mystery_chest: Gift,
 };
 
 const rarityColors: Record<string, string> = {
@@ -82,7 +84,9 @@ export default function RewardsPage() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-bg-secondary text-lg">
-                      {typeIcons[reward.type] || "🎁"}
+                      {typeIcons[reward.type]
+                        ? <Icon icon={typeIcons[reward.type]} size={18} />
+                        : <Icon icon={Gift} size={18} />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">

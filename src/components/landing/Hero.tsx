@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { Icon } from "@/components/icons/Icon";
+import { ArrowRight, BookOpen, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 
 export function Hero() {
@@ -25,7 +27,7 @@ export function Hero() {
           transition={{ duration: 0.5 }}
         >
           <div className="glass gradient-border inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-text-secondary">
-            <span className="flex h-2 w-2 rounded-full bg-success animate-pulse" />
+            <span className="flex h-2 w-2 rounded-full bg-success" />
             Now in Beta — Free to join
           </div>
         </motion.div>
@@ -59,10 +61,8 @@ export function Hero() {
         >
           <Link href="/auth/register">
             <Button variant="primary" size="xl" className="text-base shadow-lg shadow-primary/20">
+              <Icon icon={ArrowRight} size={16} />
               Start Learning Free
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
             </Button>
           </Link>
           <Link href="#how-it-works">
@@ -79,11 +79,14 @@ export function Hero() {
           className="mt-16 grid grid-cols-3 gap-8 sm:gap-16"
         >
           {[
-            { value: "50K+", label: "Active Learners" },
-            { value: "200+", label: "Interactive Lessons" },
-            { value: "15K+", label: "Daily Challenges Solved" },
+            { value: "50K+", label: "Active Learners", icon: Users },
+            { value: "200+", label: "Interactive Lessons", icon: BookOpen },
+            { value: "15K+", label: "Daily Challenges Solved", icon: Trophy },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
+              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                <Icon icon={stat.icon} size={20} className="text-primary" />
+              </div>
               <div className="text-2xl font-bold text-text-primary sm:text-3xl">
                 {stat.value}
               </div>

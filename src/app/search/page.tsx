@@ -7,13 +7,15 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Badge } from "@/components/ui/Badge";
 import { mockSearchResults } from "@/services/mockData";
 import Link from "next/link";
+import { Icon } from "@/components/icons/Icon";
+import { BookOpen, Medal, Play, HelpCircle } from "lucide-react";
 
-const categoryMeta: Record<string, { icon: string; color: string }> = {
-  lesson: { icon: "📖", color: "text-indigo-400" },
-  topic: { icon: "📚", color: "text-emerald-400" },
-  convention: { icon: "🃏", color: "text-violet-400" },
-  video: { icon: "🎬", color: "text-rose-400" },
-  faq: { icon: "❓", color: "text-amber-400" },
+const categoryMeta: Record<string, { icon: typeof BookOpen | null; color: string }> = {
+  lesson: { icon: BookOpen, color: "text-indigo-400" },
+  topic: { icon: BookOpen, color: "text-emerald-400" },
+  convention: { icon: Medal, color: "text-violet-400" },
+  video: { icon: Play, color: "text-rose-400" },
+  faq: { icon: HelpCircle, color: "text-amber-400" },
 };
 
 const allResults = Object.values(mockSearchResults).flat();
@@ -116,34 +118,34 @@ export default function SearchPage() {
                 exit={{ opacity: 0, y: -4 }}
                 className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none"
               >
-                <button
-                  onClick={() => setActiveCategory(null)}
-                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
-                    activeCategory === null
-                      ? "bg-primary text-white"
-                      : "bg-bg-secondary text-text-tertiary hover:text-text-secondary"
-                  }`}
-                >
-                  All ({results.length})
-                </button>
-                {categories.map((cat) => (
-                  <button
-                    key={cat.key}
-                    onClick={() => setActiveCategory(activeCategory === cat.key ? null : cat.key)}
-                    className={`shrink-0 flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
-                      activeCategory === cat.key
-                        ? "bg-primary text-white"
-                        : "bg-bg-secondary text-text-tertiary hover:text-text-secondary"
-                    }`}
-                  >
-                    <span>{cat.icon}</span>
-                    <span>{cat.label}</span>
-                    <Badge variant="default">{cat.count}</Badge>
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                 <button
+                   onClick={() => setActiveCategory(null)}
+                   className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
+                     activeCategory === null
+                       ? "bg-primary text-white"
+                       : "bg-bg-secondary text-text-tertiary hover:text-text-secondary"
+                   }`}
+                 >
+                   All ({results.length})
+                 </button>
+                 {categories.map((cat) => (
+                   <button
+                     key={cat.key}
+                     onClick={() => setActiveCategory(activeCategory === cat.key ? null : cat.key)}
+                     className={`shrink-0 flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
+                       activeCategory === cat.key
+                         ? "bg-primary text-white"
+                         : "bg-bg-secondary text-text-tertiary hover:text-text-secondary"
+                     }`}
+                   >
+                     <span className="text-xs leading-none">{cat.key.slice(0, 1).toUpperCase()}</span>
+                     <span>{cat.label}</span>
+                     <Badge variant="default">{cat.count}</Badge>
+                   </button>
+                 ))}
+               </motion.div>
+             )}
+           </AnimatePresence>
 
           {/* Results */}
           <div className="space-y-2">
@@ -177,7 +179,9 @@ export default function SearchPage() {
                       className="rounded-xl border border-border bg-bg-card p-4 text-center hover:border-primary/20 transition-all group"
                     >
                       <span className="text-2xl block mb-1 group-hover:scale-110 transition-transform">
-                        {categoryMeta[key]?.icon || "📄"}
+                        {categoryMeta[key]?.icon
+                          ? <Icon icon={categoryMeta[key].icon} size={28} />
+                          : <Icon icon={HelpCircle} size={28} />}
                       </span>
                       <span className="text-xs font-medium text-text-secondary capitalize">{key}s</span>
                       <span className="text-[10px] text-text-tertiary block mt-0.5">{items.length} items</span>
@@ -195,11 +199,18 @@ export default function SearchPage() {
                   i === selectedIndex ? "border-primary/30 bg-primary/5 ring-1 ring-primary/20" : "border-border bg-bg-card"
                 }`}
               >
-                <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-bg-secondary text-lg">
-                    {categoryMeta[result.category]?.icon || "📄"}
-                  </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-bg-secondary text-lg">
+                      {(() => {
+                        const IconComponent = categoryMeta[result.category]?.icon;
+                        return IconComponent ? (
+                          <IconComponent size={20} />
+                        ) : (
+                          <HelpCircle size={20} />
+                        );
+                      })()}
+                    </div>
+                    <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-bold text-text-primary">{result.title}</h3>
                       <Badge variant="default">{result.category}</Badge>

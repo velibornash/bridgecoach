@@ -7,14 +7,17 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { mockLeaderboard } from "@/services/mockData";
 import { mockFriends } from "@/services/mockData";
+import { Icon } from "@/components/icons/Icon";
+import { Award, Medal, ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 const tabs = ["Global", "Friends", "Country", "Weekly", "Monthly"] as const;
 type Tab = (typeof tabs)[number];
 
 function getMedal(rank: number) {
-  if (rank === 1) return { emoji: "🥇", color: "text-yellow-400" };
-  if (rank === 2) return { emoji: "🥈", color: "text-gray-300" };
-  if (rank === 3) return { emoji: "🥉", color: "text-amber-600" };
+  if (rank === 1) return { icon: Award, color: "text-yellow-400" };
+  if (rank === 2) return { icon: Medal, color: "text-gray-300" };
+  if (rank === 3) return { icon: Medal, color: "text-amber-600" };
   return null;
 }
 
@@ -35,7 +38,6 @@ export default function LeaderboardPage() {
         <Container className="max-w-2xl">
           <h1 className="text-2xl font-bold text-text-primary mb-6">Leaderboard</h1>
 
-          {/* Tabs */}
           <div className="flex gap-1 mb-6 overflow-x-auto scrollbar-none">
             {tabs.map((t) => (
               <button
@@ -50,13 +52,11 @@ export default function LeaderboardPage() {
             ))}
           </div>
 
-          {/* Top 3 podium */}
           <div className="grid grid-cols-3 gap-3 mb-8 items-end">
             {[2, 1, 3].map((rank) => {
               const e = filtered.find((x) => x.rank === rank);
               if (!e) return <div key={rank} />;
               const isGold = rank === 1;
-              const isSilver = rank === 2;
               return (
                 <div
                   key={e.userId}
@@ -64,8 +64,8 @@ export default function LeaderboardPage() {
                     e.isCurrentUser ? "border-primary/40 bg-primary/5" : "border-border bg-bg-card"
                   } ${isGold ? "scale-105" : ""}`}
                 >
-                  <div className={`text-2xl mb-1 ${isGold ? "scale-125" : ""}`}>
-                    {getMedal(rank)?.emoji}
+                  <div className={`text-2xl mb-1 flex justify-center ${isGold ? "scale-125" : ""}`}>
+                    <Icon icon={Award} size={32} className={getMedal(rank)?.color} />
                   </div>
                   <div className="flex justify-center mb-1.5">
                     <Avatar name={e.name} size={isGold ? "md" : "sm"} />
@@ -84,7 +84,6 @@ export default function LeaderboardPage() {
             })}
           </div>
 
-          {/* Ranking list */}
           <div className="space-y-1">
             <AnimatePresence mode="popLayout">
               {filtered.map((e) => (
@@ -98,19 +97,16 @@ export default function LeaderboardPage() {
                     e.isCurrentUser ? "bg-primary/5 border border-primary/20" : "bg-bg-card border border-transparent hover:bg-bg-secondary"
                   }`}
                 >
-                  {/* Rank */}
                   <div className="w-8 text-center shrink-0">
                     {getMedal(e.rank) ? (
-                      <span className={`text-lg ${getMedal(e.rank)?.color}`}>{getMedal(e.rank)?.emoji}</span>
+                      <Icon icon={getMedal(e.rank)!.icon} size={18} className={getMedal(e.rank)!.color} />
                     ) : (
                       <span className="text-sm font-bold text-text-tertiary">#{e.rank}</span>
                     )}
                   </div>
 
-                  {/* Avatar */}
                   <Avatar name={e.name} size="sm" />
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold text-text-primary truncate">{e.name}</p>
@@ -118,7 +114,9 @@ export default function LeaderboardPage() {
                         <span className="shrink-0 rounded-full bg-primary/20 px-1.5 py-0.5 text-[9px] font-medium text-primary">You</span>
                       )}
                       {e.isFriend && !e.isCurrentUser && (
-                        <span className="shrink-0 text-[10px] text-text-tertiary">★ Friend</span>
+                        <span className="shrink-0 text-[10px] text-text-tertiary flex items-center gap-0.5">
+                          <Icon icon={Award} size={8} className="text-warning" /> Friend
+                        </span>
                       )}
                     </div>
                     <p className="text-[11px] text-text-tertiary">
@@ -126,7 +124,6 @@ export default function LeaderboardPage() {
                     </p>
                   </div>
 
-                  {/* XP badge */}
                   <div className="shrink-0 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
                     {e.xp.toLocaleString()}
                   </div>

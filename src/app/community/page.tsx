@@ -6,14 +6,16 @@ import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
+import { Icon } from "@/components/icons/Icon";
 import { mockCommunityPosts } from "@/services/mockData";
 import type { PostType } from "@/types";
+import { Award, BookOpen, Sparkles, Flame } from "lucide-react";
 
-const typeIcons: Record<PostType, string> = {
-  achievement: "🏆",
-  lesson_completed: "📖",
-  milestone: "🎉",
-  streak: "🔥",
+const typeIcons: Record<PostType, typeof Award> = {
+  achievement: Award,
+  lesson_completed: BookOpen,
+  milestone: Sparkles,
+  streak: Flame,
 };
 
 const typeLabels: Record<PostType, string> = {
@@ -85,7 +87,9 @@ export default function CommunityPage() {
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-sm font-semibold text-text-primary">{post.userName}</span>
                         <Badge variant="default">Lv {post.userLevel}</Badge>
-                        <Badge variant={typeVariants[post.type]}>{typeIcons[post.type]} {typeLabels[post.type]}</Badge>
+                        <Badge variant={typeVariants[post.type]} className="inline-flex items-center gap-1">
+                          <Icon icon={typeIcons[post.type]} size={12} /> {typeLabels[post.type]}
+                        </Badge>
                       </div>
                       <p className="text-xs text-text-tertiary mb-2">{post.timestamp}</p>
 
