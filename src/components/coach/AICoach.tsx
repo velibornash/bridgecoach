@@ -59,7 +59,7 @@ export function AICoach() {
       <motion.button
         onClick={() => setOpen(!open)}
         className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-indigo-600 shadow-2xl shadow-primary/30 transition-transform hover:scale-105 active:scale-95"
-        whileHover={{ scale: 1.05 }}
+        whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(59,130,246,0.3)" }}
         whileTap={{ scale: 0.95 }}
       >
         {open ? (
@@ -80,36 +80,49 @@ export function AICoach() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="fixed bottom-20 right-5 z-50 w-[360px] max-w-[calc(100vw-40px)] h-[520px] max-h-[calc(100vh-120px)] rounded-2xl border border-border bg-bg-card shadow-2xl flex flex-col overflow-hidden"
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="fixed bottom-20 right-5 z-50 w-[380px] max-w-[calc(100vw-32px)] h-[540px] max-h-[calc(100vh-130px)] rounded-2xl border border-border/50 bg-bg-card/95 backdrop-blur-xl shadow-2xl shadow-black/20 flex flex-col overflow-hidden"
           >
-            {/* Header */}
-            <div className="flex items-center gap-3 border-b border-border px-4 py-3.5 shrink-0">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600">
+            {/* Header with animated gradient */}
+            <div className="relative flex items-center gap-3 border-b border-border/50 px-4 py-3.5 shrink-0 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-indigo-600/5" />
+              <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600 shadow-lg shadow-primary/20">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
                   <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
                 </svg>
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-text-primary">AI Coach</h3>
-                <p className="text-[10px] text-text-tertiary">Always here to help</p>
+              <div className="relative flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-text-primary">AI Coach</h3>
+                  <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                </div>
+                <p className="text-[10px] text-text-tertiary">Online • Bridge expert</p>
               </div>
+              <button
+                onClick={() => setOpen(false)}
+                className="relative flex h-7 w-7 items-center justify-center rounded-lg text-text-tertiary hover:text-text-primary hover:bg-bg-secondary transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 scrollbar-thin">
               {messages.map((msg) => (
                 <motion.div
                   key={msg.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-line ${
+                    className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
                       msg.role === "user"
-                        ? "bg-primary text-white rounded-br-md"
-                        : "bg-bg-secondary text-text-secondary rounded-bl-md"
+                        ? "bg-gradient-to-br from-primary to-indigo-600 text-white rounded-br-md shadow-lg shadow-primary/10"
+                        : "bg-bg-secondary text-text-secondary rounded-bl-md border border-border/30"
                     }`}
                   >
                     {msg.content}
@@ -123,23 +136,19 @@ export function AICoach() {
                   animate={{ opacity: 1 }}
                   className="flex justify-start"
                 >
-                  <div className="rounded-2xl rounded-bl-md bg-bg-secondary px-4 py-3">
-                    <div className="flex gap-1">
-                      <motion.div
-                        className="h-2 w-2 rounded-full bg-text-tertiary"
-                        animate={{ opacity: [0.3, 1, 0.3] }}
-                        transition={{ duration: 1, repeat: Infinity, delay: 0 }}
-                      />
-                      <motion.div
-                        className="h-2 w-2 rounded-full bg-text-tertiary"
-                        animate={{ opacity: [0.3, 1, 0.3] }}
-                        transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
-                      />
-                      <motion.div
-                        className="h-2 w-2 rounded-full bg-text-tertiary"
-                        animate={{ opacity: [0.3, 1, 0.3] }}
-                        transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
-                      />
+                  <div className="rounded-2xl rounded-bl-md bg-bg-secondary px-4 py-3 border border-border/30">
+                    <div className="flex gap-1.5">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="h-2 w-2 rounded-full bg-primary"
+                          animate={{
+                            opacity: [0.3, 1, 0.3],
+                            scale: [0.8, 1.2, 0.8],
+                          }}
+                          transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15 }}
+                        />
+                      ))}
                     </div>
                   </div>
                 </motion.div>
@@ -150,15 +159,16 @@ export function AICoach() {
 
             {/* Suggested questions */}
             {messages.length <= 2 && (
-              <div className="px-4 pb-2">
-                <p className="text-[10px] text-text-tertiary mb-2">Suggestions</p>
+              <div className="px-4 pb-2 shrink-0">
+                <p className="text-[10px] text-text-tertiary mb-2 font-medium uppercase tracking-wider">Suggestions</p>
                 <div className="flex flex-wrap gap-1.5">
                   {suggestions.slice(0, 4).map((q) => (
                     <button
                       key={q}
                       onClick={() => handleSend(q)}
-                      className="rounded-full border border-border bg-bg-secondary/50 px-3 py-1 text-[11px] text-text-secondary hover:border-primary/30 hover:text-primary transition-all"
+                      className="group relative rounded-full border border-border/50 bg-gradient-to-b from-bg-card to-bg-secondary/50 px-3 py-1.5 text-[11px] text-text-secondary hover:border-primary/40 hover:text-primary transition-all"
                     >
+                      <span className="absolute inset-0 rounded-full bg-primary/0 group-hover:bg-primary/5 transition-colors" />
                       {q}
                     </button>
                   ))}
@@ -167,21 +177,21 @@ export function AICoach() {
             )}
 
             {/* Input */}
-            <div className="border-t border-border p-3 shrink-0">
+            <div className="border-t border-border/50 p-3 shrink-0">
               <div className="flex gap-2">
                 <input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask anything..."
-                  className="flex-1 rounded-xl border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Ask anything about bridge..."
+                  className="flex-1 rounded-xl border border-border/50 bg-bg-secondary/50 px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary/50 focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                 />
                 <button
                   onClick={() => handleSend(input)}
                   disabled={!input.trim() || loading}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white transition-opacity hover:opacity-90 disabled:opacity-40 shrink-0"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600 text-white shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/30 disabled:opacity-40 shrink-0"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                   </svg>
                 </button>
@@ -196,7 +206,7 @@ export function AICoach() {
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="fixed bottom-[4.5rem] right-5 z-50 h-3 w-3 rounded-full bg-success border-2 border-bg-primary"
+          className="fixed bottom-[4.2rem] right-5 z-50 h-2.5 w-2.5 rounded-full bg-success border-2 border-bg-primary"
         />
       )}
     </>

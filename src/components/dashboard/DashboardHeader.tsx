@@ -1,39 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { Avatar } from "@/components/ui/Avatar";
 import { mockUser } from "@/services/mockData";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import Link from "next/link";
 
-const navLinks = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/learning-path", label: "Learn" },
-  { href: "/catalog", label: "Catalog" },
-  { href: "/community", label: "Community" },
-  { href: "/quiz", label: "Quiz" },
-  { href: "/flashcards", label: "Flashcards" },
-  { href: "/missions", label: "Missions" },
-  { href: "/statistics", label: "Stats" },
-  { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/friends", label: "Friends" },
-  { href: "/bookmarks", label: "Bookmarks" },
-  { href: "/notes", label: "Notes" },
-  { href: "/rewards", label: "Rewards" },
-  { href: "/xp", label: "XP" },
-  { href: "/achievements", label: "Achievements" },
-  { href: "/challenges", label: "Challenges" },
-  { href: "/certificates", label: "Certificates" },
-  { href: "/subscription", label: "Subscription" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/contact", label: "Contact" },
-  { href: "/email-preferences", label: "Emails" },
-  { href: "/settings", label: "Settings" },
+const primaryLinks = [
+  { href: "/dashboard", label: "Dashboard", icon: "▦" },
+  { href: "/learning-path", label: "Learn", icon: "▸" },
+  { href: "/quiz", label: "Quiz", icon: "◉" },
+  { href: "/community", label: "Community", icon: "◉" },
+];
+
+const secondaryLinks = [
+  { href: "/catalog", label: "Catalog", icon: "▢" },
+  { href: "/flashcards", label: "Flashcards", icon: "◇" },
+  { href: "/missions", label: "Missions", icon: "☰" },
+  { href: "/statistics", label: "Stats", icon: "▤" },
+  { href: "/leaderboard", label: "Leaderboard", icon: "△" },
+  { href: "/friends", label: "Friends", icon: "◈" },
+  { href: "/bookmarks", label: "Bookmarks", icon: "▽" },
+  { href: "/notes", label: "Notes", icon: "☊" },
+  { href: "/rewards", label: "Rewards", icon: "☆" },
+  { href: "/xp", label: "XP", icon: "✦" },
+  { href: "/achievements", label: "Badges", icon: "★" },
+  { href: "/challenges", label: "Challenges", icon: "⚡" },
+  { href: "/certificates", label: "Certificates", icon: "♜" },
+  { href: "/subscription", label: "Subscription", icon: "◈" },
+  { href: "/faq", label: "FAQ", icon: "?" },
+  { href: "/contact", label: "Contact", icon: "✉" },
+  { href: "/email-preferences", label: "Emails", icon: "⊕" },
+  { href: "/settings", label: "Settings", icon: "⚙" },
 ];
 
 export function DashboardHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <header className="border-b border-border bg-bg-primary/60 backdrop-blur-xl sticky top-0 z-40">
@@ -48,9 +63,9 @@ export function DashboardHeader() {
             </span>
           </Link>
 
-          {/* Desktop nav */}
+          {/* Desktop primary nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
+            {primaryLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -59,6 +74,31 @@ export function DashboardHeader() {
                 {link.label}
               </Link>
             ))}
+
+            {/* More dropdown */}
+            <div ref={moreRef} className="relative">
+              <button
+                onClick={() => setMoreOpen(!moreOpen)}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-text-tertiary hover:text-text-primary hover:bg-bg-secondary transition-all"
+              >
+                More ▾
+              </button>
+              {moreOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 rounded-xl border border-border bg-bg-card shadow-xl shadow-black/20 py-1 z-50">
+                  {secondaryLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMoreOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-all"
+                    >
+                      <span className="w-4 text-center text-text-tertiary">{link.icon}</span>
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
 
           <div className="flex items-center gap-1.5">
@@ -107,14 +147,33 @@ export function DashboardHeader() {
 
         {/* Mobile nav */}
         {menuOpen && (
-          <div className="md:hidden border-t border-border py-3 space-y-1">
-            {navLinks.map((link) => (
+          <div className="md:hidden border-t border-border py-3 space-y-1 max-h-[60vh] overflow-y-auto">
+            <div className="px-3 mb-2">
+              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-bold">Navigate</p>
+            </div>
+            {primaryLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
-                className="block rounded-lg px-3 py-2 text-sm font-medium text-text-tertiary hover:text-text-primary hover:bg-bg-secondary transition-all"
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-text-tertiary hover:text-text-primary hover:bg-bg-secondary transition-all"
               >
+                <span>{link.icon}</span>
+                {link.label}
+              </Link>
+            ))}
+            <div className="border-t border-border my-1" />
+            <div className="px-3 mb-2">
+              <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-bold">More</p>
+            </div>
+            {secondaryLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 pl-7 text-sm font-medium text-text-tertiary hover:text-text-primary hover:bg-bg-secondary transition-all"
+              >
+                <span className="text-text-tertiary">{link.icon}</span>
                 {link.label}
               </Link>
             ))}
