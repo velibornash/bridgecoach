@@ -102,7 +102,7 @@ export function Hero() {
           transition={{ duration: 0.7, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
           className="mt-14"
         >
-          <FloatingCards className="mx-auto scale-90 md:scale-100" />
+          <FloatingCards className="mx-auto scale-[0.6] sm:scale-75 md:scale-90 lg:scale-100" />
         </motion.div>
 
         <motion.div
