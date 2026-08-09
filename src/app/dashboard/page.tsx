@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { PremiumMetric } from "@/components/ui/PremiumMetric";
-import { mockUser } from "@/services/mockData";
+import { mockUser, mockUserStats } from "@/services/mockData";
 import { BookOpen, Target, Flame, Calendar, Brain, Award, Crown, Star } from "lucide-react";
 
 interface UserStats {
@@ -29,11 +29,11 @@ interface UserStats {
 
 function PremiumDashboardHero() {
   const userStats: UserStats = {
-    level: 17,
-    streak: 7,
+    level: mockUser.level,
+    streak: mockUser.streak,
     weeklyGoal: 15,
     weeklyProgress: 12,
-    accuracy: 84,
+    accuracy: mockUserStats.averageScore,
     currentLesson: {
       title: "Competitive Bidding",
       difficulty: "Advanced",
