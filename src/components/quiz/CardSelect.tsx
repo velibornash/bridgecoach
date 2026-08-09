@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { SuitSymbol, suitColor, suitGlow, type SuitLike } from "@/components/bridge/SuitSymbol";
 import type { QuizQuestion } from "@/types";
 
 interface CardSelectProps {
@@ -11,12 +12,14 @@ interface CardSelectProps {
   answered: boolean;
 }
 
-function suitInfo(card: string) {
-  if (card.includes("♠")) return { suit: "♠", color: "text-zinc-300", bg: "bg-zinc-500/10 hover:bg-zinc-500/20" };
-  if (card.includes("♥")) return { suit: "♥", color: "text-red-400", bg: "bg-red-500/10 hover:bg-red-500/20" };
-  if (card.includes("♦")) return { suit: "♦", color: "text-amber-400", bg: "bg-amber-500/10 hover:bg-amber-500/20" };
-  if (card.includes("♣")) return { suit: "♣", color: "text-emerald-400", bg: "bg-emerald-500/10 hover:bg-emerald-500/20" };
-  return { suit: "", color: "text-text-secondary", bg: "bg-bg-secondary" };
+function suitInfo(card: string): { suit: SuitLike; rank: string; bg: string } {
+  const suit = card[0];
+  const rank = card.slice(1);
+  if (suit === "♠") return { suit: "♠", rank, bg: "bg-zinc-500/10 hover:bg-zinc-500/20" };
+  if (suit === "♥") return { suit: "♥", rank, bg: "bg-red-500/10 hover:bg-red-500/20" };
+  if (suit === "♦") return { suit: "♦", rank, bg: "bg-red-500/10 hover:bg-red-500/20" };
+  if (suit === "♣") return { suit: "♣", rank, bg: "bg-zinc-500/10 hover:bg-zinc-500/20" };
+  return { suit: suit as SuitLike, rank, bg: "bg-bg-secondary" };
 }
 
 export function CardSelect({ question, onAnswer, answered }: CardSelectProps) {
@@ -59,16 +62,18 @@ export function CardSelect({ question, onAnswer, answered }: CardSelectProps) {
               key={i}
               onClick={() => toggle(card)}
               className={cn(
-                "flex items-center justify-center rounded-lg py-2 text-sm font-mono font-bold transition-all duration-150",
+                "flex items-center justify-center gap-0.5 rounded-lg py-2 text-sm font-mono font-bold transition-all duration-150",
                 isCorrectCard && "bg-success/20 text-success ring-1 ring-success",
                 isWrongCard && "bg-danger/20 text-danger ring-1 ring-danger",
                 !answered && isSelected && "bg-primary/20 text-primary ring-1 ring-primary",
-                !answered && !isSelected && "border border-border text-text-secondary opacity-70 hover:opacity-100",
-                answered && !isCorrectCard && !isWrongCard && "opacity-30",
-                info.color
+                !answered && !isSelected && cn("border border-border text-text-secondary opacity-70 hover:opacity-100", info.bg),
+                answered && !isCorrectCard && !isWrongCard && "opacity-30"
               )}
             >
-              {card}
+              <span style={{ color: suitColor(info.suit), textShadow: `0 0 8px ${suitGlow(info.suit)}` }}>
+                {info.rank}
+              </span>
+              <SuitSymbol suit={info.suit} size={12} />
             </button>
           );
         })}

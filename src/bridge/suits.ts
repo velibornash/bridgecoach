@@ -28,6 +28,8 @@ export interface SuitPresentation {
   textClass: string;
   /** Raw hex for SVG / white card surfaces. */
   hex: string;
+  /** Soft glow used behind the symbol so black suits never read as washed-out gray. */
+  glow: string;
   /** Natural suit sort order (lowest first). */
   sortOrder: number;
 }
@@ -38,23 +40,26 @@ export const suitPresentation: Record<Suit, SuitPresentation> = {
     name: "Spades",
     color: "black",
     textClass: "text-text-primary",
-    hex: "#111827",
+    hex: "#14161E",
+    glow: "rgba(20, 22, 30, 0.4)",
     sortOrder: 4,
   },
   [Suit.HEARTS]: {
     symbol: "♥",
     name: "Hearts",
     color: "red",
-    textClass: "text-red-400",
-    hex: "#DC2626",
+    textClass: "text-red-500",
+    hex: "#E0244A",
+    glow: "rgba(224, 36, 74, 0.4)",
     sortOrder: 3,
   },
   [Suit.DIAMONDS]: {
     symbol: "♦",
     name: "Diamonds",
     color: "red",
-    textClass: "text-red-400",
-    hex: "#DC2626",
+    textClass: "text-red-500",
+    hex: "#E0244A",
+    glow: "rgba(224, 36, 74, 0.4)",
     sortOrder: 2,
   },
   [Suit.CLUBS]: {
@@ -62,7 +67,8 @@ export const suitPresentation: Record<Suit, SuitPresentation> = {
     name: "Clubs",
     color: "black",
     textClass: "text-text-primary",
-    hex: "#111827",
+    hex: "#14161E",
+    glow: "rgba(20, 22, 30, 0.4)",
     sortOrder: 1,
   },
 };

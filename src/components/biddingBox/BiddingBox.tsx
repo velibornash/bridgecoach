@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
+import { SuitSymbol } from "@/components/bridge/SuitSymbol";
 import type { Suit, SuitColor } from "@/components/cardEngine/types";
 
 export interface Bid {
@@ -152,7 +153,13 @@ export function BiddingBox({ yourHand, currentBid, onBid, disabled = false, part
                           : "bg-bg-card text-text-primary border-border hover:border-primary/50 hover:bg-primary/5"
                     )}
                   >
-                    <span className={s.color}>{s.suit}</span>
+                    <span className={s.color}>
+                      {s.suit === 'NT' ? (
+                        <span className="text-blue-400">NT</span>
+                      ) : (
+                        <SuitSymbol suit={s.suit} size={14} />
+                      )}
+                    </span>
                   </motion.button>
                 );
               })}

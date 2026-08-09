@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { CardHand } from "@/types";
+import { SuitSymbol, suitColor, suitGlow, type SuitLike } from "@/components/bridge/SuitSymbol";
 
 interface CardTableProps {
   hands: CardHand[];
@@ -22,12 +23,17 @@ const positionLabels: Record<string, string> = {
   west: "W",
 };
 
-function suitSymbol(suit: string) {
-  if (suit.includes("♠")) return { sym: "♠", color: "text-zinc-300" };
-  if (suit.includes("♥")) return { sym: "♥", color: "text-red-400" };
-  if (suit.includes("♦")) return { sym: "♦", color: "text-amber-400" };
-  if (suit.includes("♣")) return { sym: "♣", color: "text-emerald-400" };
-  return { sym: suit.slice(-1), color: "text-zinc-300" };
+function suitSymbol(suit: string): { sym: SuitLike; rank: string } {
+  const sym = suit.includes("♠") ? "♠" : suit.includes("♥") ? "♥" : suit.includes("♦") ? "♦" : suit.includes("♣") ? "♣" : null;
+  if (sym) return { sym: sym as SuitLike, rank: suit.replace(sym, "") };
+  const code = suit[0];
+  if (code === "S" || code === "H" || code === "D" || code === "C") {
+    return {
+      sym: code === "S" ? "♠" : code === "H" ? "♥" : code === "D" ? "♦" : "♣",
+      rank: suit.slice(1),
+    };
+  }
+  return { sym: "♠", rank: suit };
 }
 
 export function CardTable({ hands, className }: CardTableProps) {
@@ -71,11 +77,11 @@ export function CardTable({ hands, className }: CardTableProps) {
                     key={i}
                     className={cn(
                       "text-[11px] font-mono font-bold leading-tight whitespace-nowrap",
-                      suit.color,
                       hand.highlight?.includes(card) && "ring-1 ring-warning rounded-sm"
                     )}
+                    style={{ color: suitColor(suit.sym), textShadow: `0 0 6px ${suitGlow(suit.sym)}` }}
                   >
-                    {card.replace("♠", "").replace("♥", "").replace("♦", "").replace("♣", "")}{suit.sym}
+                    {suit.rank}<SuitSymbol suit={suit.sym} size={11} />
                   </span>
                 );
               })}

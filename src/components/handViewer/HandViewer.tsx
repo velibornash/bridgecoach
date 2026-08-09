@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CardEngine, SUITS, createDeck, shuffleDeck, type BridgeCard, type Suit, type CardSize } from "@/components/cardEngine/CardEngine";
 import { Badge } from "@/components/ui/Badge";
+import { SuitSymbol, suitColor, suitGlow, type SuitLike } from "@/components/bridge/SuitSymbol";
 import { cn } from "@/lib/utils";
 
 type SortBy = 'suit' | 'rank';
@@ -96,7 +97,12 @@ export function HandViewer({
                   : 'bg-bg-secondary text-text-tertiary hover:text-text-secondary'
               }`}
             >
-              {s === 'all' ? `All (${suitCounts.all})` : `${s} (${suitCounts[s] || 0})`}
+              {s === 'all' ? `All (${suitCounts.all})` : (
+                <span className="inline-flex items-center gap-0.5">
+                  <SuitSymbol suit={s as SuitLike} size={12} />
+                  {suitCounts[s] || 0}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -157,7 +163,7 @@ export function HandViewer({
         {SUITS.map((s) => (
           <div key={s} className="flex-1">
             <div className="flex items-center justify-between text-[9px] text-text-tertiary mb-0.5">
-              <span>{s}</span>
+              <SuitSymbol suit={s as SuitLike} size={11} />
               <span>{suitCounts[s] || 0}</span>
             </div>
             <div className="h-1.5 rounded-full bg-bg-secondary overflow-hidden">
@@ -165,7 +171,7 @@ export function HandViewer({
                 className="h-full rounded-full transition-all duration-300"
                 style={{
                   width: `${hand.length > 0 ? ((suitCounts[s] || 0) / 13) * 100 : 0}%`,
-                  backgroundColor: s === '♠' || s === '♣' ? '#111827' : '#DC2626',
+                  backgroundColor: suitColor(s as SuitLike),
                 }}
               />
             </div>

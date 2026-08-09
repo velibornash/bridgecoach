@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { PremiumMetric } from "@/components/ui/PremiumMetric";
 import { mockUser, mockUserStats } from "@/services/mockData";
-import { BookOpen, Target, Flame, Calendar, Brain, Award, Crown, Star } from "lucide-react";
+import { AnimatedSuitsBackground } from "@/components/bridge/AnimatedSuitsBackground";
+import { FloatingCards } from "@/components/bridge/FloatingCards";
+import { SuitSymbol } from "@/components/bridge/SuitSymbol";
+import { BookOpen, Target, Flame, Calendar, Brain, Award, Crown, Star, Sparkles, ArrowRight, Play } from "lucide-react";
 
 interface UserStats {
   level: number;
@@ -53,22 +56,41 @@ function PremiumDashboardHero() {
 
   return (
     <section className="relative min-h-[90vh] overflow-hidden pt-24 pb-16">
-      {/* Premium background with subtle texture */}
+      {/* Premium background */}
       <div className="absolute inset-0 bg-gradient-to-br from-bg-primary via-bg-secondary to-bg-primary">
-        <div className="absolute inset-0 bg-gradient-to-t from-bg-primary/50 via-transparent to-bg-primary/30" />
-        <div className="absolute inset-0" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M52 10h8v40h-8V10zm-40 0h48v40H12z' fill='%236366F1' fill-opacity='0.03'/%3E%3C/svg%3E")`, backgroundSize: '60px 60px' }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-bg-primary/60 via-transparent to-bg-primary/30" />
+        {/* Glow orbs */}
+        <div className="absolute -top-32 -left-24 h-96 w-96 rounded-full bg-primary/10 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[28rem] w-[28rem] rounded-full bg-accent/10 blur-[120px]" />
+        {/* Felt hint */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(27,77,62,0.18) 0%, transparent 65%)",
+          }}
+        />
+        <AnimatedSuitsBackground density={10} intensity="subtle" />
       </div>
-      
+
       <Container className="relative flex min-h-[80vh] flex-col justify-center">
-        {/* Header with user info */}
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="flex items-center justify-between mb-12"
+          className="flex items-center justify-between mb-10"
         >
           <div className="flex items-center gap-4">
-            <Avatar name={userStats.userName} size="xl" className="ring-4 ring-primary/20" />
+            <div className="relative">
+              <Avatar name={userStats.userName} size="xl" className="ring-4 ring-primary/20" />
+              <motion.div
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary shadow-glow-sm"
+              >
+                <Crown size={13} className="text-white" />
+              </motion.div>
+            </div>
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
@@ -78,82 +100,111 @@ function PremiumDashboardHero() {
                   Bridge Player Level {userStats.level}
                 </p>
               </div>
-              <h1 className="text-4xl font-light text-text-primary tracking-tight sm:text-5xl">
-                Good afternoon, {userStats.userName}
+              <h1 className="text-3xl font-light tracking-tight text-text-primary sm:text-5xl">
+                Good afternoon,{" "}
+                <span className="font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  {userStats.userName.split(" ")[0]}
+                </span>
               </h1>
             </div>
           </div>
+
           <div className="hidden md:flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/10">
-              <Crown size={16} className="text-warning" />
-            </div>
-            <div className="text-sm font-medium text-text-primary">
-              {userStats.streak}-day streak
+            <motion.div
+              animate={{ scale: [1, 1.06, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary-light px-4 py-2"
+            >
+              <Flame size={16} className="text-orange-400" />
+              <div className="leading-tight">
+                <span className="block text-sm font-bold text-text-primary">{userStats.streak}-day</span>
+                <span className="block text-[10px] uppercase tracking-wider text-text-tertiary">streak</span>
+              </div>
+            </motion.div>
+            <div className="flex items-center gap-2 rounded-full border border-border bg-bg-secondary/60 px-4 py-2">
+              <Star size={16} className="text-warning" />
+              <span className="text-sm font-semibold text-text-primary">{mockUser.xp.toLocaleString()} XP</span>
             </div>
           </div>
         </motion.div>
 
         {/* Main Content Grid */}
         <div className="grid gap-8 lg:grid-cols-12">
-          {/* Left Section: Welcome & Progress */}
+          {/* Left Column */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
             className="lg:col-span-8 space-y-8"
           >
-            <div className="space-y-4">
-              <h2 className="text-2xl font-semibold text-text-primary">
-                Your Bridge Journey Continues
-              </h2>
-              <p className="text-text-secondary leading-relaxed max-w-2xl">
-                {userStats.streak > 0 && (
-                  <span className="inline-flex items-center gap-2 mb-3">
-                    <Flame size={14} className="text-orange-400" />
-                    <span className="text-sm font-medium text-text-primary">{userStats.streak}-day learning streak</span>
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2">
+                  <Sparkles size={15} className="text-primary" />
+                  <span className="text-xs font-bold uppercase tracking-[0.18em] text-text-tertiary">
+                    Your Bridge Journey Continues
                   </span>
-                )}
-                {userStats.dailyObjective}
-              </p>
+                </div>
+                <h2 className="text-2xl font-semibold text-text-primary">
+                  {userStats.streak > 0 && (
+                    <span className="inline-flex items-center gap-2">
+                      <Flame size={18} className="text-orange-400" />
+                      {userStats.streak}-day learning streak
+                    </span>
+                  )}
+                </h2>
+                <p className="text-text-secondary leading-relaxed max-w-2xl">
+                  {userStats.dailyObjective}
+                </p>
+              </div>
+
+              {/* Quick practice hand */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="relative"
+              >
+                <GlassCard variant="premium" hover className="px-6 pt-6 pb-4 w-56">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">Deal of the day</span>
+                    <span className="flex gap-0.5">
+                      {(["♠", "♥", "♦", "♣"] as const).map((s) => (
+                        <SuitSymbol key={s} suit={s} size={10} />
+                      ))}
+                    </span>
+                  </div>
+                  <FloatingCards
+                    className="scale-[0.62] origin-top -mt-2"
+                    cardHeight="h-28"
+                    cardWidth="w-20"
+                    spread={20}
+                  />
+                  <Button variant="outline" size="sm" fullWidth className="mt-1">
+                    <Play className="h-3.5 w-3.5" />
+                    Play this hand
+                  </Button>
+                </GlassCard>
+              </motion.div>
             </div>
 
-            {/* Premium Metrics Dashboard */}
+            {/* Metrics */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
               className="grid grid-cols-2 sm:grid-cols-4 gap-4"
             >
-              <PremiumMetric
-                icon={BookOpen}
-                label="Lessons"
-                value={userStats.weeklyProgress}
-                max={userStats.weeklyGoal}
-                color="text-indigo-400"
-              />
-              <PremiumMetric
-                icon={Target}
-                label="Accuracy"
-                value={userStats.accuracy}
-                max={100}
-                color="text-emerald-400"
-              />
-              <PremiumMetric
-                icon={Calendar}
-                label="Streak"
-                value={userStats.streak}
-                max={30}
-                color="text-purple-400"
-                suffix=" days"
-              />
-              <PremiumMetric
-                icon={Brain}
-                label="Confidence"
-                value={78}
-                max={100}
-                color="text-amber-400"
-                suffix="%"
-              />
+              {[
+                { icon: BookOpen, label: "Lessons", value: userStats.weeklyProgress, max: userStats.weeklyGoal, color: "text-indigo-400" },
+                { icon: Target, label: "Accuracy", value: userStats.accuracy, max: 100, color: "text-emerald-400" },
+                { icon: Calendar, label: "Streak", value: userStats.streak, max: 30, color: "text-purple-400", suffix: " days" },
+                { icon: Brain, label: "Confidence", value: 78, max: 100, color: "text-amber-400", suffix: "%" },
+              ].map((m) => (
+                <GlassCard key={m.label} hover className="p-4">
+                  <PremiumMetric {...m} />
+                </GlassCard>
+              ))}
             </motion.div>
 
             {/* Current Lesson Card */}
@@ -207,6 +258,7 @@ function PremiumDashboardHero() {
                 <div className="mt-5 flex gap-3">
                   <Button variant="primary" size="sm" className="flex-1">
                     Continue Learning
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                   <Button variant="outline" size="sm" className="bg-bg-secondary/50">
                     View Details
@@ -216,7 +268,7 @@ function PremiumDashboardHero() {
             </motion.div>
           </motion.div>
 
-          {/* Right Section: AI Coach & Daily Objectives */}
+          {/* Right Column */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}

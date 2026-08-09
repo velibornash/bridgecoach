@@ -6,11 +6,126 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Container } from "@/components/ui/Container";
 import { showToast } from "@/components/ui/Toast";
-import { mockLogin, validateEmail, validatePassword } from "@/services/auth";
+import { mockLogin, validateEmail } from "@/services/auth";
+import { AnimatedSuitsBackground } from "@/components/bridge/AnimatedSuitsBackground";
+import { FloatingCards } from "@/components/bridge/FloatingCards";
+import { SuitSymbol } from "@/components/bridge/SuitSymbol";
+import { Brain, Trophy, Sparkles, ChevronRight } from "lucide-react";
 
-export default function LoginPage() {
+const HIGHLIGHTS = [
+  { icon: Brain, title: "AI Coach", text: "Personal feedback on every bid" },
+  { icon: Trophy, title: "Bidding Engine", text: "Legality & strategy, always correct" },
+  { icon: Sparkles, title: "Progress", text: "Track lessons, streaks and XP" },
+];
+
+function Brand() {
+  return (
+    <Link href="/" className="group inline-flex items-center gap-3">
+      <motion.div
+        whileHover={{ rotate: -8, scale: 1.05 }}
+        transition={{ type: "spring", stiffness: 300, damping: 18 }}
+        className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent shadow-glow"
+      >
+        <SuitSymbol suit="♠" size={20} className="text-white drop-shadow" themed={false} />
+      </motion.div>
+      <div className="leading-tight">
+        <span className="block text-lg font-bold tracking-tight text-text-primary">Bridge Coach</span>
+        <span className="block text-[11px] font-medium uppercase tracking-[0.2em] text-text-tertiary">
+          Master the game
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function ShowcasePanel() {
+  return (
+    <div className="relative hidden overflow-hidden lg:flex lg:flex-col">
+      {/* Felt cloth background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#12402F] via-cloth to-[#0A2419]" />
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 80% 60% at 30% 20%, rgba(196,169,98,0.18) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 85%, rgba(45,107,79,0.35) 0%, transparent 60%)",
+        }}
+      />
+      {/* Subtle weave */}
+      <div
+        className="absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)",
+          backgroundSize: "42px 42px",
+        }}
+      />
+      <AnimatedSuitsBackground density={14} intensity="medium" />
+
+      <div className="relative z-10 flex flex-1 flex-col justify-between p-12">
+        <Brand />
+
+        <div className="max-w-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+          >
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5">
+              <span className="flex gap-1">
+                {(["♠", "♥", "♦", "♣"] as const).map((s) => (
+                  <SuitSymbol key={s} suit={s} size={13} />
+                ))}
+              </span>
+              <span className="text-xs font-medium tracking-wide text-primary">Your bridge club, reimagined</span>
+            </div>
+
+            <h1 className="text-5xl font-light leading-[1.1] tracking-tight text-white xl:text-6xl">
+              Master the game.
+              <br />
+              <span className="font-semibold bg-gradient-to-r from-primary via-gold to-accent bg-clip-text text-transparent">
+                One deal at a time.
+              </span>
+            </h1>
+
+            <p className="mt-6 max-w-md text-lg leading-relaxed text-white/70">
+              Learn to bid with confidence. Every call checked for legality, every
+              decision guided by a coach that never gets tired.
+            </p>
+          </motion.div>
+
+          {/* Floating cards */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.9, delay: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+            className="mt-14"
+          >
+            <FloatingCards className="mx-auto -mt-2 scale-95 xl:scale-100" />
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          {HIGHLIGHTS.map((f, i) => (
+            <motion.div
+              key={f.title}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55 + i * 0.12, duration: 0.5 }}
+              className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-colors hover:border-primary/30 hover:bg-white/10"
+            >
+              <f.icon className="mb-2 h-5 w-5 text-primary" />
+              <p className="text-sm font-semibold text-white">{f.title}</p>
+              <p className="mt-0.5 text-xs leading-snug text-white/55">{f.text}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,26 +159,32 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg-primary">
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
+    <div className="relative flex flex-1 items-center justify-center px-6 py-12 sm:px-10">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
 
-      <Container className="flex flex-1 items-center justify-center relative z-10">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
+        className="relative z-10 w-full max-w-md"
+      >
+        {/* Compact brand for mobile */}
+        <div className="mb-8 flex justify-center lg:hidden">
+          <Brand />
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-          className="w-full max-w-sm"
+          transition={{ delay: 0.12, duration: 0.55 }}
+          className="rounded-3xl border border-border bg-bg-card/70 p-8 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-10"
         >
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2.5 mb-8">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-600 shadow-glow">
-                <span className="text-sm font-bold text-white">♠</span>
-              </div>
-              <span className="text-lg font-bold tracking-tight text-text-primary">
-                Bridge Coach
-              </span>
-            </Link>
-            <h1 className="text-2xl font-bold text-text-primary">Welcome back</h1>
+          <div className="mb-8">
+            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary-light px-3 py-1">
+              <SuitSymbol suit="♥" size={12} />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">Player sign in</span>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-text-primary">Welcome back</h1>
             <p className="mt-1.5 text-sm text-text-secondary">
               Sign in to continue your bridge journey.
             </p>
@@ -133,7 +254,12 @@ export default function LoginPage() {
             </div>
 
             <Button type="submit" variant="primary" size="lg" fullWidth loading={isLoading}>
-              Sign In
+              {isLoading ? "Signing in…" : (
+                <>
+                  Sign In
+                  <ChevronRight className="h-4 w-4" />
+                </>
+              )}
             </Button>
           </form>
 
@@ -142,7 +268,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-bg-primary px-4 text-xs text-text-tertiary">or continue with</span>
+              <span className="bg-bg-card px-4 text-xs text-text-tertiary">or continue with</span>
             </div>
           </div>
 
@@ -163,15 +289,24 @@ export default function LoginPage() {
               Continue with Apple
             </button>
           </div>
-
-          <p className="mt-8 text-center text-sm text-text-secondary">
-            Don&apos;t have an account?{" "}
-            <Link href="/auth/register" className="font-medium text-primary hover:text-primary-hover transition-colors">
-              Create free account
-            </Link>
-          </p>
         </motion.div>
-      </Container>
+
+        <p className="mt-8 text-center text-sm text-text-secondary">
+          Don&apos;t have an account?{" "}
+          <Link href="/auth/register" className="font-medium text-primary hover:text-primary-hover transition-colors">
+            Create free account
+          </Link>
+        </p>
+      </motion.div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <div className="flex min-h-screen flex-col bg-bg-primary lg:grid lg:grid-cols-2">
+      <ShowcasePanel />
+      <LoginForm />
     </div>
   );
 }

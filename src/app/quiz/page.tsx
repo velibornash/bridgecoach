@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -22,8 +22,38 @@ const questionTypeIcons: Record<string, string> = {
   "drag-drop": "Match",
 };
 
+function hashString(str: string) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function seededRandom(seed: number) {
+  let s = seed || 1;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function deterministicShuffle<T>(items: T[], seed: number): T[] {
+  const arr = [...items];
+  const rand = seededRandom(seed);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export default function QuizPage() {
-  const [questions] = useState(() => mockQuizQuestions.sort(() => Math.random() - 0.5));
+  const questions = useMemo(
+    () => deterministicShuffle([...mockQuizQuestions], hashString(mockQuizQuestions.map((q) => q.id).join("|"))),
+    []
+  );
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [answeredIds, setAnsweredIds] = useState<Set<string>>(new Set());

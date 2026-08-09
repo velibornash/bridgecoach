@@ -33,7 +33,7 @@ function CardInner({ card, size, interactive, hoverable, onClick, onHover }: {
 
   const displaySuit = config.label;
   const rank = card.rank || 'A';
-  const color = config.color === 'red' ? '#DC2626' : '#111827';
+  const color = config.color === 'red' ? '#E0244A' : '#14161E';
   const isRed = config.color === 'red';
 
   return (
@@ -192,7 +192,9 @@ export function CardEngine({ card, size = 'md', interactive = false, hoverable =
           transform: `scale(${card.scale ?? 1})`,
         }}
       >
-        {card.faceUp ? content : (
+        {card.faceUp ? (
+          <svg width={sizeMap[size].w} height={sizeMap[size].h}>{content}</svg>
+        ) : (
           <motion.div
             initial={{ rotateY: 0 }}
             animate={{ rotateY: flipped ? 180 : 0 }}
@@ -207,7 +209,7 @@ export function CardEngine({ card, size = 'md', interactive = false, hoverable =
               </svg>
             </div>
             <div style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden", position: "absolute", top: 0, left: 0 }}>
-              {content}
+              <svg width={sizeMap[size].w} height={sizeMap[size].h}>{content}</svg>
             </div>
           </motion.div>
         )}
