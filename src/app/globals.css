@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  /* Surface — dark walnut bridge club */
-  --color-bg-primary: #0C0A08;
-  --color-bg-card: #16120E;
-  --color-bg-card-hover: #1C1712;
-  --color-bg-secondary: #1F1A14;
-  --color-bg-tertiary: #2A231B;
+  /* Surface — deep bridge-table felt green */
+  --color-bg-primary: #0E3A2B;
+  --color-bg-card: #134A35;
+  --color-bg-card-hover: #19563F;
+  --color-bg-secondary: #164C38;
+  --color-bg-tertiary: #205E46;
 
-  /* Brand — gold accents + bridge cloth green */
+  /* Brand — gold accents on felt green */
   --color-primary: #C4A962;
   --color-primary-hover: #D4BC7A;
   --color-primary-light: rgba(196, 169, 98, 0.12);
   --color-primary-glow: rgba(196, 169, 98, 0.25);
-  --color-accent: #2D6B4F;
-  --color-accent-light: rgba(45, 107, 79, 0.15);
+  --color-accent: #3FA57E;
+  --color-accent-light: rgba(63, 165, 126, 0.15);
   --color-cloth: #1B4D3E;
   --color-cloth-light: rgba(27, 77, 62, 0.2);
   --color-walnut: #3D2E1F;
@@ -193,7 +193,7 @@ input:-webkit-autofill:focus {
 }
 
 .glass {
-  background: rgba(22, 18, 14, 0.75);
+  background: rgba(10, 40, 28, 0.72);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-border);
@@ -216,7 +216,7 @@ input:-webkit-autofill:focus {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #C4A962, #2D6B4F);
+  background: linear-gradient(135deg, #D4BC7A, #3FA57E);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -231,7 +231,7 @@ input:-webkit-autofill:focus {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(196, 169, 98, 0.35), transparent, rgba(45, 107, 79, 0.25));
+  background: linear-gradient(135deg, rgba(196, 169, 98, 0.35), transparent, rgba(63, 165, 126, 0.25));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
