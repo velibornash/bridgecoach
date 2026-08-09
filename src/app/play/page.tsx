@@ -1,65 +1,112 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { TableEngine } from "@/components/tableEngine/Table";
 import { DealAnimation } from "@/components/dealAnimation/DealAnimation";
-import { TrickEngine } from "@/components/trickEngine/TrickEngine";
+import { TrickEngine, getWinner } from "@/components/trickEngine/TrickEngine";
 import { BiddingBox, type Bid } from "@/components/biddingBox/BiddingBox";
 import { CardEngine } from "@/components/cardEngine/CardEngine";
-import { CardBack, createDeck, shuffleDeck, SUITS, RANKS } from "@/components/cardEngine/CardEngine";
 import type { BridgeCard, Suit } from "@/components/cardEngine/types";
 import { Badge } from "@/components/ui/Badge";
 
+type Player = 'north' | 'east' | 'south' | 'west';
+
 export default function PlayDemoPage() {
   const [phase, setPhase] = useState<'idle' | 'dealing' | 'bidding' | 'trick'>('idle');
-  const [hands, setHands] = useState<{ north: BridgeCard[]; east: BridgeCard[]; south: BridgeCard[]; west: BridgeCard[] }>({
+  const [hands, setHands] = useState<Record<Player, BridgeCard[]>>({
     north: [], east: [], south: [], west: [],
   });
   const [currentBid, setCurrentBid] = useState<Bid | null>(null);
   const [trumpSuit] = useState<Suit>('♠');
   const [currentTrick, setCurrentTrick] = useState(1);
-  const [playedCards, setPlayedCards] = useState<Array<{ player: string; card: BridgeCard; color: Suit }>>([]);
+  const [playedCards, setPlayedCards] = useState<Array<{ player: Player; card: BridgeCard; color: Suit }>>([]);
   const [trickWinner, setTrickWinner] = useState<string | null>(null);
-  const [selectedCard, setSelectedCard] = useState<BridgeCard | null>(null);
+  const [tricksByDeclarer, setTricksByDeclarer] = useState(0);
   const [tab, setTab] = useState<'deal' | 'bidding' | 'trick'>('deal');
+  const handsRef = useRef(hands);
+
+  useEffect(() => {
+    handsRef.current = hands;
+  }, [hands]);
 
   const handleDealComplete = useCallback((dealtHands: Record<string, BridgeCard[]>) => {
-    setHands(dealtHands as { north: BridgeCard[]; east: BridgeCard[]; south: BridgeCard[]; west: BridgeCard[] });
+    setHands(dealtHands as Record<Player, BridgeCard[]>);
     setPhase('bidding');
     setTab('bidding');
   }, []);
 
   const handleBid = useCallback((bid: Bid) => {
     setCurrentBid(bid);
-    if (bid.label === 'Pass') {
-      // Simulate opponent passing too for demo
+    if (bid.label !== 'Pass') {
+      // Simulate opponents passing around the table, then start play
       setTimeout(() => {
         setPhase('trick');
         setTab('trick');
-      }, 800);
+      }, 900);
     }
   }, []);
 
-  const handlePlayCard = useCallback((card: BridgeCard) => {
-    setSelectedCard(card);
-    setPlayedCards(prev => [
+  const playCardFor = (player: Player, card: BridgeCard) => {
+    setPlayedCards((prev) => [...prev, { player, card, color: trumpSuit }]);
+    setHands((prev) => ({
       ...prev,
-      { player: 'south', card, color: trumpSuit },
-    ]);
-    setSelectedCard(null);
+      [player]: prev[player].filter((c) => c.id !== card.id),
+    }));
+  };
 
-    if (playedCards.length >= 3) {
-      setTrickWinner('south');
-      setTimeout(() => {
+  const autoPlayOpponent = useCallback((player: Player, leadSuit: Suit | null) => {
+    setTimeout(() => {
+      const hand = handsRef.current[player];
+      if (!hand || hand.length === 0) return;
+      let card: BridgeCard;
+      if (leadSuit) {
+        const follow = hand.filter((c) => c.suit === leadSuit);
+        card = (follow.length > 0 ? follow : hand)[0];
+      } else {
+        card = hand[0];
+      }
+      setPlayedCards((prev) => [...prev, { player, card, color: trumpSuit }]);
+      setHands((prev) => ({
+        ...prev,
+        [player]: prev[player].filter((c) => c.id !== card.id),
+      }));
+    }, 600);
+  }, [trumpSuit]);
+
+  const handlePlayCard = useCallback((card: BridgeCard) => {
+    if (playedCards.some((p) => p.player === 'south')) return;
+    playCardFor('south', card);
+
+    // Determine lead suit from the first played card
+    const leadSuit = card.suit;
+
+    // Auto-play west, north, east in turn
+    autoPlayOpponent('west', leadSuit);
+    setTimeout(() => autoPlayOpponent('north', leadSuit), 650);
+    setTimeout(() => autoPlayOpponent('east', leadSuit), 1300);
+  }, [playedCards, autoPlayOpponent]);
+
+  // Resolve the trick once all 4 cards are played
+  useEffect(() => {
+    if (playedCards.length !== 4) return;
+    const timer = setTimeout(() => {
+      const winner = getWinner(playedCards, trumpSuit);
+      setTrickWinner(winner);
+      if (winner === 'south' || winner === 'north') {
+        setTricksByDeclarer((t) => t + 1);
+      }
+      const finishTimer = setTimeout(() => {
         setPlayedCards([]);
         setTrickWinner(null);
-        setCurrentTrick(prev => prev + 1);
-      }, 2500);
-    }
-  }, [playedCards.length, trumpSuit]);
+        setCurrentTrick((t) => (t >= 13 ? 13 : t + 1));
+      }, 2200);
+      return () => clearTimeout(finishTimer);
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [playedCards, trumpSuit]);
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -112,16 +159,12 @@ export default function PlayDemoPage() {
                   onBid={handleBid}
                   disabled={phase !== 'bidding'}
                 />
-                {/* Show a sample hand */}
                 {hands.south.length > 0 && (
                   <div className="flex flex-wrap gap-2 justify-center">
                     <span className="text-xs text-text-tertiary mr-2 self-center">Your hand ({hands.south.length} cards):</span>
-                    {shuffleDeck(hands.south).slice(0, 5).map((card) => (
+                    {hands.south.slice(0, 8).map((card) => (
                       <CardEngine key={card.id} card={card} size="sm" interactive={false} />
                     ))}
-                    {hands.south.length > 5 && (
-                      <span className="text-xs text-text-tertiary self-center">+{hands.south.length - 5} more</span>
-                    )}
                   </div>
                 )}
               </div>
@@ -146,23 +189,34 @@ export default function PlayDemoPage() {
                   winner={trickWinner}
                 />
 
-                {/* Playable cards for demo */}
-                {hands.south.filter(c => !playedCards.some(p => p.card.id === c.id)).length > 0 && (
-                  <div className="rounded-xl border border-border bg-bg-card p-4">
-                    <p className="text-xs text-text-tertiary mb-3">Click a card to play (demo):</p>
-                    <div className="flex flex-wrap gap-2 justify-center max-h-40 overflow-y-auto">
-                      {hands.south.filter(c => !playedCards.some(p => p.card.id === c.id)).slice(0, 8).map((card) => (
-                        <motion.button
-                          key={card.id}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handlePlayCard(card)}
-                          className="cursor-pointer"
-                        >
-                          <CardEngine card={{ ...card, faceUp: true, playable: true }} size="sm" interactive />
-                        </motion.button>
-                      ))}
+                {/* Result row */}
+                <div className="flex items-center justify-center gap-4">
+                  <Badge variant="primary">NS tricks: {tricksByDeclarer}</Badge>
+                  <Badge variant="default">EW tricks: {Math.max(0, currentTrick - 1 - tricksByDeclarer)}</Badge>
+                  <Badge variant="default">Trick {currentTrick}/13</Badge>
+                </div>
+
+                {/* Playable cards for the user */}
+                {playedCards.some((p) => p.player === 'south') ? (
+                  <p className="text-center text-xs text-text-tertiary">Opponents are playing…</p>
+                ) : (
+                  hands.south.length > 0 && (
+                    <div className="rounded-xl border border-border bg-bg-card p-4">
+                      <p className="text-xs text-text-tertiary mb-3">Click a card to lead:</p>
+                      <div className="flex flex-wrap gap-2 justify-center max-h-40 overflow-y-auto">
+                        {hands.south.map((card) => (
+                          <motion.button
+                            key={card.id}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => handlePlayCard(card)}
+                            className="cursor-pointer"
+                          >
+                            <CardEngine card={{ ...card, faceUp: true, playable: true }} size="sm" interactive />
+                          </motion.button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )
                 )}
               </div>
             )}

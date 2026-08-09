@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Container } from "@/components/ui/Container";
 import { showToast } from "@/components/ui/Toast";
 import { mockRegister, validateEmail, validatePassword, validateRequired, countries, experienceLevels } from "@/services/auth";
+import type { ExperienceLevel } from "@/types";
 
 interface FieldErrors {
   firstName?: string | null;
@@ -69,7 +70,7 @@ export default function RegisterPage() {
     try {
       await mockRegister({
         ...form,
-        experienceLevel: form.experienceLevel as any,
+        experienceLevel: form.experienceLevel as ExperienceLevel,
       });
       showToast("success", "Account created! Welcome to Bridge Coach.");
       setTimeout(() => router.push("/dashboard"), 1000);

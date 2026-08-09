@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
@@ -39,6 +39,17 @@ const suits = [
 
 const values = ["A", "K", "Q", "J", "10", "9", "8", "7", "6", "5", "4", "3", "2"];
 
+function shuffle<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+const initialPool = shuffle(values);
+
 function Bob({ emotion = "wave" }: { emotion?: "wave" | "happy" | "think" | "celebrate" }) {
   const emoji = emotion === "celebrate" ? "🎉" : emotion === "happy" ? "😊" : emotion === "think" ? "🤔" : "🧑‍🌾";
   return (
@@ -68,6 +79,7 @@ export default function OnboardingPage() {
   const [suitQuizCorrect, setSuitQuizCorrect] = useState(false);
   const [orderedValues, setOrderedValues] = useState<string[]>([]);
   const [valueIndex, setValueIndex] = useState(0);
+  const [pool, setPool] = useState<string[]>(initialPool);
   const [valueMistakes, setValueMistakes] = useState(0);
   const [trickPickAnswer, setTrickPickAnswer] = useState<string | null>(null);
   const [selectedPartner, setSelectedPartner] = useState<string | null>(null);
@@ -93,7 +105,9 @@ export default function OnboardingPage() {
   };
 
   // Reset step-specific state
-  useEffect(() => {
+  const [resetStep, setResetStep] = useState(stepIndex);
+  if (resetStep !== stepIndex) {
+    setResetStep(stepIndex);
     setSelectedSuits([]);
     setSuitQuizAnswered(false);
     setSuitQuizCorrect(false);
@@ -102,7 +116,8 @@ export default function OnboardingPage() {
     setValueMistakes(0);
     setTrickPickAnswer(null);
     setSelectedPartner(null);
-  }, [stepIndex]);
+    setPool(initialPool);
+  }
 
   const handleSuitClick = (idx: number) => {
     if (!selectedSuits.includes(idx)) {
@@ -121,6 +136,7 @@ export default function OnboardingPage() {
     if (val === expected) {
       setOrderedValues((prev) => [...prev, val]);
       setValueIndex((i) => i + 1);
+      setPool((prev) => shuffle(prev.filter((v) => v !== val)));
     } else {
       setValueMistakes((m) => m + 1);
     }
@@ -184,7 +200,7 @@ export default function OnboardingPage() {
                     transition={{ delay: 0.35 }}
                     className="mt-2 text-sm text-text-secondary"
                   >
-                    I'm Farmer Bob! I'll teach you the world's greatest card game.
+                    I&apos;m Farmer Bob! I&apos;ll teach you the world&apos;s greatest card game.
                   </motion.p>
                   <motion.p
                     initial={{ opacity: 0, y: 12 }}
@@ -192,7 +208,7 @@ export default function OnboardingPage() {
                     transition={{ delay: 0.5 }}
                     className="mt-1 text-xs text-text-tertiary"
                   >
-                    Don't worry — I'll start from the very beginning.
+                    Don&apos;t worry — I&apos;ll start from the very beginning.
                   </motion.p>
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -204,7 +220,7 @@ export default function OnboardingPage() {
                       onClick={goNext}
                       className="rounded-xl bg-primary px-8 py-3 text-base font-semibold text-white transition-all hover:bg-primary-hover active:scale-95"
                     >
-                      Let's Go! →
+                      Let&apos;s Go! →
                     </button>
                   </motion.div>
                 </div>
@@ -383,10 +399,7 @@ export default function OnboardingPage() {
 
                   {/* Card grid */}
                   <div className="mt-3 flex flex-wrap gap-2 justify-center">
-                    {values
-                      .filter((v) => !orderedValues.includes(v))
-                      .sort(() => Math.random() - 0.5)
-                      .map((val, i) => (
+                    {pool.map((val, i) => (
                         <motion.button
                           key={val}
                           initial={{ opacity: 0, scale: 0.8 }}
@@ -437,7 +450,7 @@ export default function OnboardingPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="mt-4 text-xl font-bold text-text-primary"
                   >
-                    What's a Trick?
+                    What&apos;s a Trick?
                   </motion.h2>
                   <motion.p
                     initial={{ opacity: 0, y: 12 }}

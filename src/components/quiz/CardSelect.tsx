@@ -42,7 +42,7 @@ export function CardSelect({ question, onAnswer, answered }: CardSelectProps) {
   return (
     <div className="space-y-4">
       <div className="text-xs text-text-tertiary">
-        Select {question.correctCards!.length} cards for a balanced 16 HCP hand.
+        Select {question.correctCards!.length} cards for a valid opening hand.
         {selected.length > 0 && (
           <span className="ml-1 text-text-secondary">{selected.length} selected</span>
         )}
@@ -74,7 +74,7 @@ export function CardSelect({ question, onAnswer, answered }: CardSelectProps) {
         })}
       </div>
 
-      {!answered && selected.length >= 12 && (
+      {!answered && selected.length >= Math.min(question.correctCards!.length - 1, 12) && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <button
             onClick={handleSubmit}

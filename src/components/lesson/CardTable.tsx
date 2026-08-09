@@ -49,8 +49,8 @@ export function CardTable({ hands, className }: CardTableProps) {
       {hands.map((hand) => {
         const sorted = [...hand.cards].sort((a, b) => {
           const order = "♠♥♦♣";
-          const ai = order.indexOf(a.slice(-1) as any);
-          const bi = order.indexOf(b.slice(-1) as any);
+          const ai = order.indexOf(a.slice(-1));
+          const bi = order.indexOf(b.slice(-1));
           return ai - bi;
         });
 

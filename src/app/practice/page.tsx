@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { TableEngine } from "@/components/tableEngine/Table";
-import { BiddingBox } from "@/components/biddingBox/BiddingBox";
+import { BiddingBox, type Bid } from "@/components/biddingBox/BiddingBox";
 import { HandViewer } from "@/components/handViewer/HandViewer";
 import { CardEngine, createDeck, shuffleDeck, type BridgeCard, type Suit } from "@/components/cardEngine/CardEngine";
 import { Badge } from "@/components/ui/Badge";
@@ -163,7 +163,7 @@ export default function PracticePage() {
                 {/* Bidding box - simplified for practice */}
                 <BiddingBox
                   yourHand="south"
-                  currentBid={currentBid ? { level: 0, suit: 'PASS' as any, label: currentBid, description: currentBid } : null}
+                  currentBid={currentBid ? { level: 0, suit: 'PASS' as Bid['suit'], label: currentBid, description: currentBid } : null}
                   onBid={handleBid}
                   disabled={!!contract}
                 />

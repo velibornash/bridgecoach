@@ -3,19 +3,14 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { useEffect, useState } from "react";
 
 export default function MaintenancePage() {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => setShow(true), []);
-
   return (
     <div className="min-h-screen bg-bg-primary flex items-center justify-center">
       <Container className="max-w-lg text-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
-          animate={show ? { opacity: 1, scale: 1 } : {}}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", damping: 15 }}
         >
           <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">

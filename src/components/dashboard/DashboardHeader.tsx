@@ -6,7 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { mockUser } from "@/services/mockData";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Icon } from "@/components/icons/Icon";
-import { LayoutGrid, BookOpen, HelpCircle, MessagesSquare, Search, ChevronDown, ChevronRight, Compass, Layers, Target, BarChart3, Users, Bookmark, Pencil, Gift, Flame, Award, FileText, Crown, Settings, Mail, Bell, Menu, X, Zap, Star, Clock, Shield, Calendar, Tag, FolderOpen, Gift as GiftIcon, Trophy as TrophyIcon, ChevronDown as ChevronDownIcon, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { LayoutGrid, BookOpen, HelpCircle, MessagesSquare, Search, ChevronDown, ChevronRight, Compass, Layers, Target, BarChart3, Users, Bookmark, Pencil, Gift, Flame, Award, FileText, Crown, Settings, Mail, Bell, Menu, X, Zap, Star, Clock, Shield, Calendar, Tag, FolderOpen, Gift as GiftIcon, Trophy as TrophyIcon, ChevronDown as ChevronDownIcon, ChevronRight as ChevronRightIcon, PenLine } from "lucide-react";
 import Link from "next/link";
 
 const primaryLinks = [
@@ -35,6 +35,9 @@ const secondaryLinks = [
   { href: "/contact", label: "Contact", icon: Mail },
   { href: "/email-preferences", label: "Emails", icon: Bell },
   { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/replay", label: "Replays", icon: Clock },
+  { href: "/tactical", label: "Tactical Drills", icon: Target },
+  { href: "/author-studio", label: "Author Studio", icon: PenLine },
 ];
 
 export function DashboardHeader() {

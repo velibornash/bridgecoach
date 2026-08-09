@@ -11,6 +11,15 @@ interface Message {
   timestamp: number;
 }
 
+let messageIdCounter = 0;
+function nextMessageId(): string {
+  messageIdCounter += 1;
+  return `msg-${messageIdCounter}`;
+}
+function nowMs(): number {
+  return Date.now();
+}
+
 export function AICoach() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -18,7 +27,7 @@ export function AICoach() {
       id: "welcome",
       role: "coach",
       content: "Hi! I'm your Bridge Coach. Ask me anything about learning bridge!",
-      timestamp: Date.now(),
+      timestamp: 0,
     },
   ]);
   const [input, setInput] = useState("");
@@ -33,10 +42,10 @@ export function AICoach() {
   const handleSend = async (text: string) => {
     if (!text.trim() || loading) return;
     const userMsg: Message = {
-      id: `u${Date.now()}`,
+      id: nextMessageId(),
       role: "user",
       content: text.trim(),
-      timestamp: Date.now(),
+      timestamp: nowMs(),
     };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");

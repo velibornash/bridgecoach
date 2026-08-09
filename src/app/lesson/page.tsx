@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useCallback, useEffect, useMemo } from "react";
+import { use, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -12,6 +12,8 @@ import { showToast } from "@/components/ui/Toast";
 import { CardTable } from "@/components/lesson/CardTable";
 import { NotesPanel } from "@/components/lesson/NotesPanel";
 import { VideoPlayer } from "@/components/video/VideoPlayer";
+import { UniversalLearningRenderer } from "@/components/learningEngine/UniversalLearningRenderer";
+import type { LearningBlock, BlockType } from "@/components/learningEngine/types";
 import { mockLessons, mockEpisodes, mockUser } from "@/services/mockData";
 import { getCourseProgress, getEpisodeProgress } from "@/services/lessonService";
 import type { LessonNote } from "@/types";
@@ -32,30 +34,72 @@ export default function LessonPage({
     return idx >= 0 ? idx : available.findIndex((l) => !l.completed);
   }, [available]);
   const [currentIndex, setCurrentIndex] = useState(startIndex >= 0 ? startIndex : 0);
-  const [bookmarked, setBookmarked] = useState(available[currentIndex]?.bookmarked ?? false);
+  const lesson = available[currentIndex];
+  const [bookmarked, setBookmarked] = useState(lesson?.bookmarked ?? false);
   const [notes, setNotes] = useState<LessonNote[]>([]);
   const [notesOpen, setNotesOpen] = useState(false);
   const [completedSections, setCompletedSections] = useState<string[]>(
-    available[currentIndex]?.sectionsCompleted ?? [],
+    lesson?.sectionsCompleted ?? [],
   );
   const [showCompletion, setShowCompletion] = useState(false);
 
-  const lesson = available[currentIndex];
-  if (!lesson) return null;
-
-  const total = available.length;
-  const progress = Math.round(((currentIndex + 1) / total) * 100);
-  const episode = mockEpisodes.find((e) => e.id === lesson.episodeId);
-  const epProgress = getEpisodeProgress(lesson.episodeId);
-  const courseProgress = getCourseProgress();
-
-  useEffect(() => {
-    setCompletedSections(available[currentIndex]?.sectionsCompleted ?? []);
-    setBookmarked(available[currentIndex]?.bookmarked ?? false);
+  const [resetKey, setResetKey] = useState(`${currentIndex}-${available.length}`);
+  if (resetKey !== `${currentIndex}-${available.length}`) {
+    setResetKey(`${currentIndex}-${available.length}`);
+    setCompletedSections(lesson?.sectionsCompleted ?? []);
+    setBookmarked(lesson?.bookmarked ?? false);
     setNotes([]);
     setNotesOpen(false);
     setShowCompletion(false);
-  }, [currentIndex, available]);
+  }
+
+  const allBlocks = useMemo(() => {
+    if (!lesson) return [];
+    const lessonContent = lesson.content ?? [];
+    const baseBlocks = lessonContent.map((item) => {
+      const blockType =
+        item.type === "tip" ? "callout" :
+        item.type === "card-interactive" ? "paragraph" :
+        item.type;
+      return {
+        id: item.id,
+        type: blockType as BlockType,
+        text: item.text,
+        title: item.type === "tip" ? "Pro Tip" : undefined,
+      };
+    });
+
+    const extraBlocks: LearningBlock[] = [];
+    if (lesson.id === "l1") {
+      extraBlocks.push({
+        id: "quiz-l1",
+        type: "quiz" as const,
+        question: "In standard Bridge, how many cards is each player dealt at the beginning of a hand?",
+        options: ["10 Cards", "13 Cards", "15 Cards", "9 Cards"],
+        answerIndex: 1,
+        explanation: "Each player is dealt exactly 13 cards, making a total of 52 cards for the table.",
+      });
+    } else if (lesson.id === "l2") {
+      extraBlocks.push({
+        id: "flash-l2",
+        type: "flashcard" as const,
+        front: "Which card should you lead when holding a sequence like Q-J-10?",
+        back: "You should lead the top of a sequence. In this case, lead the Queen.",
+      });
+    } else if (lesson.id === "l3") {
+      extraBlocks.push({
+        id: "reveal-l3",
+        type: "reveal_answer" as const,
+        title: "1NT Opener Check",
+        text: "Can you open 1NT with 14 HCP and a 5-card spade suit?",
+        explanation: "No, a standard 1NT opening bid requires exactly 15-17 HCP (High Card Points) and a balanced hand. With 14 HCP, you should open 1♠ instead.",
+      });
+    }
+
+    return [...baseBlocks, ...extraBlocks];
+  }, [lesson]);
+
+  const total = available.length;
 
   const handlePrev = useCallback(() => {
     setCurrentIndex((i) => Math.max(0, i - 1));
@@ -63,8 +107,8 @@ export default function LessonPage({
 
   const handleNext = useCallback(() => {
     if (currentIndex < total - 1) {
-      const allDone = completedSections.length === lesson.content.length;
-      if (!allDone && lesson.content.length > 0) {
+      const allDone = allBlocks.length === 0 || completedSections.length >= allBlocks.length;
+      if (!allDone && allBlocks.length > 0) {
         showToast("info", "Complete all sections first");
         return;
       }
@@ -72,12 +116,19 @@ export default function LessonPage({
     } else {
       setShowCompletion(true);
     }
-  }, [currentIndex, total, completedSections, lesson]);
+  }, [currentIndex, total, completedSections, allBlocks]);
 
   const handleFinish = useCallback(() => {
     showToast("success", "Course complete! Amazing work! 🎉");
     setShowCompletion(false);
   }, []);
+
+  if (!lesson) return null;
+
+  const progress = Math.round(((currentIndex + 1) / total) * 100);
+  const episode = mockEpisodes.find((e) => e.id === lesson.episodeId);
+  const epProgress = getEpisodeProgress(lesson.episodeId);
+  const courseProgress = getCourseProgress();
 
   const toggleBookmark = () => {
     setBookmarked((b) => !b);
@@ -195,81 +246,13 @@ export default function LessonPage({
             <div className="lg:col-span-3 space-y-5">
               <VideoPlayer onComplete={() => showToast("success", "Video complete!")} />
 
-              {/* Lesson content sections */}
+              {/* Lesson content sections rendered dynamically via Universal Learning Engine */}
               <div className="space-y-4">
-                <AnimatePresence mode="popLayout">
-                  {lesson.content.map((item, idx) => (
-                    <motion.div
-                      key={item.id}
-                      layout
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.3, delay: idx * 0.05 }}
-                      onClick={() => item.type !== "card-interactive" && markSection(item.id)}
-                      className={`rounded-xl border p-4 transition-all duration-200 cursor-pointer ${
-                        completedSections.includes(item.id)
-                          ? "border-success/30 bg-success/5 ring-1 ring-success/20"
-                          : "border-border bg-bg-card hover:border-border-hover hover:bg-bg-secondary/50"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {item.type !== "card-interactive" && (
-                          <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all duration-200 ${
-                            completedSections.includes(item.id)
-                              ? "border-success bg-success text-white"
-                              : "border-border text-text-tertiary"
-                          }`}>
-                            {completedSections.includes(item.id) ? (
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                <path d="M4.5 12.75l6 6 9-13.5" />
-                              </svg>
-                            ) : (
-                              <span className="text-[9px] font-bold">{idx + 1}</span>
-                            )}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          {item.type === "heading" && (
-                            <h3 className="text-base font-bold text-text-primary">{item.text}</h3>
-                          )}
-                          {item.type === "text" && (
-                            <p className="text-sm text-text-secondary leading-relaxed">{item.text}</p>
-                          )}
-                          {item.type === "tip" && (
-                            <div className="flex gap-3">
-                              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
-                                  <path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                </svg>
-                              </div>
-                              <div>
-                                <span className="text-xs font-semibold text-primary">Pro Tip</span>
-                                <p className="mt-0.5 text-sm text-text-secondary leading-relaxed">{item.text}</p>
-                              </div>
-                            </div>
-                          )}
-                          {item.type === "example" && (
-                            <div className="flex gap-3">
-                              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-warning">
-                                  <path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </div>
-                              <div>
-                                <span className="text-xs font-semibold text-warning">Example</span>
-                                <p className="mt-0.5 text-sm text-text-secondary leading-relaxed">{item.text}</p>
-                              </div>
-                            </div>
-                          )}
-                          {item.type === "card-interactive" && (
-                            <p className="text-sm font-medium text-primary">{item.text}</p>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                <UniversalLearningRenderer
+                  blocks={allBlocks}
+                  completedSections={completedSections}
+                  onCompleteSection={markSection}
+                />
               </div>
             </div>
 
@@ -426,7 +409,7 @@ export default function LessonPage({
               </div>
               <h2 className="text-2xl font-bold text-text-primary mb-2">Course Complete!</h2>
               <p className="text-sm text-text-tertiary mb-2">
-                You've completed all available lessons. Amazing progress!
+                You&apos;ve completed all available lessons. Amazing progress!
               </p>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-warning/10 px-4 py-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-warning">

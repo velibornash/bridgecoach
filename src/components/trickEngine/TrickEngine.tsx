@@ -16,51 +16,50 @@ interface TrickEngineProps {
   winner?: string | null;
 }
 
+const rankOrder = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
+
+export function getWinner(
+  cards: Array<{ player: string; card: BridgeCard }>,
+  trumpSuit?: Suit,
+): string | null {
+  if (cards.length === 0) return null;
+  if (cards.length === 1) return cards[0].player;
+
+  const leadSuit = cards[0].card.suit;
+  let winningCard = cards[0];
+  let winningIndex = 0;
+
+  cards.forEach((entry, index) => {
+    if (index === 0) return;
+    const isTrump = entry.card.suit === trumpSuit;
+    const isLeadSuit = entry.card.suit === leadSuit;
+    const isWinTrump = winningCard.card.suit === trumpSuit;
+
+    if (isTrump && !isWinTrump) {
+      winningCard = entry;
+      winningIndex = index;
+    } else if (isTrump && isWinTrump) {
+      if (rankOrder.indexOf(entry.card.rank) < rankOrder.indexOf(winningCard.card.rank)) {
+        winningCard = entry;
+        winningIndex = index;
+      }
+    } else if (isLeadSuit && !isTrump && !isWinTrump) {
+      if (rankOrder.indexOf(entry.card.rank) < rankOrder.indexOf(winningCard.card.rank)) {
+        winningCard = entry;
+        winningIndex = index;
+      }
+    }
+  });
+
+  return winningCard.player;
+}
+
 export function TrickEngine({ playedCards = [], trumpSuit = '♠', currentTrick = 1, size = 'md', animate = true, highlightWinner = false, winner = null }: TrickEngineProps) {
   const playerLabels: Record<string, string> = {
     north: 'North', south: 'South', east: 'East', west: 'West',
   };
 
-  const getWinner = (cards: Array<{ player: string; card: BridgeCard }>) => {
-    if (cards.length === 0) return null;
-    if (cards.length === 1) return cards[0].player;
-
-    const leadSuit = cards[0].card.suit;
-    let winningCard = cards[0];
-    let winningIndex = 0;
-
-    cards.forEach((entry, index) => {
-      if (index === 0) return;
-      const isTrump = entry.card.suit === trumpSuit;
-      const isLeadSuit = entry.card.suit === leadSuit;
-      const isWinTrump = winningCard.card.suit === trumpSuit;
-
-      if (isTrump && !isWinTrump) {
-        winningCard = entry;
-        winningIndex = index;
-      } else if (isTrump && isWinTrump) {
-        const trumpOrder = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
-        const myRank = trumpOrder.indexOf(entry.card.rank);
-        const winRank = trumpOrder.indexOf(winningCard.card.rank);
-        if (myRank < winRank) {
-          winningCard = entry;
-          winningIndex = index;
-        }
-      } else if (isLeadSuit && !isTrump && !isWinTrump) {
-        const suitOrder = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
-        const myRank = suitOrder.indexOf(entry.card.rank);
-        const winRank = suitOrder.indexOf(winningCard.card.rank);
-        if (myRank < winRank) {
-          winningCard = entry;
-          winningIndex = index;
-        }
-      }
-    });
-
-    return winningCard.player;
-  };
-
-  const trickWinner = winner ?? getWinner(playedCards);
+  const trickWinner = winner ?? getWinner(playedCards, trumpSuit);
 
   return (
     <div className="flex flex-col items-center gap-4">

@@ -16,7 +16,7 @@ export default function ChallengesPage() {
         <Container className="max-w-2xl">
           <div className="mb-5">
             <h1 className="text-xl font-bold text-text-primary">Daily Challenges</h1>
-            <p className="text-sm text-text-tertiary mt-1">Complete today's challenge and track your history.</p>
+            <p className="text-sm text-text-tertiary mt-1">Complete today&apos;s challenge and track your history.</p>
           </div>
 
           <div className="space-y-5">

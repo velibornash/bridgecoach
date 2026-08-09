@@ -36,7 +36,7 @@ export default function QuizPage() {
   const progress = Math.round((answeredIds.size / total) * 100);
 
   const handleAnswer = useCallback(
-    (correct: boolean, _data?: any) => {
+    (correct: boolean) => {
       setAnswers((prev) => ({ ...prev, [q.id]: correct }));
       setAnsweredIds((prev) => new Set(prev).add(q.id));
       if (correct) {

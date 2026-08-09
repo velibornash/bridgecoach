@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/Card";
 import { Progress } from "@/components/ui/Progress";
 import { getLevelInfo, getXpSourceInfo, getDailyXpTotal, getWeeklyXpTotal, getDailyXpGoal, getWeeklyXpGoal } from "@/services/xpService";
+import type { XpSource } from "@/types";
 import { mockUser, mockXpEntries } from "@/services/mockData";
 
 export function XPProgress() {
@@ -94,7 +95,7 @@ export function XPProgress() {
         <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">XP by Source</h3>
         <div className="space-y-3">
           {Object.entries(sourceTotals).map(([source, total]) => {
-            const info = getXpSourceInfo(source as any);
+            const info = getXpSourceInfo(source as XpSource);
             const pct = (total / mockUser.xp) * 100;
             return (
               <div key={source}>

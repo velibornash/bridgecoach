@@ -24,7 +24,7 @@ export function Typography({
     label: "label",
   };
 
-  const Tag = as ?? defaultTag[variant];
+  const Tag = (as ?? defaultTag[variant]) as React.ElementType;
 
   return (
     <Tag

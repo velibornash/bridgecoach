@@ -25,14 +25,11 @@ function getStoredTheme(): ThemeMode {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>("dark");
-  const [resolved, setResolved] = useState<"dark" | "light">("dark");
-
-  useEffect(() => {
+  const [theme, setThemeState] = useState<ThemeMode>(() => getStoredTheme());
+  const [resolved, setResolved] = useState<"dark" | "light">(() => {
     const stored = getStoredTheme();
-    setThemeState(stored);
-    setResolved(stored === "system" ? getSystemPreference() : stored);
-  }, []);
+    return stored === "system" ? getSystemPreference() : stored;
+  });
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: light)");

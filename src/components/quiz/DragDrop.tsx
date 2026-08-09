@@ -142,7 +142,7 @@ export function DragDrop({ question, onAnswer, answered }: DragDropProps) {
       )}
 
       {!answered && selectedDrag && (
-        <p className="text-xs text-primary text-center">Tap a drop zone above to place "{question.dragItems!.find((d) => d.id === selectedDrag)?.text}"</p>
+        <p className="text-xs text-primary text-center">Tap a drop zone above to place &quot;{question.dragItems!.find((d) => d.id === selectedDrag)?.text}&quot;</p>
       )}
     </div>
   );

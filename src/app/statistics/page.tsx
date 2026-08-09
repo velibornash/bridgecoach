@@ -24,6 +24,7 @@ import type { LearningStats } from "@/types";
 import { staggerContainer, fadeUp } from "@/design-system/motion";
 import { Clock, BookOpen, Target, Flame, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ProgressionMasteryWidget } from "@/components/progression/ProgressionMasteryWidget";
 
 export default function StatisticsPage() {
   const router = useRouter();
@@ -70,6 +71,22 @@ export default function StatisticsPage() {
     label: m.month,
     value: Math.min(100, 60 + Math.round(m.xp / 20)),
   }));
+
+  const sortedCategories = [...stats.categoryBreakdown].sort(
+    (a, b) => b.completed / b.total - a.completed / a.total
+  );
+  const masteryStats = {
+    lessonsCompleted: stats.lessonsFinished,
+    coursesCompleted: stats.categoryBreakdown.filter((c) => c.completed >= c.total).length,
+    handsSolved: mockUserStats.correctBids,
+    accuracy: stats.quizAccuracy,
+    averageThinkingTime: 14.5,
+    weakAreas: sortedCategories.slice(0, 2).map((c) => c.category),
+    strongAreas: sortedCategories.slice(-2).map((c) => c.category),
+    streak: stats.currentStreak,
+    confidenceScore: stats.averageScore,
+    bridgeRating: 1540,
+  };
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -126,6 +143,8 @@ export default function StatisticsPage() {
                 </div>
 
                 <MasteryPanel items={masteryItems} />
+
+                <ProgressionMasteryWidget stats={masteryStats} />
               </>
             )}
           </motion.div>

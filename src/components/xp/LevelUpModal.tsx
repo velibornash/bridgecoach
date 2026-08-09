@@ -6,6 +6,13 @@ import { getXpForLevel, getXpToNextLevel } from "@/services/xpService";
 
 let showLevelUpFn: ((level: number) => void) | null = null;
 
+const particles = Array.from({ length: 20 }, (_, i) => ({
+  x: (Math.random() - 0.5) * 400,
+  y: (Math.random() - 0.5) * 400,
+  delay: 0.1 * Math.random(),
+  color: ["#6366F1", "#818CF8", "#A78BFA", "#22D3EE", "#4F46E5"][i % 5],
+}));
+
 export function triggerLevelUp(level: number) {
   showLevelUpFn?.(level);
 }
@@ -83,20 +90,20 @@ export function LevelUpOverlay() {
             </motion.div>
 
             {/* Particle burst */}
-            {Array.from({ length: 20 }).map((_, i) => (
+            {particles.map((p, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 1, x: 0, y: 0, scale: 1 }}
                 animate={{
                   opacity: 0,
-                  x: (Math.random() - 0.5) * 400,
-                  y: (Math.random() - 0.5) * 400,
+                  x: p.x,
+                  y: p.y,
                   scale: 0,
                 }}
-                transition={{ duration: 1.5, delay: 0.1 * Math.random(), ease: "easeOut" }}
+                transition={{ duration: 1.5, delay: p.delay, ease: "easeOut" }}
                 className="absolute w-2 h-2 rounded-full"
                 style={{
-                  background: ["#6366F1", "#818CF8", "#A78BFA", "#22D3EE", "#4F46E5"][i % 5],
+                  background: p.color,
                 }}
               />
             ))}

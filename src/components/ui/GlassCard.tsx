@@ -5,7 +5,7 @@ import { motion, type HTMLMotionProps } from "framer-motion";
 import { cardHover } from "@/design-system/motion";
 
 interface GlassCardProps extends HTMLMotionProps<"div"> {
-  variant?: "primary" | "secondary" | "elevated" | "premium" | "cloth";
+  variant?: "primary" | "secondary" | "elevated" | "premium" | "cloth" | "neural";
   hover?: boolean;
 }
 
@@ -16,6 +16,7 @@ const variants = {
   premium:
     "bg-gradient-to-br from-bg-card/90 via-bg-card/70 to-bg-secondary/80 backdrop-blur-2xl border-premium/20 shadow-premium gradient-border",
   cloth: "bg-cloth/20 backdrop-blur-xl border-accent/20 shadow-lg",
+  neural: "bg-gradient-to-br from-primary/10 via-accent/5 to-primary/10 backdrop-blur-2xl border-primary/20 shadow-xl",
 };
 
 export function GlassCard({

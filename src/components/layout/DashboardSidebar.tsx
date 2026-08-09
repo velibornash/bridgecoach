@@ -15,11 +15,12 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 
 interface NavItem {
   label: string;
   href: string;
-  icon: any;
+  icon: LucideIcon;
 }
 
 const navItems: NavItem[] = [

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CardEngine, CardBack, createDeck, shuffleDeck } from "@/components/cardEngine/CardEngine";
-import type { BridgeCard, Suit } from "@/components/cardEngine/types";
+import type { BridgeCard } from "@/components/cardEngine/types";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
@@ -12,51 +12,51 @@ interface DealAnimationProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
+const dealSpeed = 120;
+const positions = ['north', 'east', 'south', 'west'] as const;
+
 export function DealAnimation({ onComplete, size = 'md' }: DealAnimationProps) {
-  const [isDealing, setIsDealing] = useState(false);
-  const [hands, setHands] = useState<Record<string, BridgeCard[]>>({
-    north: [], east: [], south: [], west: [],
-  });
   const [dealIndex, setDealIndex] = useState(0);
   const [deck, setDeck] = useState<BridgeCard[]>([]);
+
+  const hands = useMemo(() => {
+    const result: Record<string, BridgeCard[]> = { north: [], east: [], south: [], west: [] };
+    deck.slice(0, Math.min(dealIndex, 52)).forEach((card, i) => {
+      result[positions[i % 4]].push({ ...card, faceUp: true });
+    });
+    return result;
+  }, [deck, dealIndex]);
+
+  const isDealing = dealIndex > 0 && dealIndex < 52;
 
   const startDeal = () => {
     const newDeck = shuffleDeck(createDeck());
     setDeck(newDeck);
-    setHands({ north: [], east: [], south: [], west: [] });
     setDealIndex(0);
-    setIsDealing(true);
   };
 
-  const dealNextCard = () => {
-    if (dealIndex >= 52 || !isDealing) {
-      setIsDealing(false);
+  useEffect(() => {
+    if (dealIndex >= 52) return;
+    if (deck.length === 0) return;
+    const interval = setInterval(() => setDealIndex((prev) => Math.min(52, prev + 1)), dealSpeed);
+    return () => clearInterval(interval);
+  }, [dealIndex, deck.length]);
+
+  useEffect(() => {
+    if (dealIndex === 52 && deck.length === 52) {
       onComplete?.(hands);
-      return;
     }
-
-    const positions: (keyof typeof hands)[] = ['north', 'east', 'south', 'west'];
-    const target = positions[dealIndex % 4];
-    const card = deck[dealIndex];
-
-    setHands(prev => ({
-      ...prev,
-      [target]: [...prev[target], { ...card, faceUp: true }],
-    }));
-    setDealIndex(prev => prev + 1);
-  };
-
-  const dealSpeed = 120;
+  }, [dealIndex, deck.length, hands, onComplete]);
 
   return (
     <div className="flex flex-col items-center gap-6">
       {/* Deal button */}
       <Button
         onClick={startDeal}
-        disabled={isDealing && dealIndex < 52}
+        disabled={isDealing}
         size="lg"
       >
-        {isDealing && dealIndex < 52 ? 'Dealing...' : '🃏 Deal Cards'}
+        {isDealing ? 'Dealing...' : '🃏 Deal Cards'}
       </Button>
 
       {/* Deal progress */}
@@ -81,7 +81,7 @@ export function DealAnimation({ onComplete, size = 'md' }: DealAnimationProps) {
       <div className="relative w-full max-w-3xl aspect-video bg-gradient-to-br from-emerald-900 to-green-900 rounded-xl border border-emerald-700/20 overflow-hidden">
         {/* Deck pile */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          {dealIndex < 52 && (
+          {dealIndex < 52 && deck.length > 0 && (
             <motion.div
               layout
               initial={{ scale: 1 }}
@@ -95,7 +95,7 @@ export function DealAnimation({ onComplete, size = 'md' }: DealAnimationProps) {
 
         {/* Dealing animation for current card */}
         <AnimatePresence>
-          {isDealing && dealIndex < 52 && (
+          {isDealing && deck[dealIndex] && (
             <motion.div
               key={`deal-${dealIndex}`}
               initial={{ scale: 1, opacity: 1 }}
@@ -128,14 +128,14 @@ export function DealAnimation({ onComplete, size = 'md' }: DealAnimationProps) {
       </div>
 
       {/* Summary after deal */}
-      {!isDealing && dealIndex === 52 && (
+      {dealIndex === 52 && deck.length === 52 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-4 text-sm"
         >
           <span className="text-text-secondary">Hands dealt:</span>
-          {(['north', 'east', 'south', 'west'] as const).map((pos) => (
+          {positions.map((pos) => (
             <Badge key={pos} variant="default">
               {pos}: {hands[pos]?.length || 0} cards
             </Badge>
