@@ -321,12 +321,12 @@ export function BlockRenderer({ block, onComplete, isCompleted = false }: BlockR
             <span className="text-xs font-bold uppercase text-emerald-400 tracking-wider">BOARD REPLAY SCENARIO</span>
             <Badge variant="success">Vulnerability: {block.vulnerability || "None"}</Badge>
           </div>
-          <CardTable hands={handsArray} />
-          {block.contract && (
-            <p className="text-xs text-text-tertiary text-center mt-3 font-medium">
-              Contract: <span className="text-text-primary">{block.contract}</span> · Dealer: <span className="text-text-primary">{block.dealer || "North"}</span>
-            </p>
-          )}
+          <CardTable
+            hands={handsArray}
+            dealer={block.dealer}
+            vulnerability={block.vulnerability}
+            contract={block.contract}
+          />
         </GlassCard>
       );
 

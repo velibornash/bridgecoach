@@ -7,6 +7,8 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Icon } from "@/components/icons/Icon";
 import { CheckCircle2, XCircle, RotateCcw, Target, Trophy, Brain } from "lucide-react";
 import { TacticalEngine, TacticalScenario, Position, BridgeHand } from "@/components/tacticalEngine/TacticalEngine";
+import { BridgeTable, type BridgeTableHand } from "@/components/bridge/BridgeTable";
+import { BidCard, parseBid } from "@/components/bridge/BidCard";
 import { showToast } from "@/components/ui/Toast";
 
 const north: BridgeHand = { spades: ["SK", "SJ", "S8", "S3"], hearts: ["HA", "HJ", "H5"], diamonds: ["DA", "D8", "D3"], clubs: ["CQ", "C5", "C4"] };
@@ -27,18 +29,25 @@ const scenario: TacticalScenario = {
 
 const quickBids = ["P", "1NT", "2C", "2D", "2H", "2S", "2NT", "3NT", "X"];
 
+const positionMap: Record<Position, BridgeTableHand["position"]> = {
+  N: "north",
+  E: "east",
+  S: "south",
+  W: "west",
+};
+
 const positionOrder: Position[] = ["N", "E", "S", "W"];
 
-function cardList(hand: BridgeHand): string[] {
-  const suits: { key: keyof BridgeHand; sym: string }[] = [
-    { key: "spades", sym: "♠" },
-    { key: "hearts", sym: "♥" },
-    { key: "diamonds", sym: "♦" },
-    { key: "clubs", sym: "♣" },
-  ];
-  const out: string[] = [];
-  suits.forEach(({ key, sym }) => hand[key].forEach((card) => out.push(`${sym}${card.slice(1)}`)));
-  return out;
+function getCurrentBidder(dealer: Position, bidsMade: number): Position {
+  const dealerIndex = positionOrder.indexOf(dealer);
+  return positionOrder[(dealerIndex + bidsMade) % 4];
+}
+
+function toBridgeTableHands(hands: Record<Position, BridgeHand>): BridgeTableHand[] {
+  return (["N", "E", "S", "W"] as const).map((pos) => ({
+    position: positionMap[pos],
+    cards: [...hands[pos].spades, ...hands[pos].hearts, ...hands[pos].diamonds, ...hands[pos].clubs],
+  }));
 }
 
 export default function TacticalPage() {
@@ -49,6 +58,9 @@ export default function TacticalPage() {
   const [feedback, setFeedback] = useState<{ correct: boolean; expected: string; explanation?: string } | null>(null);
   const [finished, setFinished] = useState(false);
   const [score, setScore] = useState(0);
+
+  const currentBidder = getCurrentBidder(scenario.dealer, bids.length);
+  const currentBidderTablePos = positionMap[currentBidder];
 
   const submitBid = (raw: string) => {
     if (finished) return;
@@ -109,38 +121,41 @@ export default function TacticalPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mb-5">
-                  {positionOrder.map((pos) => (
-                    <div key={pos} className={`rounded-xl border border-border p-2.5 ${pos === "S" ? "bg-primary/10 border-primary/30" : "bg-bg-secondary/40"}`}>
-                      <span className="text-[10px] font-bold text-text-tertiary uppercase block mb-1">{pos} ({pos === "S" ? "You" : "Opponent"})</span>
-                      <p className="text-xs font-mono text-text-primary leading-relaxed">
-                        {cardList(scenario.hands[pos]).join(" ")}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                <BridgeTable
+                  hands={toBridgeTableHands(scenario.hands)}
+                  dealer={scenario.dealer}
+                  vulnerability={scenario.vulnerability}
+                  size="lg"
+                  className="mb-6"
+                />
 
                 <div className="mb-5">
                   <div className="flex items-center gap-1.5 mb-2">
                     <Icon icon={Target} size={14} className="text-accent" />
                     <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Auction so far</span>
+                    <span className="ml-auto text-xs font-medium text-primary">
+                      {currentBidderTablePos.toUpperCase()} to bid
+                    </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 min-h-9">
                     {bids.length === 0 && (
                       <span className="text-xs text-text-tertiary self-center">No bids yet — enter your first bid.</span>
                     )}
-                    {bids.map((b, i) => (
-                      <motion.span
-                        key={i}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold font-mono border ${
-                          b === "P" ? "bg-bg-secondary border-border text-text-tertiary" : "bg-primary/15 border-primary/40 text-primary"
-                        }`}
-                      >
-                        {b}
-                      </motion.span>
-                    ))}
+                    {bids.map((b, i) => {
+                      const bidderPos = positionOrder[(positionOrder.indexOf(scenario.dealer) + i) % 4];
+                      const bidderTablePos = positionMap[bidderPos];
+                      return (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="flex flex-col items-center gap-0.5"
+                        >
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-text-tertiary">{bidderTablePos[0].toUpperCase()}</span>
+                          <BidCard bid={b} size="md" />
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
 

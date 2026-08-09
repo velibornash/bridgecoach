@@ -4,9 +4,9 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { TableEngine } from "@/components/tableEngine/Table";
 import { BiddingBox, type Bid } from "@/components/biddingBox/BiddingBox";
 import { HandViewer } from "@/components/handViewer/HandViewer";
+import { BridgeTable, type BridgeTableHand } from "@/components/bridge/BridgeTable";
 import { CardEngine, createDeck, shuffleDeck, type BridgeCard, type Suit } from "@/components/cardEngine/CardEngine";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -129,11 +129,15 @@ export default function PracticePage() {
                 </div>
 
                 {/* Table */}
-                <TableEngine
-                  hands={hands}
-                  currentPlayer="south"
+                <BridgeTable
+                  hands={(
+                    ["north", "east", "south", "west"] as const
+                  ).map((pos): BridgeTableHand => ({
+                    position: pos,
+                    cards: hands[pos].map((c) => `${c.suit}${c.rank}`),
+                  }))}
+                  contract={contract ?? undefined}
                   size="md"
-                  animate
                 />
 
                 {/* Hand viewer */}
