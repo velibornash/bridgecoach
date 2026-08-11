@@ -19,6 +19,7 @@ interface BridgeTableProps {
   vulnerability?: string;
   contract?: string;
   size?: "sm" | "md" | "lg";
+  turn?: BridgePosition;
   className?: string;
 }
 
@@ -95,11 +96,13 @@ function SideHand({
   size,
   vertical,
   isSouth,
+  isTurn,
 }: {
   hand?: BridgeTableHand;
   size: keyof typeof SIZE_CHIP;
   vertical: boolean;
   isSouth: boolean;
+  isTurn?: boolean;
 }) {
   const chip = SIZE_CHIP[size];
   if (!hand || hand.cards.length === 0) return null;
@@ -108,10 +111,12 @@ function SideHand({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center justify-center gap-y-0.5",
+        "flex flex-wrap items-center justify-center gap-y-0.5 transition-all",
         vertical ? "flex-col" : "flex-row",
         chip.gap,
-        isSouth && "rounded-xl bg-primary/5 px-2 py-1 ring-1 ring-primary/25"
+        isSouth && "rounded-xl bg-primary/5 px-2 py-1 ring-1 ring-primary/25",
+        isTurn &&
+          "rounded-xl bg-primary/10 ring-2 ring-primary/70 shadow-lg shadow-primary/25"
       )}
     >
       {cards.map((card, i) => (
@@ -146,6 +151,7 @@ export function BridgeTable({
   vulnerability,
   contract,
   size = "md",
+  turn,
   className,
 }: BridgeTableProps) {
   const byPosition = Object.fromEntries(hands.map((h) => [h.position, h]));
@@ -158,13 +164,13 @@ export function BridgeTable({
     <div className={cn("mx-auto w-full max-w-md sm:max-w-lg", className)}>
       {/* North */}
       <div className="mb-1.5 flex justify-center">
-        <SideHand hand={north} size={size} vertical={false} isSouth={false} />
+        <SideHand hand={north} size={size} vertical={false} isSouth={false} isTurn={turn === "north"} />
       </div>
 
       {/* Middle row: West | Table | East */}
       <div className="flex items-center gap-1.5 sm:gap-2">
         <div className="flex min-w-0 justify-end">
-          <SideHand hand={west} size={size} vertical isSouth={false} />
+          <SideHand hand={west} size={size} vertical isSouth={false} isTurn={turn === "west"} />
         </div>
 
         {/* Table square */}
@@ -196,13 +202,13 @@ export function BridgeTable({
         </div>
 
         <div className="flex min-w-0 justify-start">
-          <SideHand hand={east} size={size} vertical isSouth={false} />
+          <SideHand hand={east} size={size} vertical isSouth={false} isTurn={turn === "east"} />
         </div>
       </div>
 
       {/* South */}
       <div className="mt-1.5 flex justify-center">
-        <SideHand hand={south} size={size} vertical={false} isSouth />
+        <SideHand hand={south} size={size} vertical={false} isSouth isTurn={turn === "south"} />
       </div>
     </div>
   );

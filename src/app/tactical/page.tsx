@@ -5,10 +5,11 @@ import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Icon } from "@/components/icons/Icon";
-import { CheckCircle2, XCircle, RotateCcw, Target, Trophy, Brain } from "lucide-react";
+import { CheckCircle2, XCircle, RotateCcw, Target, Trophy, Brain, Sparkles } from "lucide-react";
 import { TacticalEngine, TacticalScenario, Position, BridgeHand } from "@/components/tacticalEngine/TacticalEngine";
 import { BridgeTable, type BridgeTableHand } from "@/components/bridge/BridgeTable";
-import { BidCard, parseBid } from "@/components/bridge/BidCard";
+import { BidCard } from "@/components/bridge/BidCard";
+import { getBidHint } from "@/services/aiCoachService";
 import { showToast } from "@/components/ui/Toast";
 
 const north: BridgeHand = { spades: ["SK", "SJ", "S8", "S3"], hearts: ["HA", "HJ", "H5"], diamonds: ["DA", "D8", "D3"], clubs: ["CQ", "C5", "C4"] };
@@ -50,6 +51,10 @@ function toBridgeTableHands(hands: Record<Position, BridgeHand>): BridgeTableHan
   }));
 }
 
+function toFlatCards(hand: BridgeHand): string[] {
+  return [...hand.spades, ...hand.hearts, ...hand.diamonds, ...hand.clubs];
+}
+
 export default function TacticalPage() {
   const [engine] = useState(() => new TacticalEngine(scenario));
 
@@ -61,6 +66,29 @@ export default function TacticalPage() {
 
   const currentBidder = getCurrentBidder(scenario.dealer, bids.length);
   const currentBidderTablePos = positionMap[currentBidder];
+
+  const [hint, setHint] = useState<string | null>(null);
+  const [hintLoading, setHintLoading] = useState(false);
+
+  const askHint = async () => {
+    if (hintLoading) return;
+    setHintLoading(true);
+    try {
+      const text = await getBidHint({
+        hands: Object.fromEntries(
+          (["N", "E", "S", "W"] as const).map((pos) => [pos, toFlatCards(scenario.hands[pos])])
+        ),
+        dealer: scenario.dealer,
+        vulnerability: scenario.vulnerability,
+        auction: bids,
+        turn: currentBidder,
+        expectedNextBid: scenario.expectedAuction[bids.length],
+      });
+      setHint(text);
+    } finally {
+      setHintLoading(false);
+    }
+  };
 
   const submitBid = (raw: string) => {
     if (finished) return;
@@ -90,6 +118,7 @@ export default function TacticalPage() {
     setFinished(false);
     setScore(0);
     setInput("");
+    setHint(null);
   };
 
   return (
@@ -126,6 +155,7 @@ export default function TacticalPage() {
                   dealer={scenario.dealer}
                   vulnerability={scenario.vulnerability}
                   size="lg"
+                  turn={finished ? undefined : currentBidderTablePos}
                   className="mb-6"
                 />
 
@@ -181,9 +211,13 @@ export default function TacticalPage() {
                         <button
                           key={b}
                           onClick={() => submitBid(b)}
-                          className="px-3 py-1.5 rounded-lg border border-border bg-bg-secondary text-xs font-bold font-mono text-text-secondary hover:border-primary hover:text-primary hover:bg-primary/10 transition-all"
+                          className="transition-transform hover:scale-105 active:scale-95"
                         >
-                          {b}
+                          <BidCard
+                            bid={b}
+                            size="md"
+                            className="cursor-pointer hover:border-primary hover:shadow-primary/25"
+                          />
                         </button>
                       ))}
                     </div>
@@ -242,9 +276,29 @@ export default function TacticalPage() {
                   <Icon icon={Brain} size={14} className="text-accent" />
                   <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Coach Tip</span>
                 </div>
-                <p className="text-xs text-text-tertiary leading-relaxed">
+                <p className="text-xs text-text-tertiary leading-relaxed mb-3">
                   {scenario.explanation} Use the quick-bid buttons for speed, or type any legal bid. Pass (P) is always legal.
                 </p>
+
+                <button
+                  onClick={askHint}
+                  disabled={hintLoading || finished}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-bold text-primary transition-all hover:bg-primary/20 disabled:opacity-50"
+                >
+                  <Icon icon={Sparkles} size={14} />
+                  {hintLoading ? "Analyzing..." : "Ask AI for a hint"}
+                </button>
+
+                {hint && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-3 rounded-xl border border-accent/30 bg-accent/10 p-3"
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-accent mb-1">AI Coach</p>
+                    <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-wrap">{hint}</p>
+                  </motion.div>
+                )}
               </GlassCard>
             </div>
           </div>

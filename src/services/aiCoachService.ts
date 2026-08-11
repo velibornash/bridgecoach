@@ -7,6 +7,22 @@ interface CoachMessage {
   timestamp: number;
 }
 
+interface CoachApiResponse {
+  content: string;
+  provider: string;
+  model: string;
+}
+
+const COACH_SYSTEM_PROMPT = `You are Bridge Coach, a friendly, expert contract-bridge teacher inside the Bridge Coach app.
+
+Rules:
+- Answer in clear, concise language. Use short bullet lists when helpful.
+- Use bridge suit symbols (♠ ♥ ♦ ♣) and standard notation (e.g. 1NT, 2♣, P, X, XX).
+- Tailor the depth to the student's level: beginner questions get step-by-step basics.
+- Never claim certainty about opponents' hands; teach concepts, conventions and reasoning.
+- If the question is about a specific deal, reason about it using standard bidding and play logic.
+- If you don't know, say so honestly and suggest what to learn next.`;
+
 const suggestedQuestions = [
   "What is a balanced hand?",
   "How do I bid 1NT?",
@@ -31,13 +47,111 @@ export function getSuggestedQuestions(): string[] {
   return suggestedQuestions;
 }
 
+export interface BidHintContext {
+  hands: Record<string, string[]>;
+  dealer: string;
+  vulnerability: string;
+  auction: string[];
+  turn: string;
+  expectedNextBid?: string;
+}
+
+const BID_HINT_SYSTEM_PROMPT = `You are an expert contract-bridge coach analyzing a bidding drill.
+
+Rules:
+- Explain the correct bid for the position to act and WHY, in up to 4 short sentences.
+- Use bridge notation (1NT, 2♣, P, X). Show suits as ♠ ♥ ♦ ♣.
+- Mention key features of the hand that justify the call (HCP, shape, controls, convention).
+- Be encouraging and concise. Never answer in more than 90 words.`;
+
+export async function getBidHint(ctx: BidHintContext): Promise<string> {
+  const handLines = Object.entries(ctx.hands)
+    .map(([pos, cards]) => `${pos}: ${cards.join(" ")}`)
+    .join("\n");
+
+  const auctionLine =
+    ctx.auction.length === 0
+      ? "(opening bid — no prior calls)"
+      : ctx.auction.join(" ");
+
+  const userPrompt = `Deal (each entry is a full 13-card hand in suit order ♠ ♥ ♦ ♣):
+${handLines}
+
+Dealer: ${ctx.dealer}   Vulnerability: ${ctx.vulnerability}
+Auction so far: ${auctionLine}
+Now ${ctx.turn} is on lead in the bidding.
+${ctx.expectedNextBid ? `The drill's expected call is: ${ctx.expectedNextBid}. ` : ""}Explain what the best call is and why.`;
+
+  try {
+    const response = await fetch("/api/coach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemPrompt: BID_HINT_SYSTEM_PROMPT,
+        userPrompt,
+        maxOutputTokens: 300,
+      }),
+    });
+
+    if (!response.ok) {
+      return offlineHint(ctx);
+    }
+    const data = (await response.json()) as CoachApiResponse;
+    const content = data.content.trim();
+    return content || offlineHint(ctx);
+  } catch {
+    return offlineHint(ctx);
+  }
+}
+
+function offlineHint(ctx: BidHintContext): string {
+  const expected = ctx.expectedNextBid;
+  if (!expected) {
+    return "No AI provider is configured, so I'm running in offline mode. Connect a provider (OPENAI_API_KEY / ANTHROPIC_API_KEY / AI_PROVIDER=ollama) to get real coaching hints.";
+  }
+  return `Offline mode: the drill expects ${expected} here. Try it and read the feedback — a configured AI provider would explain the full reasoning.`;
+}
+
 export async function sendMessage(message: string): Promise<CoachMessage> {
+  // 1. Try the real AI provider through the server-side gateway.
+  try {
+    const response = await fetch("/api/coach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemPrompt: COACH_SYSTEM_PROMPT,
+        userPrompt: message,
+      }),
+    });
+
+    if (response.ok) {
+      const data = (await response.json()) as CoachApiResponse;
+      return {
+        id: `c${Date.now()}`,
+        role: "coach",
+        content: data.content.trim(),
+        timestamp: Date.now(),
+      };
+    }
+
+    // 503 = no provider configured. Other statuses (401/429/502) mean the
+    // provider failed — degrade gracefully to the offline coach.
+    if (response.status === 503) {
+      return fallbackReply(message);
+    }
+  } catch {
+    // Network failure — fall through to offline coach.
+  }
+
   await simulateDelay(600 + Math.random() * 800);
-  const response = mockResponses[message] || getGenericResponse(message);
+  return fallbackReply(message);
+}
+
+function fallbackReply(message: string): CoachMessage {
   return {
     id: `c${Date.now()}`,
     role: "coach",
-    content: response,
+    content: mockResponses[message] || getGenericResponse(message),
     timestamp: Date.now(),
   };
 }

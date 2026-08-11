@@ -1,14 +1,16 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { SuitSymbol, suitColor, type SuitLike } from "./SuitSymbol";
+import { SuitSymbol, suitColor } from "./SuitSymbol";
 
 export type BidType = "bid" | "pass" | "double" | "redouble";
+
+export type BidStrain = "♠" | "♥" | "♦" | "♣" | "NT";
 
 export interface ParsedBid {
   type: BidType;
   level?: number; // 1-7 for bids
-  suit?: SuitLike; // ♠♥♦♣NT for bids
+  suit?: BidStrain; // ♠♥♦♣NT for bids
   raw: string;
 }
 
@@ -22,7 +24,7 @@ export function parseBid(bid: string): ParsedBid {
   if (levelMatch) {
     const level = parseInt(levelMatch[1], 10);
     const suitStr = levelMatch[2];
-    let suit: SuitLike = "♠";
+    let suit: BidStrain = "♠";
     if (suitStr === "C" || suitStr === "CLUBS" || suitStr === "♣") suit = "♣";
     else if (suitStr === "D" || suitStr === "DIAMONDS" || suitStr === "♦") suit = "♦";
     else if (suitStr === "H" || suitStr === "HEARTS" || suitStr === "♥") suit = "♥";
@@ -106,7 +108,7 @@ export function BidCard({
   // Regular bid: level + suit symbol in suit color
   const level = parsed.level ?? 1;
   const suit = parsed.suit ?? "♠";
-  const color = suitColor(suit);
+  const color = suit === "NT" ? "#14161E" : suitColor(suit);
 
   return (
     <span
