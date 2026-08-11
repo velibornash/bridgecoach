@@ -3,15 +3,16 @@
  *
  * IMPORTANT: This is a deliberately LIMITED strategy layer. It implements only
  * a small set of deterministic, widely accepted basic rules (HCP, balanced
- * shape, 1NT/2NT openings). Auction legality lives in ./validator.ts and is
- * complete. Strategy is NOT complete: responses, rebids, competitive bidding,
- * conventions and slam bidding are NOT implemented.
+ * shape, 1NT/2NT openings, simple responses and raises). Auction legality lives
+ * in ./validator.ts and is complete. Strategy is NOT complete: competitive
+ * bidding, slam bidding and most conventions are NOT implemented here — they
+ * live in ./conventions.ts (conventional sequences) and ./strategy.ts (dispatch).
  *
  * Nothing in this module may claim a bid is strategically wrong unless a rule
  * in this module actually supports that conclusion.
  */
 
-import { BidCall, Hand, Strain, Suit } from "./types";
+import { AuctionState, BidCall, Hand, Position, Strain, Suit, isPartner, seatAt } from "./types";
 import { suitPresentation } from "./suits";
 
 /** High-card points: A=4, K=3, Q=2, J=1. */
@@ -35,12 +36,12 @@ export function shape(hand: Hand): number[] {
     .sort((a, b) => b - a);
 }
 
-/** Standard balanced shapes: 4-3-3-3, 4-3-3-2, 4-4-3-2, 5-3-3-2. */
+/** Standard balanced shapes: 4-3-3-3, 4-4-3-3, 4-4-3-2, 5-3-3-2. */
 export function isBalanced(hand: Hand): boolean {
   const s = shape(hand);
   return (
     (s[0] === 4 && s[1] === 3 && s[2] === 3 && s[3] === 3) ||
-    (s[0] === 4 && s[1] === 3 && s[2] === 3 && s[3] === 2) ||
+    (s[0] === 4 && s[1] === 4 && s[2] === 3 && s[3] === 3) ||
     (s[0] === 4 && s[1] === 4 && s[2] === 3 && s[3] === 2) ||
     (s[0] === 5 && s[1] === 3 && s[2] === 3 && s[3] === 2)
   );
@@ -109,4 +110,94 @@ export function evaluateOpening(hand: Hand): Recommendation | null {
 /** True when a basic opening rule exists for this hand. */
 export function hasOpeningRecommendation(hand: Hand): boolean {
   return evaluateOpening(hand) !== null;
+}
+
+function suitLen(hand: Hand, suit: Suit): number {
+  switch (suit) {
+    case Suit.SPADES: return hand.spades.length;
+    case Suit.HEARTS: return hand.hearts.length;
+    case Suit.DIAMONDS: return hand.diamonds.length;
+    case Suit.CLUBS: return hand.clubs.length;
+  }
+}
+
+/** True when `position` is responding to partner's standing bid, no interference. */
+function respondingToPartner(
+  state: AuctionState,
+  position: Position,
+): boolean {
+  const standing = state.currentContract;
+  if (!standing) return false;
+  const openerSeat = seatAt(state.dealer, state.lastBidIndex);
+  if (!isPartner(openerSeat, position)) return false;
+  // Opponents (or partner) must not have acted since the standing bid.
+  for (let i = state.lastBidIndex + 1; i < state.history.length; i++) {
+    if (state.history[i].type !== "pass") return false;
+  }
+  return true;
+}
+
+/**
+ * NATURAL responses and raises to partner's opening. Conventions (Stayman,
+ * transfers) are evaluated separately in ./conventions.ts and take precedence.
+ * Returns null when no natural rule supports a recommendation.
+ */
+export function evaluateResponse(
+  state: AuctionState,
+  position: Position,
+  hand: Hand,
+): Recommendation | null {
+  const standing = state.currentContract;
+  if (!standing || !respondingToPartner(state, position)) return null;
+  const points = hcp(hand);
+
+  // Partner opened 1NT/2NT and no convention applies (no 4/5-card major).
+  if (standing.strain === Strain.NT && (standing.level === 1 || standing.level === 2)) {
+    if (points >= 10 && points <= 14 && isBalanced(hand)) {
+      return {
+        call: { type: "bid", level: 3, strain: Strain.NT },
+        reason: `${points} HCP balanced with no major — raise to game in 3NT.`,
+        ruleName: "nt-response-3nt",
+      };
+    }
+    if ((points === 8 || points === 9) && isBalanced(hand)) {
+      return {
+        call: { type: "bid", level: 2, strain: Strain.NT },
+        reason: `${points} HCP balanced with no major — invite with 2NT.`,
+        ruleName: "nt-response-2nt",
+      };
+    }
+    return null;
+  }
+
+  // Partner opened one of a suit — support raises.
+  if (standing.strain !== Strain.NT) {
+    const length = suitLen(hand, standing.strain);
+    const name = suitPresentation[standing.strain].name;
+    if (length >= 4) {
+      if (points >= 6 && points <= 9) {
+        return {
+          call: { type: "bid", level: 2, strain: standing.strain },
+          reason: `${length}-card ${name} support with ${points} HCP — simple raise to level 2.`,
+          ruleName: "simple-raise",
+        };
+      }
+      if (points >= 10 && points <= 12) {
+        return {
+          call: { type: "bid", level: 3, strain: standing.strain },
+          reason: `${length}-card ${name} support with ${points} HCP — invitational limit raise.`,
+          ruleName: "limit-raise",
+        };
+      }
+      if (points >= 13) {
+        return {
+          call: { type: "bid", level: 4, strain: standing.strain },
+          reason: `${length}-card ${name} support with ${points} HCP — raise to game.`,
+          ruleName: "game-raise",
+        };
+      }
+    }
+  }
+
+  return null;
 }

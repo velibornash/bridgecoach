@@ -6,10 +6,10 @@
  *     ├── Auction State        (auction.ts — AuctionStateMachine)
  *     ├── Legal Bid Validator  (validator.ts)
  *     ├── Contract Calculator  (contract.ts)
- *     └── Bidding Evaluation   (evaluation.ts + confirmation.ts)
- *           ├── Rules          (evaluation.ts — limited, deterministic)
- *           ├── Conventions    (not implemented — explicit limitation)
- *           └── Hand Evaluation (evaluation.ts — HCP, shape)
+ *     └── Bidding Evaluation   (strategy.ts → evaluation.ts + conventions.ts)
+ *           ├── Conventions    (conventions.ts — Stayman, Jacoby transfers)
+ *           ├── Rules          (evaluation.ts — deterministic)
+ *           └── Confirmation   (confirmation.ts)
  */
 
 export * from "./types";
@@ -19,4 +19,6 @@ export * from "./auction";
 export * from "./validator";
 export * from "./contract";
 export * from "./evaluation";
+export * from "./conventions";
+export * from "./strategy";
 export * from "./confirmation";

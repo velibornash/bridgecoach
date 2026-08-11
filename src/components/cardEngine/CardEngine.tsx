@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { suitHexForSymbol } from "@/bridge/suits";
 import type { BridgeCard, Suit, SuitColor, Rank, CardSize, CardEngineProps } from "./types";
 
 const sizeMap: Record<CardSize, { w: number; h: number; rankSize: number; suitSize: number; cornerSize: number }> = {
@@ -33,7 +34,7 @@ function CardInner({ card, size, interactive, hoverable, onClick, onHover }: {
 
   const displaySuit = config.label;
   const rank = card.rank || 'A';
-  const color = config.color === 'red' ? '#E0244A' : '#14161E';
+  const color = suitHexForSymbol(card.suit || '♠');
   const isRed = config.color === 'red';
   const cardFace = '#FDFDF7';
 

@@ -33,46 +33,14 @@ import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
 import { LearningBlock, BlockType } from "@/components/learningEngine/types";
 import { BlockRenderer } from "@/components/learningEngine/BlockRenderer";
-
-interface SavedDraft {
-  id: string;
-  title: string;
-  updatedAt: number;
-  blocks: LearningBlock[];
-}
-
-const CURRENT_KEY = "authorStudio.current";
-const DRAFTS_KEY = "authorStudio.drafts";
-
-function loadCurrent(): { title: string; blocks: LearningBlock[] } {
-  try {
-    const raw = localStorage.getItem(CURRENT_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {
-    /* ignore corrupt storage */
-  }
-  return {
-    title: "Untitled Lesson",
-    blocks: [
-      { id: "b1", type: "heading", text: "Introduction to Major Suit Openings" },
-      {
-        id: "b2",
-        type: "paragraph",
-        text: "In standard modern bidding, opening a major suit (Hearts or Spades) requires exactly 5 or more cards in that suit, alongside 12-21 High Card Points (HCP).",
-      },
-    ],
-  };
-}
-
-function loadDrafts(): SavedDraft[] {
-  try {
-    const raw = localStorage.getItem(DRAFTS_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {
-    /* ignore corrupt storage */
-  }
-  return [];
-}
+import {
+  AuthorStudioDraft,
+  loadCurrentLesson,
+  loadDrafts,
+  persistDeleteDraft,
+  persistDraft,
+  saveCurrentLesson,
+} from "@/services/authorStudioService";
 
 function parseCards(input: string): string[] {
   return input
@@ -95,7 +63,7 @@ const availableBlockTypes: { type: BlockType; label: string; icon: typeof FileTe
 ];
 
 export default function ContentAuthorStudioPage() {
-  const initial = useMemo(() => loadCurrent(), []);
+  const initial = useMemo(() => loadCurrentLesson(), []);
   const [lessonTitle, setLessonTitle] = useState(initial.title);
   const [blocks, setBlocks] = useState<LearningBlock[]>(initial.blocks);
   const [activeTab, setActiveTab] = useState<"builder" | "preview" | "json">("builder");
@@ -121,12 +89,12 @@ export default function ContentAuthorStudioPage() {
   const [boardVulnerability, setBoardVulnerability] = useState<"None" | "All" | "NS" | "EW">("None");
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [drafts, setDrafts] = useState<SavedDraft[]>(loadDrafts);
+  const [drafts, setDrafts] = useState<AuthorStudioDraft[]>(loadDrafts);
   const [draftsOpen, setDraftsOpen] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => {
-      localStorage.setItem(CURRENT_KEY, JSON.stringify({ title: lessonTitle, blocks }));
+      saveCurrentLesson(lessonTitle, blocks);
     }, 600);
     return () => clearTimeout(t);
   }, [lessonTitle, blocks]);
@@ -296,15 +264,13 @@ export default function ContentAuthorStudioPage() {
       return;
     }
     const title = lessonTitle.trim() || "Untitled Lesson";
-    const draft: SavedDraft = { id: `d-${Date.now()}`, title, updatedAt: Date.now(), blocks };
-    const next = [draft, ...drafts].slice(0, 20);
-    setDrafts(next);
-    localStorage.setItem(DRAFTS_KEY, JSON.stringify(next));
+    const draft: AuthorStudioDraft = { id: `d-${Date.now()}`, title, updatedAt: Date.now(), blocks };
+    setDrafts(persistDraft(draft));
     setLessonTitle(title);
     showToast("success", "Draft saved to library");
   };
 
-  const loadDraft = (draft: SavedDraft) => {
+  const loadDraft = (draft: AuthorStudioDraft) => {
     setBlocks(draft.blocks);
     setLessonTitle(draft.title);
     setEditingId(null);
@@ -313,9 +279,7 @@ export default function ContentAuthorStudioPage() {
   };
 
   const deleteDraft = (id: string) => {
-    const next = drafts.filter((d) => d.id !== id);
-    setDrafts(next);
-    localStorage.setItem(DRAFTS_KEY, JSON.stringify(next));
+    setDrafts(persistDeleteDraft(id));
     showToast("info", "Draft deleted");
   };
 

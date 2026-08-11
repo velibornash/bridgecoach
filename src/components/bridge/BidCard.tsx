@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { SuitSymbol, suitColor } from "./SuitSymbol";
+import { NT_COLOR } from "@/bridge/suits";
 
 export type BidType = "bid" | "pass" | "double" | "redouble";
 
@@ -108,7 +109,7 @@ export function BidCard({
   // Regular bid: level + suit symbol in suit color
   const level = parsed.level ?? 1;
   const suit = parsed.suit ?? "♠";
-  const color = suit === "NT" ? "#14161E" : suitColor(suit);
+  const color = suit === "NT" ? NT_COLOR : suitColor(suit);
 
   return (
     <span

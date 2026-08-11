@@ -75,6 +75,20 @@ export const suitPresentation: Record<Suit, SuitPresentation> = {
 
 export const SUITS: Suit[] = [Suit.CLUBS, Suit.DIAMONDS, Suit.HEARTS, Suit.SPADES];
 
+/** Neutral ink used for the no-trump strain (NT has no suit color). */
+export const NT_COLOR = "#14161E";
+
+/** Tailwind class used to render the "NT" strain label on themed surfaces. */
+export const NT_TEXT_CLASS = "text-blue-400";
+
+/** Maps every suit symbol to its canonical code, e.g. "♠" → Suit.SPADES. */
+export const SUIT_SYMBOL_TO_CODE: Record<string, Suit> = {
+  "♠": Suit.SPADES,
+  "♥": Suit.HEARTS,
+  "♦": Suit.DIAMONDS,
+  "♣": Suit.CLUBS,
+};
+
 /** Returns the presentation for a suit code. */
 export function getSuitPresentation(suit: Suit): SuitPresentation {
   return suitPresentation[suit];
@@ -88,4 +102,28 @@ export function isRedSuit(suit: Suit): boolean {
 /** True when the suit is a black suit (spades or clubs). */
 export function isBlackSuit(suit: Suit): boolean {
   return suitPresentation[suit].color === "black";
+}
+
+/** Themed Tailwind text class for a suit code (red suits red, black suits theme ink). */
+export function suitTextClass(suit: Suit): string {
+  return suitPresentation[suit].textClass;
+}
+
+/** Interactive tile classes for a suit code (red tint for red suits, neutral for black). */
+export function suitTileClass(suit: Suit): string {
+  return isRedSuit(suit)
+    ? "bg-red-500/10 hover:bg-red-500/20"
+    : "bg-zinc-500/10 hover:bg-zinc-500/20";
+}
+
+/** Hex color for a suit given as a symbol ("♠"/"♥"/"♦"/"♣"). */
+export function suitHexForSymbol(symbol: string): string {
+  const code = SUIT_SYMBOL_TO_CODE[symbol];
+  return code ? suitPresentation[code].hex : NT_COLOR;
+}
+
+/** Tile classes for a suit given as a symbol; neutral fallback when unknown. */
+export function suitTileClassForSymbol(symbol: string): string {
+  const code = SUIT_SYMBOL_TO_CODE[symbol];
+  return code ? suitTileClass(code) : "bg-bg-secondary";
 }

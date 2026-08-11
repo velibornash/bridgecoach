@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { SuitSymbol } from "@/components/bridge/SuitSymbol";
+import { NT_TEXT_CLASS } from "@/bridge/suits";
 import type { Suit, SuitColor } from "@/components/cardEngine/types";
 
 export interface Bid {
@@ -18,16 +19,15 @@ export interface Bid {
 export interface SuitConfig {
   suit: Suit | 'NT';
   label: string;
-  color: string;
   order: number;
 }
 
 export const BIDDING_SUITS: SuitConfig[] = [
-  { suit: '♣', label: 'Clubs', color: 'text-text-primary', order: 1 },
-  { suit: '♦', label: 'Diamonds', color: 'text-red-400', order: 2 },
-  { suit: '♥', label: 'Hearts', color: 'text-red-500', order: 3 },
-  { suit: '♠', label: 'Spades', color: 'text-text-primary', order: 4 },
-  { suit: 'NT', label: 'No Trump', color: 'text-blue-400', order: 5 },
+  { suit: '♣', label: 'Clubs', order: 1 },
+  { suit: '♦', label: 'Diamonds', order: 2 },
+  { suit: '♥', label: 'Hearts', order: 3 },
+  { suit: '♠', label: 'Spades', order: 4 },
+  { suit: 'NT', label: 'No Trump', order: 5 },
 ];
 
 const BID_LEVELS = [1, 2, 3, 4, 5, 6, 7] as const;
@@ -153,11 +153,11 @@ export function BiddingBox({ yourHand, currentBid, onBid, disabled = false, part
                           : "bg-bg-card text-text-primary border-border hover:border-primary/50 hover:bg-primary/5"
                     )}
                   >
-                    <span className={s.color}>
+                    <span className={s.suit === 'NT' ? NT_TEXT_CLASS : undefined}>
                       {s.suit === 'NT' ? (
-                        <span className="text-blue-400">NT</span>
+                        <span className={NT_TEXT_CLASS}>NT</span>
                       ) : (
-                        <SuitSymbol suit={s.suit} size={14} />
+                        <SuitSymbol suit={s.suit} size={14} themed />
                       )}
                     </span>
                   </motion.button>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SuitSymbol, suitColor, suitGlow, type SuitLike } from "@/components/bridge/SuitSymbol";
+import { suitTileClassForSymbol } from "@/bridge/suits";
 import type { QuizQuestion } from "@/types";
 
 interface CardSelectProps {
@@ -15,11 +16,7 @@ interface CardSelectProps {
 function suitInfo(card: string): { suit: SuitLike; rank: string; bg: string } {
   const suit = card[0];
   const rank = card.slice(1);
-  if (suit === "♠") return { suit: "♠", rank, bg: "bg-zinc-500/10 hover:bg-zinc-500/20" };
-  if (suit === "♥") return { suit: "♥", rank, bg: "bg-red-500/10 hover:bg-red-500/20" };
-  if (suit === "♦") return { suit: "♦", rank, bg: "bg-red-500/10 hover:bg-red-500/20" };
-  if (suit === "♣") return { suit: "♣", rank, bg: "bg-zinc-500/10 hover:bg-zinc-500/20" };
-  return { suit: suit as SuitLike, rank, bg: "bg-bg-secondary" };
+  return { suit: suit as SuitLike, rank, bg: suitTileClassForSymbol(suit) };
 }
 
 export function CardSelect({ question, onAnswer, answered }: CardSelectProps) {

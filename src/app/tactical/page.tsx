@@ -119,6 +119,13 @@ export default function TacticalPage() {
         proposedBid: bid,
       });
 
+      if (verdict && verdict.legal === false) {
+        setFeedback({ correct: false, expected: "", explanation: verdict.explanation || "Illegal call." });
+        showToast("error", verdict.explanation || "Illegal call.");
+        setInput("");
+        return;
+      }
+
       if (verdict && verdict.correct) {
         engine.pushBid(bid);
         setBids(engine.getCurrentState().currentBids);

@@ -98,6 +98,12 @@ export function nextPosition(position: Position): Position {
   return order[(idx + 1) % 4];
 }
 
+/** The seat that made the auction call at zero-based history index `index`. */
+export function seatAt(dealer: Position, index: number): Position {
+  const order: Position[] = ["N", "E", "S", "W"];
+  return order[(order.indexOf(dealer) + index) % 4];
+}
+
 /** Partners (N-S and E-W). */
 export function isPartner(a: Position, b: Position): boolean {
   return (

@@ -120,12 +120,16 @@ export interface BidVerdict {
   correct: boolean;
   suggestedBid: string;
   explanation: string;
+  /** True when the Bridge Engine confirmed the call is legal. */
+  legal?: boolean;
 }
 
 /**
  * Ask the real AI coach to judge whether a proposed bid is a good call for the
  * actual deal and auction. Returns null when the AI provider is unavailable so
  * the caller can fall back to the deterministic expert-line check.
+ *
+ * Legality is decided server-side by the Bridge Engine before any AI call.
  */
 export async function validateTacticalBid(ctx: BidValidationContext): Promise<BidVerdict | null> {
   try {
@@ -150,6 +154,7 @@ export async function validateTacticalBid(ctx: BidValidationContext): Promise<Bi
       correct: Boolean(data.correct),
       suggestedBid: data.suggestedBid || "",
       explanation: data.explanation || "",
+      legal: typeof data.legal === "boolean" ? data.legal : undefined,
     };
   } catch {
     return null;

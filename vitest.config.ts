@@ -16,5 +16,10 @@ export default defineConfig({
     exclude: ["tests/e2e/**"],
     globals: false,
     css: false,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      include: ["src/bridge/**", "src/services/**", "src/components/bridge/**", "src/components/cardEngine/**", "src/components/replayEngine/**"],
+    },
   },
 });
