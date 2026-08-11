@@ -29,6 +29,7 @@ src/
 │   ├── community/          # Community feed with posts, likes, comments
 ├── error.tsx             # Global error boundary (500)
 │   ├── contact/            # Contact/support form with type selector
+│   ├── api/                # Server routes: /api/coach (AI), /api/tactical/validate
 │   ├── dashboard/          # Main dashboard
 │   ├── email-preferences/  # Email notification preferences
 │   ├── faq/                # FAQ with accordion, categories, search
@@ -49,6 +50,8 @@ src/
 │   ├── settings/           # User settings (with live theme switcher)
 │   ├── statistics/         # Learning statistics with charts
 │   ├── subscription/       # Plan, billing, invoices, usage
+│   ├── practice/           # Free-play table (deal any hand)
+│   ├── tactical/           # Tactical bidding drills with AI coach
 │   └── xp/                 # XP & progress tracking
 ├── components/
 │   ├── ui/                 # Reusable design system (17 components)
@@ -60,6 +63,10 @@ src/
 │   ├── xp/                 # XP animations & progress
 │   ├── achievements/       # Achievement cards & unlocks
 │   ├── challenge/          # Daily challenge components
+│   ├── bridge/             # BBO-style bridge table, bidding box, turn highlight
+│   ├── cardEngine/         # SVG playing-card engine (sizes, glyphs, overlap)
+│   ├── handViewer/         # Overlapping hand fan with hover lift
+│   ├── tacticalEngine/     # Deterministic deal/bidding-drill engine
 │   ├── coach/              # AI Coach chat interface
 │   ├── rewards/            # Reward popup animations
 │   ├── notifications/      # Notification bell dropdown
@@ -79,15 +86,19 @@ src/
 │   ├── quizService.ts      # Quiz API
 │   ├── challengeService.ts # Challenges API
 │   ├── achievementService.ts
-│   ├── aiCoachService.ts   # AI Coach mock responses
+│   ├── aiCoachService.ts   # AI Coach (real AI + offline fallback)
 │   ├── statsService.ts     # Learning statistics
 │   └── mockData.ts         # All mock data
 ├── types/                  # TypeScript interfaces
 └── lib/                    # Utilities
+    └── ai/                 # AI provider gateway (server-side only)
 ```
 
 ## Features
 
+- **Real AI Coach** — free-text bridge questions answered by a real LLM (OpenCode/OpenAI/Anthropic/Ollama) with offline fallback; hint + bid validation in tactical drills
+- **Tactical Bidding Drills** — `/tactical` scenario drills with expert-line answers, BBO-style bid cards, turn highlight, and AI feedback on your calls
+- **BBO-style Bridge Table** — real SVG playing cards on all four hands, adaptive fan overlap that fits mobile, warm off-white card faces
 - **Interactive Lessons** — Split-screen viewer with custom video player (speed, captions, seek), card tables, bookmarking, and notes panel
 - **Quiz Engine** — Single/Multiple choice, Card Select, Drag & Drop question types with instant feedback
 - **Lesson Progress** — Resumable lessons, chapter tracking, section mini-grid, course completion modal
@@ -161,3 +172,20 @@ All colors defined in `globals.css` via `@theme inline` with `.light` class over
 ## Mock Backend
 
 All data is mocked. The `src/services/` layer provides a clean API abstraction with simulated network delays (200–800ms), making it straightforward to swap in a real backend.
+
+## AI Integration
+
+Real AI calls run **server-side only** through `src/lib/ai/`. Configure at least one provider in `.env` (see `.env.example`); without any, the app falls back to the built-in offline coach.
+
+| Provider | Env keys | Notes |
+|----------|----------|-------|
+| OpenCode (default) | `OPENCODE_GO_API_KEY`, `OPENCODE_ZEN_API_KEY` | Go → Zen → fallback chain, no extra accounts needed |
+| OpenAI | `OPENAI_API_KEY` | `gpt-4o-mini` by default |
+| Anthropic | `ANTHROPIC_API_KEY` | `claude-sonnet-4-20250514` by default |
+| Ollama (local) | `AI_PROVIDER=ollama` | free, runs on localhost |
+
+Where AI is used: **AI Coach chat** (message bubble, bottom-right), the **Hint** button in tactical drills, and **bid validation** in tactical drills (`/api/tactical/validate`).
+
+## SEO
+
+`/sitemap.xml`, `/robots.txt`, Open Graph + Twitter images (`next/og`), JSON-LD structured data, and full metadata in the root layout. Set `NEXT_PUBLIC_SITE_URL` for the canonical domain and `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` for Search Console verification.

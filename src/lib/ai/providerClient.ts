@@ -14,6 +14,19 @@ export interface ProviderCallRequest {
   apiKey?: string;
   baseUrl?: string;
   maxOutputTokens?: number;
+  /** OpenCode-specific config (Go → Zen fallback chain). */
+  opencode?: OpenCodeConfig;
+}
+
+/** OpenCode managed config, ported from QALabAI's OpenCodeAiProvider. */
+export interface OpenCodeConfig {
+  goApiKey?: string;
+  zenApiKey?: string;
+  goBaseUrl: string;
+  zenBaseUrl: string;
+  goModel: string;
+  zenModel: string;
+  zenFallbackModel: string;
 }
 
 export interface ProviderCallResult {
@@ -165,8 +178,189 @@ class AnthropicCompatProviderClient implements ProviderClient {
   }
 }
 
+/**
+ * OpenCode managed client, ported from QALabAI's OpenCodeAiProvider.
+ *
+ * Fallback chain:
+ *  1. OpenCode Go   — Anthropic-style /v1/messages endpoint (x-api-key).
+ *  2. OpenCode Zen  — OpenAI-style /chat/completions (primary model).
+ *  3. OpenCode Zen  — fallback model.
+ *
+ * A Go 429 whose body mentions "usage" marks the Go allowance as exhausted,
+ * skipping it for the remainder of the request.
+ */
+class OpenCodeProviderClient implements ProviderClient {
+  readonly type: AiProviderType = "opencode";
+
+  private static readonly MAX_ATTEMPTS = 2;
+  private static readonly BASE_DELAY_MS = 1000;
+  private static readonly MAX_DELAY_MS = 3000;
+
+  async call(request: ProviderCallRequest): Promise<ProviderCallResult> {
+    const cfg = request.opencode;
+    if (!cfg) {
+      throw new Error("opencode: missing OpenCodeConfig (gateway bug)");
+    }
+
+    const failures: string[] = [];
+    let goExhausted = false;
+
+    for (let attempt = 1; attempt <= OpenCodeProviderClient.MAX_ATTEMPTS; attempt++) {
+      try {
+        const content = await this.attemptChain(request, cfg, goExhausted);
+        return {
+          content,
+          inputTokens: 0,
+          outputTokens: 0,
+          estimated: true,
+          model: "opencode",
+        };
+      } catch (e) {
+        if (e instanceof GoUsageLimitError) {
+          goExhausted = true;
+          failures.push(`Go: ${e.message}`);
+        } else {
+          failures.push((e as Error).message);
+        }
+        if (attempt < OpenCodeProviderClient.MAX_ATTEMPTS) {
+          await sleep(this.backoff(attempt));
+        }
+      }
+    }
+
+    throw new Error(
+      `opencode: all attempts failed. ${failures.join(" | ")}`
+    );
+  }
+
+  private async attemptChain(
+    request: ProviderCallRequest,
+    cfg: OpenCodeConfig,
+    goExhausted: boolean
+  ): Promise<string> {
+    if (!goExhausted && cfg.goApiKey) {
+      const content = await callGoApi(request, cfg);
+      if (content) return content;
+    }
+
+    if (cfg.zenApiKey) {
+      const primary = await callZenApi(request, cfg, cfg.zenModel);
+      if (primary) return primary;
+
+      const fallback = await callZenApi(request, cfg, cfg.zenFallbackModel);
+      if (fallback) return fallback;
+    }
+
+    throw new Error("no provider returned a usable response");
+  }
+
+  private backoff(attempt: number): number {
+    return Math.min(
+      OpenCodeProviderClient.MAX_DELAY_MS,
+      OpenCodeProviderClient.BASE_DELAY_MS * 2 ** (attempt - 1)
+    );
+  }
+}
+
+async function callGoApi(
+  request: ProviderCallRequest,
+  cfg: OpenCodeConfig
+): Promise<string> {
+  const body = {
+    model: cfg.goModel,
+    max_tokens: request.maxOutputTokens ?? 12000,
+    messages: [
+      ...(request.systemPrompt
+        ? [{ role: "system", content: request.systemPrompt }]
+        : []),
+      { role: "user", content: request.userPrompt },
+    ],
+  };
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "x-api-key": cfg.goApiKey ?? "",
+    "anthropic-version": "2023-06-01",
+  };
+
+  try {
+    const res = await rawFetch(
+      "opencode" as AiProviderType,
+      trimSlash(cfg.goBaseUrl) + "/v1/messages",
+      headers,
+      body
+    );
+    return extractAnthropicContent(res);
+  } catch (e) {
+    if (e instanceof ProviderHttpError && isGoUsageLimit(e)) {
+      throw new GoUsageLimitError(e.responseBody);
+    }
+    throw e;
+  }
+}
+
+async function callZenApi(
+  request: ProviderCallRequest,
+  cfg: OpenCodeConfig,
+  model: string
+): Promise<string> {
+  const body = {
+    model,
+    max_tokens: request.maxOutputTokens ?? 12000,
+    // Zen reasoning models (big-pickle, mimo) burn the token budget on
+    // "thinking" and can return empty content. Answer directly for fast,
+    // reliable responses.
+    thinking: { type: "disabled" },
+    messages: [
+      ...(request.systemPrompt
+        ? [{ role: "system", content: request.systemPrompt }]
+        : []),
+      { role: "user", content: request.userPrompt },
+    ],
+  };
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${cfg.zenApiKey ?? ""}`,
+  };
+
+  const res = (await rawFetch(
+    "opencode" as AiProviderType,
+    trimSlash(cfg.zenBaseUrl) + "/chat/completions",
+    headers,
+    body
+  )) as OpenAiResponse;
+  return extractOpenAiContent(res.choices);
+}
+
+function extractAnthropicContent(res: unknown): string {
+  const content = (res as AnthropicResponse).content;
+  if (!Array.isArray(content)) return "";
+  return content
+    .filter((item) => item.type === "text")
+    .map((item) => item.text ?? "")
+    .join("");
+}
+
+function isGoUsageLimit(e: ProviderHttpError): boolean {
+  if (e.statusCode !== 429) return false;
+  return e.responseBody.toLowerCase().includes("usage");
+}
+
+class GoUsageLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "GoUsageLimitError";
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /** Registry keyed by provider type (same role as the gateway's client map). */
 export const PROVIDER_CLIENTS: Record<AiProviderType, ProviderClient> = {
+  opencode: new OpenCodeProviderClient(),
   openai: new OpenAiCompatProviderClient("openai"),
   anthropic: new AnthropicCompatProviderClient(),
   ollama: new OpenAiCompatProviderClient("ollama"),

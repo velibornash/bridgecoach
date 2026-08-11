@@ -9,7 +9,7 @@ import { CheckCircle2, XCircle, RotateCcw, Target, Trophy, Brain, Sparkles } fro
 import { TacticalEngine, TacticalScenario, Position, BridgeHand } from "@/components/tacticalEngine/TacticalEngine";
 import { BridgeTable, type BridgeTableHand } from "@/components/bridge/BridgeTable";
 import { BidCard } from "@/components/bridge/BidCard";
-import { getBidHint } from "@/services/aiCoachService";
+import { getBidHint, validateTacticalBid } from "@/services/aiCoachService";
 import { showToast } from "@/components/ui/Toast";
 
 const north: BridgeHand = { spades: ["SK", "SJ", "S8", "S3"], hearts: ["HA", "HJ", "H5"], diamonds: ["DA", "D8", "D3"], clubs: ["CQ", "C5", "C4"] };
@@ -24,11 +24,11 @@ const scenario: TacticalScenario = {
   dealer: "S",
   vulnerability: "None",
   hands: { N: north, E: east, S: south, W: west },
-  expectedAuction: ["1NT", "P", "2C", "P", "2H", "P", "3NT", "P", "P", "P"],
-  explanation: "North uses Stayman (2C) to look for a 4-card major, then settles in 3NT with 10+ HCP and no major fit.",
+  expectedAuction: ["1NT", "P", "2C", "P", "2S", "P", "4S", "P", "P", "P"],
+  explanation: "North uses Stayman (2C) to look for a 4-card major fit. Opener rebids 2S, showing four spades. With a confirmed 4-4 spade fit and 15 HCP, North raises to game in 4S.",
 };
 
-const quickBids = ["P", "1NT", "2C", "2D", "2H", "2S", "2NT", "3NT", "X"];
+const quickBids = ["P", "1NT", "2C", "2D", "2H", "2S", "2NT", "3NT", "4S", "X"];
 
 const positionMap: Record<Position, BridgeTableHand["position"]> = {
   N: "north",
@@ -69,6 +69,7 @@ export default function TacticalPage() {
 
   const [hint, setHint] = useState<string | null>(null);
   const [hintLoading, setHintLoading] = useState(false);
+  const [validating, setValidating] = useState(false);
 
   const askHint = async () => {
     if (hintLoading) return;
@@ -90,25 +91,72 @@ export default function TacticalPage() {
     }
   };
 
-  const submitBid = (raw: string) => {
-    if (finished) return;
+  const submitBid = async (raw: string) => {
+    if (finished || validating) return;
     const bid = raw.trim().toUpperCase();
     if (!bid) return;
 
-    const result = engine.submitBid(bid);
-    setFeedback({ correct: result.isCorrect, expected: result.expected, explanation: result.explanation });
+    const lineResult = engine.submitBid(bid);
 
-    if (result.isCorrect) {
-      setBids(engine.getCurrentState().currentBids);
-      setScore((s) => s + 1);
-      if (result.isComplete) {
-        setFinished(true);
-        showToast("success", "Auction complete — perfect bidding line!");
+    if (lineResult.isCorrect) {
+      acceptBid(bid, scenario.explanation);
+      setInput("");
+      return;
+    }
+
+    // The bid diverges from the expert line — ask the real AI coach to judge
+    // this exact deal and auction. If AI is unavailable, keep the strict line check.
+    setValidating(true);
+    try {
+      const verdict = await validateTacticalBid({
+        hands: Object.fromEntries(
+          (["N", "E", "S", "W"] as const).map((pos) => [pos, toFlatCards(scenario.hands[pos])])
+        ),
+        dealer: scenario.dealer,
+        vulnerability: scenario.vulnerability,
+        auction: engine.getCurrentState().currentBids,
+        turn: currentBidder,
+        proposedBid: bid,
+      });
+
+      if (verdict && verdict.correct) {
+        engine.pushBid(bid);
+        setBids(engine.getCurrentState().currentBids);
+        setScore((s) => s + 1);
+        setFeedback({ correct: true, expected: bid, explanation: verdict.explanation || "A good bid — the AI coach approved it." });
+        showToast("success", "Good bid — approved by the AI coach.");
+        if (engine.isAuctionComplete()) {
+          setFinished(true);
+          showToast("success", "Auction complete!");
+        }
+        setInput("");
+        return;
       }
-    } else {
-      showToast("error", `Expected: ${result.expected}`);
+
+      const expected = verdict?.suggestedBid || lineResult.expected;
+      setFeedback({
+        correct: false,
+        expected,
+        explanation: verdict?.explanation || lineResult.explanation,
+      });
+      showToast("error", `Not a good bid — try ${expected}`);
+    } catch {
+      setFeedback({ correct: false, expected: lineResult.expected, explanation: lineResult.explanation });
+      showToast("error", `Expected: ${lineResult.expected}`);
+    } finally {
+      setValidating(false);
     }
     setInput("");
+  };
+
+  const acceptBid = (bid: string, explanation: string) => {
+    setBids(engine.getCurrentState().currentBids);
+    setScore((s) => s + 1);
+    setFeedback({ correct: true, expected: bid, explanation });
+    if (engine.isAuctionComplete()) {
+      setFinished(true);
+      showToast("success", "Auction complete — perfect bidding line!");
+    }
   };
 
   const reset = () => {
@@ -119,6 +167,7 @@ export default function TacticalPage() {
     setScore(0);
     setInput("");
     setHint(null);
+    setValidating(false);
   };
 
   return (
@@ -131,7 +180,7 @@ export default function TacticalPage() {
           </div>
           <h1 className="text-heading text-text-primary mb-2">Bidding Tactical Engine</h1>
           <p className="text-sm text-text-tertiary mb-6">
-            Reproduce the correct auction move by move. The engine validates each bid against the expert line.
+            Reproduce the correct auction move by move. Bids are checked against the expert line and reviewed by the AI coach.
           </p>
 
           <div className="grid gap-6 lg:grid-cols-5">
@@ -211,7 +260,8 @@ export default function TacticalPage() {
                         <button
                           key={b}
                           onClick={() => submitBid(b)}
-                          className="transition-transform hover:scale-105 active:scale-95"
+                          disabled={validating}
+                          className="transition-transform hover:scale-105 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
                         >
                           <BidCard
                             bid={b}
@@ -221,6 +271,12 @@ export default function TacticalPage() {
                         </button>
                       ))}
                     </div>
+                    {validating && (
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary mb-2">
+                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        AI coach is reviewing this bid…
+                      </div>
+                    )}
                     <form
                       onSubmit={(e) => { e.preventDefault(); submitBid(input); }}
                       className="flex gap-2"
@@ -229,13 +285,15 @@ export default function TacticalPage() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="Type a bid, e.g. 2C or P..."
-                        className="flex-1 bg-bg-secondary rounded-lg border border-border px-3 py-2 text-xs font-mono text-text-primary outline-none focus:border-primary transition-colors"
+                        disabled={validating}
+                        className="flex-1 bg-bg-secondary rounded-lg border border-border px-3 py-2 text-xs font-mono text-text-primary outline-none focus:border-primary transition-colors disabled:opacity-50"
                       />
                       <button
                         type="submit"
-                        className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
+                        disabled={validating || !input.trim()}
+                        className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
                       >
-                        Bid
+                        {validating ? "…" : "Bid"}
                       </button>
                     </form>
                   </>

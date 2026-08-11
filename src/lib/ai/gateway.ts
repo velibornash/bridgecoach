@@ -1,4 +1,4 @@
-import { ProviderHttpError, PROVIDER_CLIENTS } from "./providerClient";
+import { OpenCodeConfig, ProviderHttpError, PROVIDER_CLIENTS } from "./providerClient";
 import {
   AiGatewayError,
   AiProviderType,
@@ -19,12 +19,14 @@ import {
  */
 
 const DEFAULT_MODELS: Record<AiProviderType, string> = {
+  opencode: "big-pickle",
   openai: "gpt-4o-mini",
   anthropic: "claude-sonnet-4-20250514",
   ollama: "llama3.2",
 };
 
 const DEFAULT_BASE_URLS: Record<AiProviderType, string> = {
+  opencode: "https://opencode.ai/zen",
   openai: "https://api.openai.com/v1",
   anthropic: "https://api.anthropic.com",
   ollama: "http://localhost:11434/v1",
@@ -50,6 +52,7 @@ export async function complete(request: AiRequest): Promise<AiResponse> {
         apiKey,
         baseUrl,
         maxOutputTokens: request.maxOutputTokens,
+        opencode: provider === "opencode" ? resolveOpenCodeConfig() : undefined,
       });
       break;
     } catch (e) {
@@ -106,11 +109,15 @@ function resolveProvider(request: AiRequest): AiProviderType {
     return envProvider as AiProviderType;
   }
 
+  // OpenCode is the default managed provider (Go → Zen fallback chain).
+  if (process.env.OPENCODE_GO_API_KEY || process.env.OPENCODE_ZEN_API_KEY) {
+    return "opencode";
+  }
   if (process.env.OPENAI_API_KEY) return "openai";
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
 
   throw AiGatewayError.notConfigured(
-    "No AI provider configured. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or AI_PROVIDER=ollama."
+    "No AI provider configured. Set OPENCODE_GO_API_KEY / OPENCODE_ZEN_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or AI_PROVIDER=ollama."
   );
 }
 
@@ -124,12 +131,26 @@ function resolveModel(request: AiRequest, provider: AiProviderType): string {
 function resolveApiKey(provider: AiProviderType): string | undefined {
   if (provider === "openai") return process.env.OPENAI_API_KEY || undefined;
   if (provider === "anthropic") return process.env.ANTHROPIC_API_KEY || undefined;
+  if (provider === "opencode") return process.env.OPENCODE_ZEN_API_KEY || undefined;
   return undefined;
 }
 
 function resolveBaseUrl(provider: AiProviderType): string {
   const envBase = envFor(provider, "BASE_URL");
   return (envBase?.trim() || DEFAULT_BASE_URLS[provider]).trim();
+}
+
+/** OpenCode managed config: Go (primary) → Zen (fallback chain). */
+function resolveOpenCodeConfig(): OpenCodeConfig {
+  return {
+    goApiKey: process.env.OPENCODE_GO_API_KEY || undefined,
+    zenApiKey: process.env.OPENCODE_ZEN_API_KEY || undefined,
+    goBaseUrl: process.env.OPENCODE_GO_BASE_URL?.trim() || "https://opencode.ai/zen/go",
+    zenBaseUrl: process.env.OPENCODE_ZEN_BASE_URL?.trim() || "https://opencode.ai/zen/v1",
+    goModel: process.env.OPENCODE_GO_MODEL?.trim() || "qwen3.7-plus",
+    zenModel: process.env.OPENCODE_ZEN_MODEL?.trim() || "big-pickle",
+    zenFallbackModel: process.env.OPENCODE_ZEN_FALLBACK_MODEL?.trim() || "mimo-v2.5-free",
+  };
 }
 
 function envFor(provider: AiProviderType, suffix: string): string | undefined {

@@ -6,9 +6,14 @@
  * Server-only module: imported by the API route, never by client components.
  */
 
-export type AiProviderType = "openai" | "anthropic" | "ollama";
+export type AiProviderType = "opencode" | "openai" | "anthropic" | "ollama";
 
-export const SUPPORTED_PROVIDERS: AiProviderType[] = ["openai", "anthropic", "ollama"];
+export const SUPPORTED_PROVIDERS: AiProviderType[] = [
+  "opencode",
+  "openai",
+  "anthropic",
+  "ollama",
+];
 
 export interface AiRequest {
   /** System prompt that defines the role and rules for the model. */

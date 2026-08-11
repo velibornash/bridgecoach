@@ -70,6 +70,19 @@ export class TacticalEngine {
     };
   }
 
+  /** Record a bid that the AI coach accepted even though it differs from the expert line. */
+  public pushBid(bid: string) {
+    this.currentBids.push(bid);
+  }
+
+  /** The auction is over after a contract followed by three consecutive passes. */
+  public isAuctionComplete(): boolean {
+    if (this.currentBids.length < 3) return false;
+    const hadContract = this.currentBids.some((b) => b.toUpperCase() !== "P");
+    if (!hadContract) return false;
+    return this.currentBids.slice(-3).every((b) => b.toUpperCase() === "P");
+  }
+
   // Validate a card play (Sprint 53)
   public submitPlay(card: string): { isCorrect: boolean; isComplete: boolean; expected: string; explanation?: string } {
     if (!this.scenario.expectedPlaySequence) {

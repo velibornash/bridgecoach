@@ -112,6 +112,50 @@ function offlineHint(ctx: BidHintContext): string {
   return `Offline mode: the drill expects ${expected} here. Try it and read the feedback — a configured AI provider would explain the full reasoning.`;
 }
 
+export interface BidValidationContext extends BidHintContext {
+  proposedBid: string;
+}
+
+export interface BidVerdict {
+  correct: boolean;
+  suggestedBid: string;
+  explanation: string;
+}
+
+/**
+ * Ask the real AI coach to judge whether a proposed bid is a good call for the
+ * actual deal and auction. Returns null when the AI provider is unavailable so
+ * the caller can fall back to the deterministic expert-line check.
+ */
+export async function validateTacticalBid(ctx: BidValidationContext): Promise<BidVerdict | null> {
+  try {
+    const response = await fetch("/api/tactical/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        hands: ctx.hands,
+        dealer: ctx.dealer,
+        vulnerability: ctx.vulnerability,
+        auction: ctx.auction,
+        turn: ctx.turn,
+        proposedBid: ctx.proposedBid,
+      }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+    const data = (await response.json()) as BidVerdict;
+    return {
+      correct: Boolean(data.correct),
+      suggestedBid: data.suggestedBid || "",
+      explanation: data.explanation || "",
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function sendMessage(message: string): Promise<CoachMessage> {
   // 1. Try the real AI provider through the server-side gateway.
   try {

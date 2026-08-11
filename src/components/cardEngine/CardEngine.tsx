@@ -6,11 +6,11 @@ import { cn } from "@/lib/utils";
 import type { BridgeCard, Suit, SuitColor, Rank, CardSize, CardEngineProps } from "./types";
 
 const sizeMap: Record<CardSize, { w: number; h: number; rankSize: number; suitSize: number; cornerSize: number }> = {
-  xs: { w: 48, h: 68, rankSize: 8, suitSize: 10, cornerSize: 6 },
-  sm: { w: 64, h: 90, rankSize: 10, suitSize: 14, cornerSize: 7 },
-  md: { w: 80, h: 112, rankSize: 13, suitSize: 18, cornerSize: 8 },
-  lg: { w: 104, h: 148, rankSize: 17, suitSize: 24, cornerSize: 10 },
-  xl: { w: 136, h: 192, rankSize: 22, suitSize: 30, cornerSize: 12 },
+  xs: { w: 56, h: 80, rankSize: 13, suitSize: 17, cornerSize: 9 },
+  sm: { w: 74, h: 104, rankSize: 16, suitSize: 22, cornerSize: 11 },
+  md: { w: 96, h: 134, rankSize: 20, suitSize: 28, cornerSize: 14 },
+  lg: { w: 124, h: 176, rankSize: 26, suitSize: 38, cornerSize: 18 },
+  xl: { w: 160, h: 226, rankSize: 34, suitSize: 48, cornerSize: 22 },
 };
 
 const suitConfig: Record<Suit, { color: SuitColor; svg: string; label: string }> = {
@@ -35,6 +35,7 @@ function CardInner({ card, size, interactive, hoverable, onClick, onHover }: {
   const rank = card.rank || 'A';
   const color = config.color === 'red' ? '#E0244A' : '#14161E';
   const isRed = config.color === 'red';
+  const cardFace = '#FDFDF7';
 
   return (
     <g
@@ -58,8 +59,8 @@ function CardInner({ card, size, interactive, hoverable, onClick, onHover }: {
         x={0} y={0}
         width={s.w} height={s.h}
         rx={5} ry={5}
-        fill="white"
-        stroke={card.highlighted ? '#FBBF24' : card.selected ? '#6366F1' : '#E5E7EB'}
+        fill={cardFace}
+        stroke={card.highlighted ? '#FBBF24' : card.selected ? '#6366F1' : '#E6E3DA'}
         strokeWidth={card.highlighted ? 2.5 : card.selected ? 2 : 0.5}
       />
       {/* Highlighted glow */}
@@ -150,6 +151,11 @@ function CardInner({ card, size, interactive, hoverable, onClick, onHover }: {
   );
 }
 
+export function getCardSize(size: CardSize): { w: number; h: number } {
+  const s = sizeMap[size];
+  return { w: s.w, h: s.h };
+}
+
 export function CardEngine({ card, size = 'md', interactive = false, hoverable = true, onClick, onHover, animate = true }: CardEngineProps) {
   const [flipped, setFlipped] = useState(false);
   const displayCard = useMemo(() => ({ ...card, faceUp: card.faceUp && !flipped }), [card]);
@@ -203,8 +209,8 @@ export function CardEngine({ card, size = 'md', interactive = false, hoverable =
           >
             <div style={{ backfaceVisibility: "hidden" }}>
               <svg width={sizeMap[size].w} height={sizeMap[size].h} viewBox={`0 0 ${sizeMap[size].w} ${sizeMap[size].h}`}>
-                <rect width={sizeMap[size].w} height={sizeMap[size].h} rx={5} fill="white" stroke="#E5E7EB" strokeWidth="0.5" />
-                <rect x="4" y="4" width={sizeMap[size].w - 8} height={sizeMap[size].h - 8} rx={3} fill="#F3F4F6" />
+                <rect width={sizeMap[size].w} height={sizeMap[size].h} rx={5} fill="#FDFDF7" stroke="#E6E3DA" strokeWidth="0.5" />
+                <rect x="4" y="4" width={sizeMap[size].w - 8} height={sizeMap[size].h - 8} rx={3} fill="#F3F2EC" />
                 <text x={sizeMap[size].w / 2} y={sizeMap[size].h / 2} textAnchor="middle" dominantBaseline="central" fontSize="16" fill="#9CA3AF" fontFamily="serif">⚡</text>
               </svg>
             </div>
@@ -219,8 +225,8 @@ export function CardEngine({ card, size = 'md', interactive = false, hoverable =
 
   return card.faceUp ? <svg style={{ width: sizeMap[size].w, height: sizeMap[size].h }}>{content}</svg> : (
     <svg width={sizeMap[size].w} height={sizeMap[size].h}>
-      <rect width={sizeMap[size].w} height={sizeMap[size].h} rx={5} fill="white" stroke="#E5E7EB" strokeWidth="0.5" />
-      <rect x="4" y="4" width={sizeMap[size].w - 8} height={sizeMap[size].h - 8} rx={3} fill="#F3F4F6" />
+      <rect width={sizeMap[size].w} height={sizeMap[size].h} rx={5} fill="#FDFDF7" stroke="#E6E3DA" strokeWidth="0.5" />
+      <rect x="4" y="4" width={sizeMap[size].w - 8} height={sizeMap[size].h - 8} rx={3} fill="#F3F2EC" />
       <text x={sizeMap[size].w / 2} y={sizeMap[size].h / 2} textAnchor="middle" dominantBaseline="central" fontSize="16" fill="#9CA3AF" fontFamily="serif">⚡</text>
     </svg>
   );

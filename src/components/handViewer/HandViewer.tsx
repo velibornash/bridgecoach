@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CardEngine, SUITS, createDeck, shuffleDeck, type BridgeCard, type Suit, type CardSize } from "@/components/cardEngine/CardEngine";
+import { CardEngine, getCardSize, SUITS, createDeck, shuffleDeck, type BridgeCard, type Suit, type CardSize } from "@/components/cardEngine/CardEngine";
 import { Badge } from "@/components/ui/Badge";
 import { SuitSymbol, suitColor, suitGlow, type SuitLike } from "@/components/bridge/SuitSymbol";
 import { cn } from "@/lib/utils";
@@ -63,6 +63,37 @@ export function HandViewer({
     return counts;
   }, [hand]);
 
+  // Overlap the cards so a full hand fits on one row — the first card shows
+  // fully and each following card reveals its rank+suit corner (like holding
+  // a fan of cards). If even the minimum sliver is too wide, the row scrolls.
+  const { w: cardW, h: cardH } = getCardSize(size);
+  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
+  const [overlap, setOverlap] = useState(0);
+  const gap = 8;
+  const minVisible = Math.max(20, Math.round(cardW * 0.32));
+
+  useEffect(() => {
+    const el = containerRef;
+    if (!el) return;
+    const measure = () => {
+      const width = el.clientWidth;
+      const n = filteredHand.length;
+      if (n <= 1) { setOverlap(0); return; }
+      const fullWidth = n * cardW + (n - 1) * gap;
+      if (fullWidth <= width) { setOverlap(0); return; }
+      const needed = Math.ceil((fullWidth - width) / (n - 1));
+      setOverlap(Math.min(needed, Math.max(0, cardW - minVisible)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [containerRef, filteredHand.length, cardW, gap, minVisible]);
+
+  const rowWidth = overlap > 0
+    ? filteredHand.length * cardW - (filteredHand.length - 1) * overlap
+    : undefined;
+
   return (
     <div className="w-full">
       {/* Controls */}
@@ -114,48 +145,60 @@ export function HandViewer({
       </p>
 
       {/* Cards */}
-      <div className="flex flex-wrap gap-2 justify-center">
-        <AnimatePresence mode="popLayout">
-          {filteredHand.map((card, index) => {
-            const isHighlighted = highlighted.includes(card.id);
-            const isSelected = selected.includes(card.id);
-            const isHovered = hoveredCard === card.id;
+      <div ref={setContainerRef} className="w-full overflow-x-auto py-2">
+        <div
+          className="flex items-center"
+          style={{ minWidth: rowWidth }}
+        >
+          <AnimatePresence mode="popLayout">
+            {filteredHand.map((card, index) => {
+              const isHighlighted = highlighted.includes(card.id);
+              const isSelected = selected.includes(card.id);
+              const isHovered = hoveredCard === card.id;
+              const isLast = index === filteredHand.length - 1;
 
-            return (
-              <motion.div
-                key={card.id}
-                layout
-                initial={{ opacity: 0, scale: 0.5, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.5, y: -20 }}
-                transition={{ delay: index * 0.03, type: "spring", damping: 20 }}
-                className={cn(
-                  'cursor-pointer transition-all',
-                  interactive && onCardClick && 'hover:z-10',
-                  isHighlighted && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-bg-primary',
-                  isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-bg-primary'
-                )}
-                onHoverStart={() => interactive && setHoveredCard(card.id)}
-                onHoverEnd={() => setHoveredCard(null)}
-              >
-                <CardEngine
-                  card={{
-                    ...card,
-                    highlighted: isHighlighted,
-                    selected: isSelected,
-                    playable: interactive && onCardClick !== undefined,
-                    rotation: isHovered && interactive ? -8 : 0,
+              return (
+                <motion.div
+                  key={card.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.5, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.5, y: -20 }}
+                  transition={{ delay: index * 0.03, type: "spring", damping: 20 }}
+                  whileHover={interactive ? { y: -16 } : undefined}
+                  onHoverStart={() => interactive && setHoveredCard(card.id)}
+                  onHoverEnd={() => setHoveredCard(null)}
+                  className={cn(
+                    'relative shrink-0 cursor-pointer',
+                    !isLast && overlap === 0 && 'mr-2',
+                    isHighlighted && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-bg-primary',
+                    isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-bg-primary'
+                  )}
+                  style={{
+                    marginLeft: index === 0 ? 0 : overlap > 0 ? -overlap : 0,
+                    zIndex: isHovered ? 50 : index,
+                    height: cardH,
                   }}
-                  size={size}
-                  interactive={interactive && !!onCardClick}
-                  hoverable={interactive}
-                  onClick={onCardClick}
-                  animate
-                />
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+                >
+                  <CardEngine
+                    card={{
+                      ...card,
+                      highlighted: isHighlighted,
+                      selected: isSelected,
+                      playable: interactive && onCardClick !== undefined,
+                      rotation: isHovered && interactive ? -6 : 0,
+                    }}
+                    size={size}
+                    interactive={interactive && !!onCardClick}
+                    hoverable={interactive}
+                    onClick={onCardClick}
+                    animate
+                  />
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Suit distribution bar */}

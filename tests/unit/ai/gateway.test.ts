@@ -130,6 +130,8 @@ describe("AI gateway", () => {
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
     delete process.env.AI_PROVIDER;
+    delete process.env.OPENCODE_GO_API_KEY;
+    delete process.env.OPENCODE_ZEN_API_KEY;
 
     try {
       await complete({ userPrompt: "hi" });
@@ -137,5 +139,86 @@ describe("AI gateway", () => {
     } catch (e) {
       expect(e).toBeInstanceOf(AiGatewayError);
     }
+  });
+});
+
+describe("AI gateway — OpenCode (default)", () => {
+  it("resolves opencode when OPENCODE keys are set", async () => {
+    process.env.OPENCODE_GO_API_KEY = "sk-go-test";
+    process.env.OPENCODE_ZEN_API_KEY = "sk-zen-test";
+    expect(isAiConfigured()).toBe(true);
+  });
+
+  it("uses the Go endpoint first (Anthropic-style response)", async () => {
+    process.env.OPENCODE_GO_API_KEY = "sk-go-test";
+    process.env.OPENCODE_ZEN_API_KEY = "sk-zen-test";
+    stubFetchOnce(200, {
+      content: [{ type: "text", text: "Bid 3NT from Go." }],
+      usage: { input_tokens: 3, output_tokens: 2 },
+    });
+
+    const result = await complete({ userPrompt: "what now?" });
+    expect(result.content).toBe("Bid 3NT from Go.");
+    expect(result.provider).toBe("opencode");
+
+    const fetchMock = vi.mocked(fetch);
+    const [url] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain("/zen/go/v1/messages");
+  });
+
+  it("falls back to Zen when Go hits its usage limit (429 + usage)", async () => {
+    process.env.OPENCODE_GO_API_KEY = "sk-go-test";
+    process.env.OPENCODE_ZEN_API_KEY = "sk-zen-test";
+
+    let calls = 0;
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (url: string) => {
+      calls += 1;
+      if (String(url).includes("/go/v1/messages")) {
+        return {
+          ok: false,
+          status: 429,
+          text: () => Promise.resolve("{\"error\":\"usage limit exceeded\"}"),
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify({
+          choices: [{ message: { content: "Pass from Zen." } }],
+          usage: { prompt_tokens: 1, completion_tokens: 1 },
+        })),
+      };
+    }));
+
+    const result = await complete({ userPrompt: "what now?" });
+    expect(result.content).toBe("Pass from Zen.");
+    expect(calls).toBeGreaterThanOrEqual(2);
+  });
+
+  it("tries the Zen fallback model after the primary returns empty", async () => {
+    process.env.OPENCODE_GO_API_KEY = "sk-go-test";
+    process.env.OPENCODE_ZEN_API_KEY = "sk-zen-test";
+
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (url: string, init?: { body?: string }) => {
+      if (String(url).includes("/go/v1/messages")) {
+        return {
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify({ content: [{ type: "text", text: "Go reply." }] })),
+        };
+      }
+      const body = JSON.parse(init?.body ?? "{}");
+      return {
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify({
+          choices: [{ message: { content: body.model === "mimo-v2.5-free" ? "Fallback reply." : "" } }],
+          usage: { prompt_tokens: 1, completion_tokens: 1 },
+        })),
+      };
+    }));
+
+    const result = await complete({ userPrompt: "what now?" });
+    expect(result.content).toBe("Go reply.");
   });
 });

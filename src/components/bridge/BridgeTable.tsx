@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { SuitSymbol, suitColor, type SuitLike } from "./SuitSymbol";
+import type { SuitLike } from "./SuitSymbol";
+import { CardEngine, getCardSize, type BridgeCard, type CardSize } from "@/components/cardEngine/CardEngine";
 
 export type BridgePosition = "north" | "east" | "south" | "west";
 
@@ -29,18 +31,30 @@ const RANK_VALUE: Record<string, number> = {
   "6": 6, "5": 5, "4": 4, "3": 3, "2": 2,
 };
 
+const SUIT_MAP: Record<string, SuitLike> = {
+  S: "♠", H: "♥", D: "♦", C: "♣",
+};
+
 function parseCard(card: string): { rank: string; suit: SuitLike } {
   const first = card[0];
   if (first === "♠" || first === "♥" || first === "♦" || first === "♣") {
     return { rank: card.slice(1), suit: first };
   }
   if (first === "S" || first === "H" || first === "D" || first === "C") {
-    return {
-      rank: card.slice(1),
-      suit: first === "S" ? "♠" : first === "H" ? "♥" : first === "D" ? "♦" : "♣",
-    };
+    return { rank: card.slice(1), suit: SUIT_MAP[first] };
   }
   return { rank: card, suit: "♠" };
+}
+
+function toBridgeCard(card: string, highlight: boolean): BridgeCard {
+  const { rank, suit } = parseCard(card);
+  return {
+    id: `${suit}${rank}`,
+    suit: suit as BridgeCard["suit"],
+    rank: rank as BridgeCard["rank"],
+    faceUp: true,
+    highlighted: highlight,
+  };
 }
 
 /** Sort ♠♥♦♣ left-to-right, high-to-low within each suit (bridge notation). */
@@ -54,42 +68,26 @@ function sortCards(cards: string[]) {
   });
 }
 
-const SIZE_CHIP = {
-  sm: { text: "text-[9px]", symbol: 8, pad: "gap-[1px] px-[2px] py-[2px] rounded-[4px]", gap: "gap-x-[3px]" },
-  md: { text: "text-[10px]", symbol: 9, pad: "gap-[2px] px-[3px] py-[2px] rounded-[5px]", gap: "gap-x-[4px]" },
-  lg: { text: "text-xs", symbol: 11, pad: "gap-[2px] px-1 py-[3px] rounded-md", gap: "gap-x-[5px]" },
-} as const;
+type TableSize = "sm" | "md" | "lg";
 
-function CardChip({
-  card,
-  index,
-  highlight,
-  size,
-}: {
-  card: string;
-  index: number;
-  highlight?: boolean;
-  size: keyof typeof SIZE_CHIP;
-}) {
-  const { rank, suit } = parseCard(card);
-  const chip = SIZE_CHIP[size];
-  return (
-    <motion.span
-      initial={{ opacity: 0, y: 6, scale: 0.6 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: index * 0.04, type: "spring", damping: 20, stiffness: 260 }}
-      className={cn(
-        "inline-flex select-none items-center whitespace-nowrap border border-zinc-300/60 bg-white/95 font-mono font-bold shadow-md shadow-black/25",
-        chip.text,
-        chip.pad,
-        highlight && "ring-2 ring-warning shadow-warning/40"
-      )}
-    >
-      <span className="leading-none" style={{ color: suitColor(suit) }}>{rank}</span>
-      <SuitSymbol suit={suit} size={chip.symbol} />
-    </motion.span>
-  );
-}
+const TABLE_WIDTH: Record<TableSize, string> = {
+  sm: "max-w-md",
+  md: "max-w-lg",
+  lg: "max-w-xl",
+};
+
+const CARD_SIZE: Record<TableSize, CardSize> = {
+  sm: "xs",
+  md: "sm",
+  lg: "sm",
+};
+
+/** Visible sliver of each overlapping E/W card (pixels). */
+const VERTICAL_SLIVER: Record<TableSize, number> = {
+  sm: 14,
+  md: 16,
+  lg: 18,
+};
 
 function SideHand({
   hand,
@@ -99,35 +97,76 @@ function SideHand({
   isTurn,
 }: {
   hand?: BridgeTableHand;
-  size: keyof typeof SIZE_CHIP;
+  size: TableSize;
   vertical: boolean;
   isSouth: boolean;
   isTurn?: boolean;
 }) {
-  const chip = SIZE_CHIP[size];
-  if (!hand || hand.cards.length === 0) return null;
-  const cards = sortCards(hand.cards);
+  const ref = useRef<HTMLDivElement>(null);
+  const [overlap, setOverlap] = useState(0);
+  const cards = hand ? sortCards(hand.cards) : [];
+  const n = cards.length;
+  const cardSize = CARD_SIZE[size];
+  const { w: cardW, h: cardH } = getCardSize(cardSize);
+
+  // Horizontal hands (N/S) overlap adaptively so all 13 cards fit the row.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || vertical) return;
+    const measure = () => {
+      const width = el.clientWidth;
+      if (n <= 1) { setOverlap(0); return; }
+      const fullWidth = n * cardW;
+      if (fullWidth <= width) { setOverlap(0); return; }
+      const minVisible = Math.max(18, Math.round(cardW * 0.3));
+      const needed = Math.ceil((fullWidth - width) / (n - 1));
+      setOverlap(Math.min(needed, cardW - minVisible));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [vertical, n, cardW]);
+
+  if (!hand || n === 0) return null;
+
+  const verticalSliver = VERTICAL_SLIVER[size];
+  const verticalOverlap = Math.max(0, cardH - verticalSliver);
 
   return (
     <div
+      ref={ref}
       className={cn(
-        "flex flex-wrap items-center justify-center gap-y-0.5 transition-all",
+        "flex select-none items-center overflow-x-auto transition-all",
         vertical ? "flex-col" : "flex-row",
-        chip.gap,
-        isSouth && "rounded-xl bg-primary/5 px-2 py-1 ring-1 ring-primary/25",
+        isSouth && "rounded-xl bg-primary/5 px-1 py-1 ring-1 ring-primary/25",
         isTurn &&
           "rounded-xl bg-primary/10 ring-2 ring-primary/70 shadow-lg shadow-primary/25"
       )}
     >
-      {cards.map((card, i) => (
-        <CardChip
-          key={`${card}-${i}`}
-          card={card}
-          index={i}
-          highlight={hand.highlight?.includes(card)}
-          size={size}
-        />
-      ))}
+      {cards.map((card, i) => {
+        const isHighlighted = hand.highlight?.includes(card) ?? false;
+        return (
+          <motion.div
+            key={`${card}-${i}`}
+            initial={{ opacity: 0, y: 6, scale: 0.6 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: i * 0.02, type: "spring", damping: 22, stiffness: 280 }}
+            className="relative shrink-0"
+            style={
+              vertical
+                ? { marginTop: i === 0 ? 0 : -verticalOverlap, zIndex: i }
+                : { marginLeft: i === 0 ? 0 : -overlap, zIndex: i }
+            }
+          >
+            <CardEngine
+              card={toBridgeCard(card, isHighlighted)}
+              size={cardSize}
+              animate={false}
+            />
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
@@ -161,7 +200,7 @@ export function BridgeTable({
   const west = byPosition.west;
 
   return (
-    <div className={cn("mx-auto w-full max-w-md sm:max-w-lg", className)}>
+    <div className={cn("mx-auto w-full", TABLE_WIDTH[size], className)}>
       {/* North */}
       <div className="mb-1.5 flex justify-center">
         <SideHand hand={north} size={size} vertical={false} isSouth={false} isTurn={turn === "north"} />

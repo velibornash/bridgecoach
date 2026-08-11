@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { Avatar } from "@/components/ui/Avatar";
@@ -31,6 +32,7 @@ interface UserStats {
 }
 
 function PremiumDashboardHero() {
+  const router = useRouter();
   const userStats: UserStats = {
     level: mockUser.level,
     streak: mockUser.streak,
@@ -180,7 +182,7 @@ function PremiumDashboardHero() {
                     cardWidth="w-20"
                     spread={20}
                   />
-                  <Button variant="outline" size="sm" fullWidth className="mt-1">
+                  <Button variant="outline" size="sm" fullWidth className="mt-1" onClick={() => router.push("/practice")}>
                     <Play className="h-3.5 w-3.5" />
                     Play this hand
                   </Button>
