@@ -7,11 +7,11 @@ import { suitHexForSymbol } from "@/bridge/suits";
 import type { BridgeCard, Suit, SuitColor, Rank, CardSize, CardEngineProps } from "./types";
 
 const sizeMap: Record<CardSize, { w: number; h: number; rankSize: number; suitSize: number; cornerSize: number }> = {
-  xs: { w: 56, h: 80, rankSize: 13, suitSize: 17, cornerSize: 9 },
-  sm: { w: 74, h: 104, rankSize: 16, suitSize: 22, cornerSize: 11 },
-  md: { w: 96, h: 134, rankSize: 20, suitSize: 28, cornerSize: 14 },
-  lg: { w: 124, h: 176, rankSize: 26, suitSize: 38, cornerSize: 18 },
-  xl: { w: 160, h: 226, rankSize: 34, suitSize: 48, cornerSize: 22 },
+  xs: { w: 56, h: 80, rankSize: 13, suitSize: 25, cornerSize: 12 },
+  sm: { w: 74, h: 104, rankSize: 16, suitSize: 34, cornerSize: 16 },
+  md: { w: 96, h: 134, rankSize: 20, suitSize: 44, cornerSize: 20 },
+  lg: { w: 124, h: 176, rankSize: 26, suitSize: 56, cornerSize: 25 },
+  xl: { w: 160, h: 226, rankSize: 34, suitSize: 72, cornerSize: 31 },
 };
 
 const suitConfig: Record<Suit, { color: SuitColor; svg: string; label: string }> = {
