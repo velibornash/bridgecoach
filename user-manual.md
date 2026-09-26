@@ -193,6 +193,31 @@ overwriting the earlier decision.
 `PUT /api/admin/registrations` creates or resets an active account without a
 prior request. Use this for onboarding a teammate by another channel.
 
+### Reports
+
+Reports filed from the community appear in the queue at the top of `/admin`,
+with the reported content resolved inline so you can judge without opening
+anything.
+
+**Filing a report changes nothing.** No post is hidden, no account suspended, no
+automatic action. That is deliberate: if reporting auto-hid content, one user
+could remove another's post by clicking a button, which is the abuse the queue
+exists to prevent. **You** decide, by closing the report.
+
+A report cannot be closed twice, and the same person reporting the same thing
+twice updates nothing rather than flooding the queue.
+
+### Blocking
+
+Any user can block another. A block is one-directional and personal:
+
+- the blocker cannot send a friend request to the blocked user, and vice versa
+- pending friend requests between them are cancelled
+- the blocked user's posts and comments are hidden from the blocker's feed
+
+It is **not** moderation. Nothing is removed for anyone else, and no account is
+suspended. Only an owner acting on a report does that.
+
 ### Outgoing email
 
 The lower half of `/admin` lists recent messages. In development this is your
@@ -290,9 +315,10 @@ you to where you were headed after signing in.
 |---|---|
 | `/leaderboard` | Ranked by real XP. Global, country, weekly, monthly. Weekly/monthly sum the `XPEvent` log, not the cached total. Shows your own rank even when outside the top 50. |
 | `/friends` | Request/accept. Online status derived from `lastActiveAt`; mutual-friend counts computed from the graph. |
-| `/community` | Real posts with per-user likes and comments. Composer, four categories, soft delete. |
+| `/community` | Real posts with per-user likes and comments. Composer, four categories, soft delete. Posts and comments are rate limited. |
 | `/profile/[id]` | Another player's public profile. Progression, achievements, activity. **No email address is ever exposed.** |
 | `/friends` → send a request | From the leaderboard or a profile |
+| `/search` | Real database search over lesson titles, descriptions, and **full lesson text**. Case-insensitive, ranked, with a real count in the idle state. |
 
 **Ranking against real players only.** A fresh install has one player, so the
 leaderboard shows one row and an explicit empty state rather than padding the list
@@ -363,7 +389,7 @@ All configuration lives in `.env`. **Never commit it.**
 
 ## 10. Database
 
-PostgreSQL. **37 models, 18 enums, 38 tables, 8 migrations.**
+PostgreSQL. **39 models, 18 enums, 40 tables, 9 migrations.**
 
 ### Core tables
 
@@ -375,6 +401,7 @@ PostgreSQL. **37 models, 18 enums, 38 tables, 8 migrations.**
 | Play | `Hand`, `Auction`, `AuctionAction`, `PracticeSession`, `PracticeAction` |
 | Authoring | `AuthorContent`, `AuthorDraft`, `AuthorRevision` |
 | Social | `Friendship`, `CommunityPost`, `PostLike`, `PostComment` |
+| Moderation | `BlockedUser`, `ContentReport` |
 | Other | `Bookmark`, `Note`, `Mission`, `Achievement`, `AIConversation`, `AIMessage`, `OutgoingEmail` |
 
 ### Deliberate design decisions
@@ -406,10 +433,11 @@ psql "$DATABASE_URL"         # or query directly
 | Gate | Result |
 |---|---|
 | `npm run typecheck` | 0 errors |
-| `npm run lint` | **0 errors**, 130 warnings |
-| `npm test` | **298 passing**, 25 files |
+| `npm run lint` | **0 errors**, 133 warnings |
+| `npm test` | **318 passing**, 26 files |
 | `npm run test:e2e` | 7 passing |
 | `npm run build` | clean |
+| `npm run test:e2e` | 7 passing, against `bridgecoach_test` |
 
 Run everything before committing:
 
@@ -559,19 +587,24 @@ Stated plainly, because a manual that only lists strengths is marketing.
 
 ### Community and social
 
-6. **No reporting, blocking, or moderation queue.** Any approved user can post,
-   and every post is readable by every approved user. Adequate for one owner,
-   inadequate once a stranger can register.
-7. **No post rate limit.** A user can post as fast as the database allows.
-8. **`blocked` exists in the status vocabulary but nothing sets it.** Declining
-   a request hides it; it does not prevent a new one.
-9. **No friend search.** Requests are sent from the leaderboard or a profile.
+6. **There is reporting, blocking, and a moderation queue** — see §8. What is
+   still missing is the *policy* around them: no rate limit on filing reports
+   beyond 10/hour, no bulk actions in the queue, and no escalation. An
+   administrator must open each report and act individually.
+7. **A block is a personal boundary, not moderation.** It hides one account's
+   content from one account's feed and stops friend requests. It does not
+   suspend anyone or remove anything for other users. Only an owner at
+   `/admin` can do that, and only for reports.
+8. **No friend search.** Requests are sent from the leaderboard or a profile.
+9. **No email notification of a report.** The queue at `/admin` is the only
+   signal that something arrived.
 
 ### Data and content
 
-10. **`/search` reads a static index**, not the database. The catalogue describes
-    lessons that exist as real rows, so it is closer to static content than to a
-    persistence gap — but it is not live.
+10. **Search has no full-text index.** It uses `ILIKE` against `content::text`,
+    which is correct for ~10 lessons and would need a `tsvector` column and a GIN
+    index at a few thousand. Ranking is title > description > body, computed in
+    SQL so it happens before the row limit.
 11. **`/rewards` balances are static.** No currency ledger exists.
 12. **`SkillRadar` renders a static skill profile.** A real breakdown needs the
     Player Model, which will mine the persisted action rows.
@@ -581,10 +614,17 @@ Stated plainly, because a manual that only lists strengths is marketing.
 
 ### Infrastructure
 
-15. **Playwright runs against the development database.** Vitest is isolated;
-    the browser tests are not.
-16. **130 lint warnings remain** (unused variables, mostly). No errors.
-17. **No CI pipeline** is configured in this repository.
+15. **The test database is never truncated.** `db:test:setup` migrates and
+    seeds idempotently, so rows left by earlier runs accumulate. The browser
+    suite does not depend on an empty database — it runs serially against one
+    account — but a long-lived local test database will keep growing. Clearing it
+    means `prisma migrate reset`, which is deliberately not automated: Prisma
+    blocks AI agents from running it without your explicit consent, and it is
+    irreversible.
+16. **133 lint warnings remain** (unused variables, mostly). No errors.
+17. **CI is configured but unverified.** `.github/workflows/ci.yml` runs the full
+    gate plus a from-scratch migration job. It has never executed, because the
+    repository has no remote — see §12.
 
 ### Deliberately out of scope
 

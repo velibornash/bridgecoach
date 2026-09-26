@@ -16,6 +16,8 @@
  */
 import { NextResponse } from "next/server";
 import { handleRoute, withUser, prisma, readJson, badRequest, notFound, forbidden, requireString } from "@/lib/apiRoute";
+import { limitWrite } from "@/lib/writeLimit";
+import { AI_RATE_LIMITS } from "@/lib/ai/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,9 +37,17 @@ const authorSelect = {
 export const GET = handleRoute((request: Request) =>
   withUser(async (userId) => {
     const before = new URL(request.url).searchParams.get("before");
+    const { blockedIds } = await import("@/app/api/blocks/route");
+    const blocked = await blockedIds(userId);
 
     const posts = await prisma.communityPost.findMany({
-      where: { deletedAt: null },
+      where: {
+        deletedAt: null,
+        // A block hides the other person's content from the blocker's feed. It
+        // is a personal boundary, so it applies to this view only and does not
+        // remove anything for anyone else.
+        ...(blocked.size > 0 ? { authorId: { notIn: [...blocked] } } : {}),
+      },
       // Cursor pagination on createdAt. Offset pagination would drift as new
       // posts arrive, which on a feed means silently skipping content.
       ...(before ? { cursor: { id: before }, skip: 1 } : {}),
@@ -85,6 +95,9 @@ const POST_TYPES = new Set(["achievement", "lesson_completed", "milestone", "str
 
 export const POST = handleRoute(async (request: Request) =>
   withUser(async (userId) => {
+    const limit = await limitWrite(request, "community:post", AI_RATE_LIMITS.post);
+    if (limit) return limit;
+
     const body = await readJson<CreateBody>(request);
     const text = requireString(body.body, "body").trim();
 

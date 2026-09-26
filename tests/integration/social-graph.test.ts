@@ -10,6 +10,7 @@ import { describe, expect, it, beforeAll, afterAll, afterEach, vi } from "vitest
 import { prisma } from "@/lib/db";
 import * as sessionModule from "@/lib/session";
 import { hashPassword } from "@/lib/password";
+import { resetRateLimits } from "@/lib/ai/rateLimit";
 
 let stamp: number;
 let aliceId: string;
@@ -48,6 +49,11 @@ afterAll(async () => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  // Posting is rate limited (Sprint 60 follow-up), and this file posts several
+  // times per user while testing the state machine. Rate-limit behaviour has
+  // its own tests in moderation-search.test.ts; clearing here keeps the two
+  // concerns from interfering.
+  resetRateLimits();
 });
 
 function asUser(id: string, handle: string) {

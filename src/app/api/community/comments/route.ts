@@ -7,6 +7,8 @@
  */
 import { NextResponse } from "next/server";
 import { handleRoute, withUser, prisma, readJson, badRequest, notFound, forbidden, requireString } from "@/lib/apiRoute";
+import { limitWrite } from "@/lib/writeLimit";
+import { AI_RATE_LIMITS } from "@/lib/ai/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,12 +24,20 @@ const authorSelect = {
 } as const;
 
 export const GET = handleRoute((request: Request) =>
-  withUser(async () => {
+  withUser(async (userId) => {
     const postId = new URL(request.url).searchParams.get("postId");
     if (!postId) throw badRequest("postId is required", "MISSING_POST_ID");
 
+    // Comments by someone this account has blocked are hidden, matching the feed.
+    const { blockedIds } = await import("@/app/api/blocks/route");
+    const blocked = await blockedIds(userId);
+
     const comments = await prisma.postComment.findMany({
-      where: { postId, deletedAt: null },
+      where: {
+        postId,
+        deletedAt: null,
+        ...(blocked.size > 0 ? { authorId: { notIn: [...blocked] } } : {}),
+      },
       orderBy: { createdAt: "asc" },
       include: { author: { select: authorSelect } },
     });
@@ -50,6 +60,9 @@ export const GET = handleRoute((request: Request) =>
 
 export const POST = handleRoute(async (request: Request) =>
   withUser(async (userId) => {
+    const limit = await limitWrite(request, "community:comment", AI_RATE_LIMITS.comment);
+    if (limit) return limit;
+
     const body = await readJson<{ postId?: unknown; body?: unknown }>(request);
     const postId = requireString(body.postId, "postId");
     const text = requireString(body.body, "body").trim();

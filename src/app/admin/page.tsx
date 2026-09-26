@@ -31,6 +31,18 @@ interface RegistrationRequest {
   decidedAt: string | null;
 }
 
+interface ReportRow {
+  id: string;
+  targetType: string;
+  targetId: string;
+  reason: string;
+  detail: string | null;
+  status: string;
+  createdAt: string;
+  reporter: { id: string; name: string; email: string };
+  content: { exists: boolean; body?: string; authorId?: string; authorName?: string };
+}
+
 interface MailRow {
   id: string;
   to: string;
@@ -54,17 +66,20 @@ export default function AdminPage() {
   const [requests, setRequests] = useState<RegistrationRequest[] | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [mail, setMail] = useState<MailRow[]>([]);
+  const [reports, setReports] = useState<ReportRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [openMail, setOpenMail] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [registrations, mailbox] = await Promise.all([
+    const [registrations, mailbox, queue] = await Promise.all([
       apiFetchSafe<{ requests: RegistrationRequest[]; counts: Record<string, number> }>(
         "/api/admin/registrations",
       ),
       apiFetchSafe<{ messages: MailRow[] }>("/api/admin/mailbox"),
+      apiFetchSafe<{ reports: ReportRow[] }>("/api/reports"),
     ]);
+    if (queue.data) setReports(queue.data.reports);
     if (registrations.data) {
       setRequests(registrations.data.requests);
       setCounts(registrations.data.counts);
@@ -78,6 +93,19 @@ export default function AdminPage() {
     // render a "loaded" state that is really "not loaded yet".
     void load();
   });
+
+  const resolveReport = async (reportId: string) => {
+    const result = await apiFetchSafe("/api/reports", {
+      method: "PATCH",
+      body: { reportId, action: "dismissed" },
+    });
+    if (result.error) {
+      showToast("error", result.error);
+      return;
+    }
+    showToast("success", "Report closed.");
+    await load();
+  };
 
   const decide = async (email: string, action: "approve" | "reject") => {
     setBusy(email);
@@ -196,6 +224,65 @@ export default function AdminPage() {
                   ))}
                 </ul>
               </details>
+            )}
+          </section>
+
+          <section className="mt-10">
+            <h2 className="text-sm font-bold text-text-primary">
+              Reports ({reports.length})
+            </h2>
+            <p className="mt-1 text-xs text-text-tertiary">
+              Filing a report changes nothing on its own. Nothing is hidden and no
+              account is suspended until you decide here.
+            </p>
+            {reports.length === 0 ? (
+              <p className="mt-3 text-sm text-text-tertiary">
+                Nothing reported. Queue is empty.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {reports.map((r) => (
+                  <li
+                    key={r.id}
+                    className="rounded-xl border border-border bg-bg-card px-4 py-3"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="warning">{r.reason.replace(/_/g, " ")}</Badge>
+                      <span className="text-xs text-text-secondary">
+                        {r.targetType}
+                      </span>
+                      <span className="text-[10px] text-text-tertiary">
+                        reported by {r.reporter.name} · {formatDate(r.createdAt)}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto"
+                        onClick={() => resolveReport(r.id)}
+                      >
+                        Close
+                      </Button>
+                    </div>
+                    {r.detail && (
+                      <p className="mt-2 text-xs text-text-secondary">{r.detail}</p>
+                    )}
+                    {r.content.exists ? (
+                      <p className="mt-2 rounded-lg bg-bg-secondary px-2.5 py-1.5 text-[11px] text-text-tertiary">
+                        {r.content.authorName && (
+                          <span className="font-medium text-text-secondary">
+                            {r.content.authorName}:{" "}
+                          </span>
+                        )}
+                        {r.content.body ?? "(account report)"}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-text-tertiary">
+                        The reported content no longer exists.
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
 

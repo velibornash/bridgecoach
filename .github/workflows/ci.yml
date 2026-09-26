@@ -1,0 +1,153 @@
+# Continuous integration
+#
+# The quality gate existed but only ran when a human remembered to run it. This
+# makes it automatic, and it is the same gate `user-manual.md` documents:
+#
+#   typecheck  →  lint  →  unit + integration  →  build  →  browser
+#
+# PostgreSQL runs as a service container, and BOTH test suites get their own
+# database inside it, because `persistence-journey.spec.ts` completes lessons
+# and changes XP. Sharing one database between the Vitest and Playwright halves
+# is what made the browser suite flaky before it was isolated.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A new push makes an in-flight run irrelevant. Cancelling is left to the user:
+# a half-finished deploy-style pipeline should not disappear silently.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        # The job is worthless if it silently tests a stale schema.
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bridgecoach?schema=public
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bridgecoach_test?schema=public
+      SESSION_SECRET: ci-session-secret-not-used-in-production-000000
+      BCRYPT_COST: "10"
+      # CI never resolves the development identity: the production guard is
+      # asserted by a dedicated test, and leaving this on would weaken it.
+      ALLOW_DEV_IDENTITY: "false"
+      DEV_USER_EMAIL: ci-owner@test.local
+      DEV_USER_PASSWORD: ci-password-1234
+      # No AI provider. `tests/unit/ai/gateway.test.ts` depends on the provider
+      # variables being absent, so sending one would fail the suite honestly.
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in $(seq 1 30); do
+            if pg_isready -h localhost -U postgres; then exit 0; fi
+            sleep 1
+          done
+          echo "PostgreSQL did not become ready" >&2
+          exit 1
+
+      - name: Create and prepare the test database
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE bridgecoach_test;"
+
+      - name: Validate the schema
+        run: npm run db:validate
+
+      - name: Apply migrations to the test database
+        run: npm run db:test:setup
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      # Fail on lint ERRORS but do not fail on warnings. The project is at zero
+      # errors and that is the bar worth protecting; the 130+ warnings are
+      # recorded debt and blocking on them would mean this job is red for weeks.
+      - name: Unit and integration tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests
+        run: npm run test:e2e
+
+  # Migration drift is the failure mode that is invisible locally and expensive
+  # in production: a schema edited without a migration file, which only fails on
+  # a fresh database.
+  migrations:
+    name: Migrations apply to an empty database
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bridgecoach_fresh?schema=public
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Apply every migration from scratch
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE bridgecoach_fresh;"
+          npx prisma migrate deploy
+          npx prisma migrate status

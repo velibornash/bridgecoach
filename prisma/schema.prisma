@@ -208,6 +208,13 @@ model User {
   posts               CommunityPost[]
   postLikes           PostLike[]
   postComments        PostComment[]
+
+  // Moderation
+  /** People this account has blocked. One row per blocked party. */
+  blockedUsers  BlockedUser[] @relation("Blocker")
+  blockedBy     BlockedUser[] @relation("Blocked")
+  reportsFiled     ContentReport[] @relation("ReportsFiled")
+  reportsResolved  ContentReport[] @relation("ReportsResolved")
   activity         Activity[]
 
   @@index([lastActiveAt])
@@ -967,4 +974,52 @@ model PostComment {
   author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([postId, createdAt])
+}
+
+/// A moderation report against a post, comment, or user (Sprint 60 follow-up).
+///
+/// Reports are a queue for a human, not an automatic action. Nothing is deleted
+/// or hidden when a report is filed — an automated response lets one user remove
+/// another user's content by clicking a button, which is the abuse the report
+/// mechanism exists to prevent.
+/// A one-directional block (Sprint 60 follow-up).
+///
+/// One row per blocker/blocked pair. Deliberately not symmetric: blocking is a
+/// personal boundary, and making it symmetric would mean the blocked user's
+/// action list also changed without them doing anything.
+model BlockedUser {
+  blockerId String
+  blockedId String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+model ContentReport {
+  id         String   @id @default(cuid())
+  reporterId String
+  /// "post" | "comment" | "user"
+  targetType String
+  targetId   String
+  reason     String
+  /// Free-text detail, optional.
+  detail     String?
+  status     String   @default("open")
+  resolvedBy String?
+  resolvedAt DateTime?
+  resolution String?
+  createdAt  DateTime @default(now())
+
+  reporter  User  @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+  resolvedByUser User? @relation("ReportsResolved", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([targetType, targetId])
+  /// One report per user per target, so holding the button cannot flood the queue.
+  @@unique([reporterId, targetType, targetId])
 }

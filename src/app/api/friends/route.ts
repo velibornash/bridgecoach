@@ -44,12 +44,18 @@ function presence(lastActiveAt: Date | null): { online: boolean; lastActive: str
 
 export const GET = handleRoute(() =>
   withUser(async (userId) => {
+    const { blockedIds } = await import("@/app/api/blocks/route");
+    const blocked = await blockedIds(userId);
+
     const [accepted, incoming, outgoing] = await Promise.all([
       // Accepted, either direction. `distinct` on the user is what collapses the
       // two rows into one entry, and it is the step most easily forgotten.
       prisma.user.findMany({
         where: {
           id: { not: userId },
+          // Someone who blocked this account is not shown, even if the friendship
+          // predates the block: the blocker asked not to see them.
+          ...(blocked.size > 0 ? { id: { notIn: [...blocked] } } : {}),
           OR: [
             { friendshipsSent: { some: { addresseeId: userId, status: "accepted" } } },
             { friendshipsReceived: { some: { requesterId: userId, status: "accepted" } } },
@@ -158,6 +164,27 @@ export const POST = handleRoute(async (request: Request) =>
     // someone who cannot sign in to read it.
     if (target.status !== "active") throw badRequest("That account is not active", "NOT_ACTIVE");
 
+    // A block in either direction prevents a new request. Checking only the
+    // sender's own block list would let someone who was blocked keep sending
+    // requests to the person who blocked them.
+    const blocks = await prisma.blockedUser.findMany({
+      where: {
+        OR: [
+          { blockerId: userId, blockedId: targetId },
+          { blockerId: targetId, blockedId: userId },
+        ],
+      },
+      select: { blockerId: true, blockedId: true },
+    });
+    if (blocks.some((b) => b.blockerId === userId)) {
+      throw badRequest("Unblock that account before sending a request", "BLOCKED");
+    }
+    if (blocks.some((b) => b.blockerId === targetId)) {
+      // Deliberately the same message. Revealing "this person blocked you"
+      // turns the endpoint into a way to probe another user's block list.
+      throw badRequest("A friend request cannot be sent to that account", "REQUEST_UNAVAILABLE");
+    }
+
     const edges = await existingEdges(userId, targetId);
 
     // Already my friend.
@@ -177,10 +204,6 @@ export const POST = handleRoute(async (request: Request) =>
     if (myPending) {
       throw badRequest("You have already sent a request", "ALREADY_REQUESTED");
     }
-    if (edges.some((e) => e.status === "blocked")) {
-      throw badRequest("That account is not accepting requests", "BLOCKED");
-    }
-
     // A declined pair is retried by deleting the old row first, because the
     // compound primary key means a second insert for the same pair fails.
     await prisma.friendship.deleteMany({

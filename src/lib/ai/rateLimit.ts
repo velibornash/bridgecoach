@@ -45,6 +45,14 @@ export const AI_RATE_LIMITS = {
   chat: { windowMs: 60_000, limit: 20 },
   /** Bid hint/validation: called on every tactical bid. */
   bidding: { windowMs: 60_000, limit: 40 },
+  /**
+   * Community posting. Moderately generous, because a legitimate user writing
+   * about a lesson should not be interrupted, but low enough that a runaway
+   * client cannot fill the feed in a minute. Comments are tighter: replies are
+   * high-frequency by nature and also the cheapest way to flood a thread.
+   */
+  post: { windowMs: 10 * 60_000, limit: 8 },
+  comment: { windowMs: 5 * 60_000, limit: 20 },
 } satisfies Record<string, RateLimitConfig>;
 
 export interface RateLimitResult {

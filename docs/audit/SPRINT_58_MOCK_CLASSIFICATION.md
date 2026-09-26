@@ -20,8 +20,14 @@ possible for the first time.
 | **LABELLED → now real** | 4 files | Unblocked by sessions, then by the social-graph schema |
 | **TEST** | 1 file | Test fixture (correct location) |
 
-**7 real imports remain, down from 45 at the start of Sprint 58** (7 KEEP, 0
-LABELLED). Every multi-user feature is now on real data.
+**6 real imports remain, down from 45 at the start of Sprint 58** (6 KEEP, 0
+LABELLED). Every multi-user feature and search is now on real data.
+
+`mockSearchResults` was the last one to go. It was classified KEEP as "a search
+index over static content", which turned out to be wrong in a way that mattered:
+it described four lessons while the database held eight, so search could not find
+anything the learner did not already know existed. The `KEEP` classification was
+based on the export's name, not on whether the index matched reality.
 
 ---
 
@@ -62,7 +68,6 @@ migrating them would be wasted work.
 |---|---|---|
 | `src/app/catalog/page.tsx` | `mockCatalog` | Course catalogue copy. Static marketing content. |
 | `src/app/flashcards/page.tsx` | `mockFlashcards` | Flashcard content. Static learning material, not user state. |
-| `src/app/search/page.tsx` | `mockSearchResults` | Search index over static content. |
 | `src/app/rewards/page.tsx` | `mockRewards` | Rewards catalogue and cosmetic item prices. |
 | `src/components/landing/Features.tsx` | `mockFeatures` | Marketing copy. |
 | `src/components/landing/Testimonials.tsx` | `mockTestimonials` | Marketing copy. |
@@ -150,13 +155,11 @@ The two design points that mattered:
    has one player, so the page shows one row and an explicit empty state rather
    than padding the list to look populated. Ranking users who do not exist would
    be the same fabrication as the Sprint 58 fixture, just harder to notice.
-6. **`mockSearchResults`** still backs `/search`. It is a catalogue of lessons
-   that exist as real `Lesson` rows, so this is closer to KEEP than to a
-   persistence gap, but the page is not reading the database.
-7. **The community has no moderation beyond author-and-admin deletion.** There is
-   no reporting, no rate limit on posting, and no visibility control — every post
-   is readable by every approved user. This is adequate for a single-owner app
-   and inadequate the moment a stranger can register.
+6. **The community has no moderation *policy*.** Reporting, blocking, a triage
+   queue, and write rate limits all exist as of Sprint 60. What is missing is
+   policy around them: no bulk actions in the queue, no email notification that a
+   report arrived, and no escalation path. Adequate for one owner; still thin for
+   a community.
 
 ---
 

@@ -187,6 +187,18 @@ new bridge conventions.
       approve/reject; password reset with hashed single-use tokens, delivered via
       a local dev mailbox or Resend's free tier. The social-graph half is
       untouched and still open below.
+- [x] **60c — Moderation, search, CI, test isolation.** Shipped. Post and comment
+      rate limits charged to the user id; `BlockedUser` implements the `blocked`
+      status that previously existed in the vocabulary with nothing to set it,
+      enforced on friend requests in both directions and on the feed;
+      `ContentReport` plus an admin triage queue where filing a report
+      deliberately changes nothing. `/search` replaced the last fixture-backed
+      page and is written in SQL because Prisma's Json operators cannot do
+      case-insensitive matching. `.github/workflows/ci.yml` runs the full gate
+      plus a from-scratch migration job. Playwright now runs against
+      `bridgecoach_test` — the docs claimed isolation that only existed for
+      Vitest, and the browser suite was mutating the owner's real progression.
+      **Known gap:** the test database is never truncated, so rows accumulate.
 - [x] **60b — Social graph.** Shipped. `Friendship` with a request/accept state
       machine stored as two rows so the sender survives; `CommunityPost`,
       `PostLike` (a table, because "did I like this" must be answerable), and
