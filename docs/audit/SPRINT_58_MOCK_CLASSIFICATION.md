@@ -17,12 +17,11 @@ possible for the first time.
 | **SEED** | 0 remaining | Converted to database seed data |
 | **REMOVE** | 0 remaining | Was production mock user state — deleted |
 | **KEEP** | 7 files | Legitimate static content, not user state |
-| **LABELLED → now real** | 2 files | Unblocked by sessions, migrated to PostgreSQL |
-| **LABELLED → still labelled** | 2 files | Blocked on a missing data model, not on auth |
+| **LABELLED → now real** | 4 files | Unblocked by sessions, then by the social-graph schema |
 | **TEST** | 1 file | Test fixture (correct location) |
 
-**9 real imports remain, down from 45 at the start of Sprint 58** (7 KEEP +
-2 LABELLED).
+**7 real imports remain, down from 45 at the start of Sprint 58** (7 KEEP, 0
+LABELLED). Every multi-user feature is now on real data.
 
 ---
 
@@ -102,17 +101,26 @@ Fabricated statistics were removed rather than re-derived. "Avg Score 78%",
 already flagged them as REMOVE in Sprint 58 — so the profile now shows six
 metrics that can be computed from real rows.
 
-## LABELLED → still labelled (blocked on a data model, not on auth)
+## LABELLED → now real (Sprint 60)
 
-| File | Exports | Why it is not done |
+The remaining two pages needed data models rather than authentication, so they
+were deferred out of Sprint 59 and built in Sprint 60.
+
+| File | Was | Now |
 |---|---|---|
-| `src/app/friends/page.tsx` | `mockFriends` | Needs a `Friendship` model with a request/accept state machine, plus a decision on who may send a request. `online` and `lastActive` are derivable from `User.lastActiveAt`; `mutualFriends` needs the graph. |
-| `src/app/community/page.tsx` | `mockCommunityPosts` | Needs `Post`, `Like`, and `Comment` models, and answers to questions authentication does not: are posts public, is there blocking or reporting, and is `likes` a counter or a table. |
+| `src/app/friends/page.tsx` | `mockFriends` — ten invented people, and `mutualFriends` counts referencing a graph that did not exist | `GET/POST/PATCH/DELETE /api/friends` — real request/accept, `online` derived from `lastActiveAt`, mutual counts computed from the graph |
+| `src/app/community/page.tsx` | `mockCommunityPosts` — authors `u1`/`u3`/`u6` matching no account, like counts written into a file | `GET/POST /api/community` plus `/likes` and `/comments` — real posts, per-user likes, comments |
 
-Both keep their visible `MultiUserNotice`. This is a deliberate deferral, not an
-oversight: a social graph is a feature area with its own moderation and privacy
-design, and building it inside the authentication sprint would have meant
-inventing those answers under time pressure. Scheduled as Sprint 60.
+The two design points that mattered:
+
+- **Friendship is two rows, not one.** Symmetric in the UI, asymmetric in
+  storage, so "who sent this request" survives for the accept flow. Every read
+  has to consider both directions, and the tests assert the two users' views
+  *agree* after each transition — an asymmetry bug produces a list that
+  disagrees with itself rather than an error.
+- **`likes` is a table, not a counter**, because "did I like this" must be
+  answerable and a counter cannot answer it. One person cannot inflate a count
+  by refreshing.
 
 ---
 
@@ -145,6 +153,10 @@ inventing those answers under time pressure. Scheduled as Sprint 60.
 6. **`mockSearchResults`** still backs `/search`. It is a catalogue of lessons
    that exist as real `Lesson` rows, so this is closer to KEEP than to a
    persistence gap, but the page is not reading the database.
+7. **The community has no moderation beyond author-and-admin deletion.** There is
+   no reporting, no rate limit on posting, and no visibility control — every post
+   is readable by every approved user. This is adequate for a single-owner app
+   and inadequate the moment a stranger can register.
 
 ---
 

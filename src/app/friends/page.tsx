@@ -6,26 +6,65 @@ import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { mockFriends } from "@/services/mockData";
+import {
+  fetchFriends,
+  respondToFriendRequest,
+  removeFriend,
+  type Friend,
+  type FriendsData,
+} from "@/services/friendsService";
+import { useApiResource } from "@/hooks/useApiResource";
 import { showToast } from "@/components/ui/Toast";
-import type { Friend } from "@/types";
-import { MultiUserNotice } from "@/components/common/MultiUserNotice";
+
+/** Relative time, from a real ISO timestamp. */
+function since(iso: string | null, online: boolean): string {
+  if (online) return "Active now";
+  if (!iso) return "No recent activity";
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (minutes < 60) return `${Math.max(1, minutes)} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
 
 export default function FriendsPage() {
+  // Real friends (Sprint 60). Previously ten invented people, whose
+  // "mutualFriends" counts referenced a graph that did not exist.
+  const { data, loading, error, reload } = useApiResource<FriendsData>(() => fetchFriends());
+  const friends = data?.friends ?? [];
+  const incoming = data?.incoming ?? [];
+  const outgoing = data?.outgoing ?? [];
+
+  const respond = async (id: string, action: "accept" | "decline") => {
+    const result = await respondToFriendRequest(id, action);
+    if (result.error) {
+      showToast("error", result.error);
+      return;
+    }
+    showToast("success", action === "accept" ? "Friend added." : "Request declined.");
+    reload();
+  };
+
   const [selected, setSelected] = useState<Friend | null>(null);
 
-  const online = mockFriends.filter((f) => f.online);
+  const online = friends.filter((f: Friend) => f.online);
 
   return (
     <div className="min-h-screen bg-bg-primary">
       <DashboardHeader />
       <main className="py-8 sm:py-12">
-        <MultiUserNotice feature="Friends" className="mb-5" />
         <Container className="max-w-3xl">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-text-primary">Friends</h1>
-              <p className="text-sm text-text-tertiary mt-1">{online.length} online · {mockFriends.length} total</p>
+              <p className="text-sm text-text-tertiary mt-1">
+                {loading
+                  ? "Loading…"
+                  : error
+                    ? error
+                    : `${online.length} online · ${friends.length} total`}
+              </p>
             </div>
             <Button
               onClick={() => showToast("success", "Invite link copied!")}
@@ -34,11 +73,54 @@ export default function FriendsPage() {
             </Button>
           </div>
 
+          {incoming.length > 0 && (
+            <section className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4">
+              <h2 className="text-sm font-bold text-text-primary">
+                Requests ({incoming.length})
+              </h2>
+              <ul className="mt-3 space-y-2">
+                {incoming.map((r) => (
+                  <li key={r.id} className="flex items-center gap-3">
+                    <Avatar name={r.name} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-text-primary">
+                        {r.name}
+                      </p>
+                      <p className="text-[11px] text-text-tertiary">
+                        Level {r.level} · {r.country}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Button size="sm" onClick={() => respond(r.id, "accept")}>
+                        Accept
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => respond(r.id, "decline")}>
+                        Decline
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {outgoing.length > 0 && (
+            <p className="mb-4 text-xs text-text-tertiary">
+              {outgoing.length} request{outgoing.length === 1 ? "" : "s"} waiting for a
+              reply.
+            </p>
+          )}
+
           <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
             {/* Friend list */}
             <div className="space-y-2">
               <AnimatePresence mode="popLayout">
-                {mockFriends.map((friend) => (
+                {!loading && friends.length === 0 && (
+                <p className="py-10 text-center text-sm text-text-tertiary">
+                  No friends yet. Send a request from the leaderboard or a profile.
+                </p>
+              )}
+              {friends.map((friend: Friend) => (
                   <motion.div
                     key={friend.id}
                     layout
@@ -64,14 +146,16 @@ export default function FriendsPage() {
                         {friend.online && <span className="shrink-0 text-[10px] text-emerald-400 font-medium">Online</span>}
                       </div>
                       <p className="text-[11px] text-text-tertiary">
-                        Level {friend.level} · {friend.country} · {friend.lastActive === "now" ? "Active now" : friend.lastActive}
+                        Level {friend.level} · {friend.country} · {since(friend.lastActive, friend.online)}
                       </p>
                     </div>
 
                     <div className="shrink-0 flex items-center gap-2">
                       <div className="text-right">
                         <p className="text-xs font-bold text-text-primary">{friend.xp.toLocaleString()} XP</p>
-                        <p className="text-[10px] text-text-tertiary">{friend.achievements} achievements</p>
+                        <p className="text-[10px] text-text-tertiary">
+                          {friend.mutualFriends} mutual · {friend.achievements} friends
+                        </p>
                       </div>
                       <svg
                         width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"

@@ -186,14 +186,14 @@ new bridge conventions.
       approve/reject; password reset with hashed single-use tokens, delivered via
       a local dev mailbox or Resend's free tier. The social-graph half is
       untouched and still open below.
-- [ ] **60b — Social graph.** `/friends` and `/community` are still labelled
-      sample data. Unblocked by Sprint 59; they are blocked on a missing data
-      model, not on auth. Needs `Friendship` (request/accept state machine, and a
-      decision on who may send a request) and `Post`/`Like`/`Comment` (with
-      answers about public visibility, blocking, and whether `likes` is a counter
-      or a table). Deferred from Sprint 59 on purpose: those are moderation and
-      privacy design questions, and inventing them under time pressure inside an
-      auth sprint would have been worse than deferring. Three decisions are needed first (session storage,
+- [x] **60b — Social graph.** Shipped. `Friendship` with a request/accept state
+      machine stored as two rows so the sender survives; `CommunityPost`,
+      `PostLike` (a table, because "did I like this" must be answerable), and
+      `PostComment`. `/friends` and `/community` are on real data and their
+      `MultiUserNotice` is gone. Both users' views are asserted to agree after
+      every friendship transition. **Known gap:** no reporting, no post rate
+      limit, no visibility control — adequate for one owner, inadequate once a
+      stranger can register. Three decisions are needed first (session storage,
       dev-user handling, hashing algorithm).
       Summary: server-side sessions in a signed `httpOnly` cookie, `bcryptjs`
       hashing, a `Session` + `AuthEvent` table, `/api/auth/*` endpoints on the

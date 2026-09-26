@@ -203,6 +203,11 @@ model User {
   authorContents   AuthorContent[]
   authorDrafts     AuthorDraft[]
   registrationDecisions RegistrationRequest[] @relation("RegistrationDecidedBy")
+  friendshipsSent     Friendship[] @relation("FriendshipRequester")
+  friendshipsReceived Friendship[] @relation("FriendshipAddressee")
+  posts               CommunityPost[]
+  postLikes           PostLike[]
+  postComments        PostComment[]
   activity         Activity[]
 
   @@index([lastActiveAt])
@@ -879,4 +884,87 @@ model RegistrationRequest {
 
   @@index([status])
   @@index([createdAt])
+}
+
+/// A directed connection between two users (Sprint 60).
+///
+/// Friendship is symmetric in the UI but stored as two rows, so "who sent this
+/// request" survives. Collapsing it into one row with two ids would force every
+/// read to remember which side was which, and the accept flow needs to know.
+///
+/// The compound primary key on (requesterId, addresseeId) is what makes a
+/// duplicate request impossible at the database level rather than in a check
+/// that two concurrent requests can both pass.
+model Friendship {
+  requesterId String
+  addresseeId String
+  /// pending | accepted | declined | blocked
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  respondedAt DateTime?
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@id([requesterId, addresseeId])
+  @@index([addresseeId, status])
+  @@index([requesterId, status])
+}
+
+/// A community post (Sprint 60).
+///
+/// `authorId` is required and cascades: deleting a user removes their posts
+/// rather than leaving them attributed to nobody.
+model CommunityPost {
+  id        String   @id @default(cuid())
+  authorId  String
+  body      String
+  /// What kind of post this is, and the axis the feed filters on.
+  /// Kept separate from `relatedType`: the category is intrinsic to the post,
+  /// while the related link is incidental. Overloading one column for both meant
+  /// a categorised post was rejected as a malformed relation.
+  type      String   @default("milestone")
+  /// Optional link to the lesson or achievement the post refers to.
+  relatedType String?
+  relatedId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@index([type])
+
+  author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes     PostLike[]
+  comments  PostComment[]
+
+  @@index([createdAt])
+  @@index([authorId])
+}
+
+/// A like. A table rather than an integer counter, because "did I like this" must
+/// be answerable and a counter cannot answer it.
+model PostLike {
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+  @@index([userId])
+}
+
+model PostComment {
+  id        String   @id @default(cuid())
+  postId    String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+
+  post   CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
 }
