@@ -153,7 +153,8 @@ new bridge conventions.
       Sprint 58 also fixed two browser-only bugs this pass surfaced (a `NaN`
       progress-bar width from a `0/0` division, and a hydration mismatch from
       render-phase `new Date()` calls).
-- [ ] **58.4.5 Mock dependency classification** (§28).
+- [x] **58.4.5 Mock dependency classification** (§28).
+      `docs/audit/SPRINT_58_MOCK_CLASSIFICATION.md`, re-audited twice since.
 - [x] **58.4.6 Quality gate** (§30): typecheck 0 errors · lint 0 errors ·
       `npm test` 184/184 · coverage 67.44% stmts (bridge engine 86.12%) ·
       `npm run test:e2e` 4/4 · `npm run build` clean.
@@ -245,21 +246,27 @@ new bridge conventions.
       waiting.
 - [ ] **AI Coach 2.0.** Reconnect `/api/coach` to persisted conversations
       (needs 58.2.4), send real history, and inject Player Model context.
-- [ ] **Fix the fake countdown** `src/app/dashboard/page.tsx:57` — `timeLeft = 365`
+- [x] **Fix the fake countdown** — real seconds to end of day (Sprint 58)
       renders a fabricated `6:05` timer.
-- [ ] **Fix the hero marketing claims** `src/components/landing/Hero.tsx:13-17`
+- [x] **Fix the hero marketing claims.** "50K+ Active Learners / 200+ Lessons /
+      15K+ Challenges" replaced with product facts
       — `"50K+ Active Learners"`, `"200+ Interactive Lessons"`,
       `"15K+ Daily Challenges Solved"` are fabricated with no data source.
-- [ ] **Fix content contradictions.** `src/app/faq/page.tsx:20` claims "6 lessons"
+- [x] **Fix content contradictions.** FAQ and pricing rewritten: no invented paid
+      tiers, no fabricated payment methods or refund guarantees
       and "$9.99/$19.99"; fixtures say 8 lessons and $0/$9/$99
       (`src/components/landing/PricingPreview.tsx`).
-- [ ] **Real leaderboard / friends / community.** Currently pure fixtures
+- [x] **Real leaderboard / friends / community.** Shipped in Sprint 59/60
       (`mockLeaderboard`, `mockFriends`, `mockCommunityPosts`). Depends on auth.
-- [ ] **Real certificates** — `mockCertificates` / `mockExtendedCertificates`
+- [x] **Real certificates** — served from `/api/certificates`; the fixtures are
+      dead code and removed
       are static; should be derived from persisted lesson completion.
-- [ ] **Settings persistence.** `src/app/settings/page.tsx:46-54` notification
+- [x] **Settings persistence.** Shipped: `Profile.preferences`, and the three
+      privacy toggles are now enforced rather than decorative
       and privacy toggles are `useState` only, never saved.
-- [ ] **Fix `bridgecoach-locale` write-only bug.**
+- [x] **Fix `bridgecoach-locale` write-only bug.** It was written and never read;
+      the language reset to English on every reload. Fixed with the existing
+      `getLocaleFromString`, so a stale value falls back safely.
       `src/i18n/useTranslation.tsx:19` writes the locale but never reads it, so
       the language always resets to `en` on reload.
 - [ ] **Finish localization** (P3 in the 1–56 audit): theme switcher is real,
@@ -267,19 +274,21 @@ new bridge conventions.
 
 ### P3 — Cleanup
 
-- [ ] **Delete or adopt `SurfaceCard.tsx`** (614 lines, 7 variants, orphaned —
+- [x] **Delete or adopt `SurfaceCard.tsx`** — deleted; it had no importers
       never imported). R-4 in the 1–56 audit.
 - [ ] **Resolve XP semantics ambiguity.** R-5: `mockUserStats.totalXpEarned 2450`
       vs `mockUser.xp 3500`. Define current vs lifetime, then derive both.
-- [ ] **Clear the 106 remaining lint warnings** (P3, R-7). All are unused
+- [ ] **Clear the remaining lint warnings** (P3, R-7) — 127, down from 139 by
+      deleting orphaned `SurfaceCard` and removing dead imports. All are unused
       imports/vars in pre-existing files.
-- [ ] **Add CI** on `lint && typecheck && test && build` — nothing is guarded
+- [x] **Add CI** on `lint && typecheck && test && build`. Shipped: also runs the
+      browser suite and a from-scratch migration job. Unverified — no remote yet
       automatically today.
 - [ ] **Add `/api` error + rate-limit conventions**, structured logging, and
       health checks before production.
 - [ ] **Orphaned pages check.** 42 `page.tsx` routes; confirm every one is
       reachable and intentional (e.g. `/maintenance`, `/offline`).
-- [ ] **Remove `test-results/` noise** from the working tree (gitignored, but
+- [x] **Remove `test-results/` noise** from the working tree (gitignored, but
       Playwright leaves artefacts locally).
 
 ---

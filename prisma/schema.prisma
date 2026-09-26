@@ -285,6 +285,14 @@ model Profile {
   bio       String   @default("")
   website   String?
   location  String?
+  /// Notification, privacy and language choices from /settings.
+  ///
+  /// Stored as JSON rather than a preferences table because there is no query
+  /// that needs to slice it — it is read whole by one page and written whole by
+  /// one endpoint. The earlier version kept these in `useState` and showed
+  /// "settings saved" while persisting nothing, which is the same class of lie
+  /// as the removed mock statistics.
+  preferences Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

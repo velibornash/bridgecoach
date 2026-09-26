@@ -3,6 +3,8 @@ import { complete, isAiConfigured } from "@/lib/ai/gateway";
 import { AiGatewayError } from "@/lib/ai/types";
 import { AI_RATE_LIMITS, checkRateLimit, rateLimitKey, pinnedProvider } from "@/lib/ai/rateLimit";
 import { getSessionUser } from "@/lib/session";
+import { prisma } from "@/lib/db";
+import { readPreferences } from "@/lib/preferences";
 
 export const runtime = "nodejs";
 
@@ -35,6 +37,28 @@ const MAX_SYSTEM_PROMPT_LENGTH = 4_000;
 export async function POST(req: NextRequest) {
   // ---- Rate limit -------------------------------------------------------
   const session = await getSessionUser();
+
+  // `dataForAI` off means the coach is refused rather than silently ignoring
+  // the setting. A toggle that gates nothing is a lie; a toggle that gates the
+  // feature and is never read is worse, because the user believes their data is
+  // not being sent.
+  if (session) {
+    const profile = await prisma.profile.findUnique({
+      where: { userId: session.id },
+      select: { preferences: true },
+    });
+    if (!readPreferences(profile?.preferences).privacy.dataForAI) {
+      return NextResponse.json(
+        {
+          error:
+            "The AI coach is turned off for your account. Enable 'Use my learning data for AI features' in Settings to use it.",
+          code: "AI_DISABLED",
+        },
+        { status: 403 },
+      );
+    }
+  }
+
   const limit = checkRateLimit(
     `coach:${rateLimitKey(req, session?.id ?? null)}`,
     AI_RATE_LIMITS.chat,

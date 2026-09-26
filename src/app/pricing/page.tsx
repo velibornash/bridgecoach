@@ -11,77 +11,57 @@ import { Container } from "@/components/ui/Container";
 import { Accordion } from "@/components/ui/Accordion";
 import Link from "next/link";
 
+/**
+ * One plan, because there is one.
+ *
+ * This page previously sold four tiers — $9 Premium, $19 Pro, and a custom Elite
+ * tier — listing "200+ lessons", live tournaments, expert analysis, custom
+ * learning plans, API access, a class management dashboard, custom branding and
+ * an SLA guarantee. The application had eight lessons, no tournaments, no
+ * billing integration, and no API. The FAQ alongside it promised a 30-day
+ * money-back guarantee and accepted PayPal and Apple Pay.
+ *
+ * None of that was ever labelled as a placeholder, and a pricing page is the one
+ * place where a visitor might reasonably act on a number. So the invented tiers
+ * are gone and the page says what is actually true: everything is free, and here
+ * is what works.
+ *
+ * When billing is genuinely built, restore the tiers from the same source of
+ * truth the checkout reads — not from a component constant.
+ */
 const plans = [
   {
-    name: "Free",
+    name: "Everything",
     price: "$0",
     period: "forever",
-    description: "Start your bridge journey.",
+    description: "The whole application, at no cost, while it is in beta.",
     features: [
-      "First 10 lessons",
-      "Basic quizzes",
-      "Daily challenges",
-      "XP tracking & achievements",
+      "All lessons in the catalogue",
+      "Server-graded quizzes",
+      "Bidding practice with a real engine",
+      "Hand replay and analysis",
+      "XP, levels, streaks and achievements",
+      "Notes, bookmarks and progress tracking",
+      "AI coach (bring your own key)",
+      "Leaderboard, friends and community",
     ],
-    cta: "Get Started",
-    variant: "outline" as const,
-    highlight: false,
-    popular: false,
-  },
-  {
-    name: "Premium",
-    price: "$9",
-    period: "/month",
-    description: "The complete experience.",
-    features: [
-      "All 200+ lessons",
-      "Advanced quizzes & puzzles",
-      "AI Coach feedback",
-      "Unlimited daily challenges",
-      "Partner matching",
-      "Priority support",
-    ],
-    cta: "Start Free Trial",
+    cta: "Create an account",
     variant: "primary" as const,
     highlight: true,
     popular: true,
   },
-  {
-    name: "Pro",
-    price: "$19",
-    period: "/month",
-    description: "For serious learners.",
-    features: [
-      "Everything in Premium",
-      "Live tournaments access",
-      "Expert analysis",
-      "Custom learning plans",
-      "Advanced hand analysis",
-      "API access for tools",
-    ],
-    cta: "Go Pro",
-    variant: "outline" as const,
-    highlight: false,
-    popular: false,
-  },
-  {
-    name: "Elite",
-    price: "Custom",
-    period: "",
-    description: "For clubs & coaches.",
-    features: [
-      "Everything in Pro",
-      "Unlimited student seats",
-      "Class management dashboard",
-      "Custom branding",
-      "Dedicated support",
-      "SLA guarantee",
-    ],
-    cta: "Contact Sales",
-    variant: "outline" as const,
-    highlight: false,
-    popular: false,
-  },
+];
+
+/**
+ * Not yet built, listed so the absence is deliberate and visible rather than
+ * looking like an oversight. Each is a real gap, not a future promise.
+ */
+const notYetBuilt = [
+  "Paid tiers and payment processing — there is no checkout",
+  "Email delivery, including password reset outside development",
+  "Live tournaments and expert analysis",
+  "API access for third-party tools",
+  "Team seats, class management and custom branding",
 ];
 
 const allFeatures = [
@@ -100,12 +80,12 @@ const allFeatures = [
 ];
 
 const faqs = [
-  { q: "Can I switch plans anytime?", a: "Yes, you can upgrade or downgrade at any time. When upgrading, you get immediate access to new features. When downgrading, changes apply at the end of your billing cycle." },
-  { q: "Is there a free trial for Premium?", a: "Absolutely! You get a 7-day free trial of Premium with full access to all features. No credit card required to start." },
-  { q: "What payment methods do you accept?", a: "We accept all major credit cards, PayPal, and Apple Pay. For Elite plans, we also support invoicing and bank transfers." },
-  { q: "Can I cancel my subscription?", a: "Yes, you can cancel anytime from your Settings page. Your access continues until the end of your paid period." },
-  { q: "Is there a student discount?", a: "Yes, we offer 50% off Premium for verified students. Contact our support team with your student ID." },
-  { q: "Do you offer refunds?", a: "We offer a 30-day money-back guarantee on all paid plans. If you are not satisfied, we will refund your full payment." },
+  { q: "Will there be paid plans?", a: "Possibly, and this page will say so before they exist. Nothing here takes a payment today, so there is nothing to cancel or refund." },
+  { q: "Is there a free trial?", a: "There is no trial because there is no paid plan. The whole application is free." },
+  { q: "What payment methods do you accept?", a: "None — there is no checkout. Everything is free while the app is in beta, so there is nothing to pay for." },
+  { q: "Can I cancel a subscription?", a: "There is no subscription to cancel. Nothing is charged and no card details are ever collected." },
+  { q: "Is there a student discount?", a: "Not applicable — everything is already free, so there is nothing to discount." },
+  { q: "Do you offer refunds?", a: "There is nothing to refund: the app is free and no payment is ever taken. If paid tiers are added later, this page will say so before they exist." },
 ];
 
 const CheckIcon = () => (
@@ -224,46 +204,32 @@ export default function PricingPage() {
             ))}
           </div>
 
-          {/* Comparison Table */}
+          {/* What is not built yet. A single-plan comparison table would be
+              theatre, so the space is used to state the gaps instead. */}
           <div className="mt-24">
-            <h2 className="text-2xl font-bold text-text-primary text-center mb-8">Compare Plans</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="py-3 pr-4 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider">Feature</th>
-                    {plans.map((p) => (
-                      <th key={p.name} className={`py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider ${
-                        p.highlight ? "text-primary" : "text-text-tertiary"
-                      }`}>
-                        {p.name}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {allFeatures.map((f, i) => (
-                    <tr key={f.name} className={`border-b border-border/50 ${i % 2 === 0 ? "bg-bg-card/30" : ""}`}>
-                      <td className="py-3 pr-4 text-sm text-text-secondary">{f.name}</td>
-                      {["free", "premium", "pro", "elite"].map((tier) => {
-                        const val = f[tier as keyof typeof f];
-                        return (
-                          <td key={tier} className="py-3 px-4 text-center">
-                            {typeof val === "boolean" ? (
-                              val ? <CheckIcon /> : <MinusIcon />
-                            ) : (
-                              <span className="text-xs text-text-secondary">{val}</span>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <h2 className="text-2xl font-bold text-text-primary text-center mb-3">
+              Not built yet
+            </h2>
+            <p className="mx-auto max-w-xl text-center text-sm text-text-secondary mb-8">
+              Listed so their absence is deliberate rather than looking like an
+              oversight. None of them are sold or promised anywhere on this site.
+            </p>
+            <ul className="mx-auto max-w-xl space-y-2">
+              {notYetBuilt.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-start gap-2.5 rounded-lg border border-border bg-bg-card px-4 py-2.5 text-sm text-text-secondary"
+                >
+                  <span className="mt-0.5 text-text-tertiary" aria-hidden>
+                    &mdash;
+                  </span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
+          {/* FAQ */}
           {/* FAQ */}
           <div className="mt-24 max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold text-text-primary text-center mb-8">Frequently Asked Questions</h2>

@@ -15,6 +15,7 @@
 import { NextResponse } from "next/server";
 import { handleRoute, withUser, prisma, notFound } from "@/lib/apiRoute";
 import { getLevelInfo } from "@/services/xpService";
+import { readPreferences } from "@/lib/preferences";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,13 +60,29 @@ export const GET = handleRoute(
         prisma.courseProgress.count({ where: { userId: id, completed: true } }),
       ]);
 
+      /**
+       * The privacy choices from /settings, enforced here rather than described
+       * on the settings page. A toggle that does not gate anything is a lie, and
+       * this is the place it can be made true.
+       */
+      const privacy = readPreferences(profile?.preferences).privacy;
+
+      // A user who turned their profile off is not merely hidden from the
+      // leaderboard; the profile itself is not served. Viewers still get a
+      // clean 404 rather than an error that reveals it exists.
+      if (!privacy.showProfile && id !== viewerId) {
+        throw notFound("Profile not found");
+      }
+
       // Recent real activity, newest first. Previously a fixture list with
       // invented entries and dates.
-      const activity = await prisma.activity.findMany({
-        where: { userId: id },
-        orderBy: { createdAt: "desc" },
-        take: 20,
-      });
+      const activity = privacy.showActivity
+        ? await prisma.activity.findMany({
+            where: { userId: id },
+            orderBy: { createdAt: "desc" },
+            take: 20,
+          })
+        : [];
 
       return NextResponse.json({
         user: {
@@ -104,6 +121,9 @@ export const GET = handleRoute(
           // it was granted outside the normal path.
           unlockedAt: row.unlockedAt?.toISOString() ?? null,
         })),
+        // Reported so the page can explain an empty section rather than showing
+        // "no recent activity" when the truth is that it was turned off.
+        activityVisible: privacy.showActivity,
         activity: activity.map((row) => ({
           id: row.id,
           type: row.type,

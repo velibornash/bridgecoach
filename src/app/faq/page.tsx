@@ -18,9 +18,9 @@ const faqs = [
   {
     category: "Account & Billing",
     items: [
-      { q: "How much does Bridge Coach cost?", a: "We offer a free tier with 6 lessons and basic quizzes. Premium ($9.99/mo) unlocks the full curriculum, AI Coach, and detailed analytics. Pro ($19.99/mo) adds advanced courses and priority support." },
+      { q: "How much does Bridge Coach cost?", a: "Nothing. The whole application is free while it is in beta, and there is no checkout. Everything described on this site is available to every registered user." },
       { q: "Can I cancel anytime?", a: "Yes, you can cancel your subscription at any time. Your access continues until the end of the current billing period." },
-      { q: "Do you offer refunds?", a: "We offer a 14-day money-back guarantee on all paid plans. Contact us at ${SUPPORT_EMAIL} for assistance." },
+      { q: "Do you offer refunds?", a: "There is nothing to refund, because no payment is ever taken. If paid tiers are introduced they will appear on this page before they go on sale." },
       { q: "How do I upgrade my plan?", a: "Go to the Subscription page in your settings. You can upgrade, downgrade, or cancel your plan at any time." },
     ],
   },

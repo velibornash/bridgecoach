@@ -861,3 +861,87 @@ its own route with its own `requireAdmin()`.
 
 typecheck 0 · lint 0 errors · **281 unit/integration** (was 264) · 7 E2E · build
 clean
+
+---
+
+## Session 16 — the surfaces that lied
+
+**Commit:** see git log for the session-16 commit
+
+Sprint 60 closed the gaps the manual admitted to. This session went after the
+ones the manual did not, because they were on pages nobody opens in a demo.
+
+### `/settings` reported success while writing nothing
+
+The save button called a handler that showed a toast and touched no storage. The
+three password inputs were never read, and "Update Password" called the same
+handler that saved preferences — so wiring the handler to the database without
+touching the form would have produced a *worse* lie: a button that saved
+preferences and claimed to have changed a password.
+
+Now: `Profile.preferences` holds language, notification and privacy choices;
+`PATCH /api/profile` writes name, country and experience level; Change Password
+calls the endpoint the reset flow already uses, which revokes other sessions.
+
+### Three privacy toggles now gate something
+
+A toggle that gates nothing is a lie, and one that gates the feature without
+saying so is worse. So the three privacy settings are enforced where they can be:
+
+- **Show Profile off** → the public profile returns 404 to everyone but its owner
+- **Show Activity off** → activity omitted, and the response says it was hidden
+  rather than letting the page claim there is none
+- **AI Coach Data off** → `/api/coach` refuses with a message naming the setting,
+  instead of quietly proceeding
+
+The notification toggles cannot be enforced — there is no delivery system — so
+the section now says so in plain text rather than implying alerts are sent.
+
+### Language: a dropdown that changed nothing
+
+Eight languages were offered; switching one set a `useState` value that nothing
+read. Seven are now disabled and marked "soon", with a line explaining why. The
+choice is still persisted so it applies when the translations land.
+
+### The pricing page was selling a product that does not exist
+
+Four tiers: $9 Premium, $19 Pro, and a custom Elite tier. Listing "200+ lessons",
+live tournaments, expert analysis, custom learning plans, API access, class
+management, custom branding and an SLA guarantee. The application has eight
+lessons, no tournaments, no billing integration and no API. The FAQ next to it
+promised a 30-day money-back guarantee and accepted PayPal and Apple Pay.
+
+A pricing page is the one surface where a visitor might reasonably act on a
+number, so this was the most consequential of the lies. It is now one honest
+plan, and a "Not built yet" list so the gaps read as decisions rather than
+oversights. The Hero's "50K+ Active Learners / 200+ Lessons / 15K+ Challenges"
+went the same way, replaced with product facts that cannot go stale.
+
+### The locale was write-only
+
+`bridgecoach-locale` was written on every change and never read, so the language
+reset to English on every reload. Fixed with the `getLocaleFromString` helper
+that already existed and was imported but unused.
+
+### Dead code and a stale backlog
+
+`SurfaceCard.tsx` — 614 lines, seven variants, no importers — deleted. The
+backlog had nine entries marked open that were finished, including "Add CI" and
+"Real leaderboard / friends / community"; those are now closed, because a
+backlog that lies about what is done is worse than no backlog. Open items went
+19 → 8, and the eight are real.
+
+### Two things only the build caught
+
+- `SettingsClient.tsx` lost its `"use client"` directive when the page was split
+  into a server component and a form. `tsc` passed. Only `next build` failed.
+- A regex replacement in the pricing page swallowed the file's `"use client"`
+  directive. Same story.
+
+Both are invisible to typecheck. Neither would have been caught by reading the
+diff, because the diff looks correct.
+
+### Gate
+
+typecheck 0 · lint **0 errors, 127 warnings** (was 139 — deleting the orphan and
+its imports) · **333 unit/integration** (was 318) · 7 E2E · build clean

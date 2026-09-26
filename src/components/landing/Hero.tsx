@@ -10,10 +10,20 @@ import { FloatingCards } from "@/components/bridge/FloatingCards";
 import { SuitSymbol } from "@/components/bridge/SuitSymbol";
 import Link from "next/link";
 
-const stats = [
-  { value: "50K+", label: "Active Learners", icon: Users },
-  { value: "200+", label: "Interactive Lessons", icon: BookOpen },
-  { value: "15K+", label: "Daily Challenges Solved", icon: Trophy },
+/**
+ * The previous three figures were "50K+ Active Learners", "200+ Interactive
+ * Lessons" and "15K+ Daily Challenges Solved" — invented, and on an application
+ * with one account and eight lessons. This is the same failure as the mock
+ * statistics that Sprint 58 removed from the dashboard, except it is the first
+ * thing a visitor sees and it was never labelled as sample data.
+ *
+ * These are properties of the product rather than claims about its adoption, so
+ * they cannot go out of date as the user count changes.
+ */
+const facts = [
+  { value: "Full bidding engine", label: "Every auction validated, not approximated", icon: Trophy },
+  { value: "Real persistence", label: "Progress stored in PostgreSQL", icon: BookOpen },
+  { value: "Multi-user", label: "Leaderboard, friends, community", icon: Users },
 ];
 
 export function Hero() {
@@ -109,14 +119,14 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-16 grid grid-cols-3 gap-8 sm:gap-16"
+          className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-16"
         >
-          {stats.map((stat) => (
+          {facts.map((stat) => (
             <div key={stat.label} className="text-center">
               <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 backdrop-blur-sm">
                 <Icon icon={stat.icon} size={20} className="text-primary" />
               </div>
-              <div className="text-2xl font-bold text-white sm:text-3xl">
+              <div className="text-sm font-bold text-white sm:text-base">
                 {stat.value}
               </div>
               <div className="mt-1 text-xs text-white/60 sm:text-sm">

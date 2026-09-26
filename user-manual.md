@@ -340,6 +340,23 @@ with fiction.
 `/author-studio` — create and edit courses, lessons, and quizzes. Role-gated for
 privileged operations.
 
+### Settings — what each control actually does
+
+`/settings` is real. Every control writes, and the three privacy toggles are
+enforced rather than decorative:
+
+| Control | Effect |
+|---|---|
+| **Theme** | Applies and persists immediately. No Save button, because there is no second step. |
+| **Language** | Saved. Only English is translated; the other options are disabled and marked "soon" rather than silently doing nothing. |
+| **Notifications** | Saved. **No delivery exists yet** — there is no email or push system behind these. The section says so. |
+| **Show Profile** | Enforced. Off means the public profile returns 404 to everyone except its owner. |
+| **Show Activity** | Enforced. Off means recent activity is omitted from the public profile. |
+| **AI Coach Data** | Enforced. Off makes `/api/coach` refuse with a clear message rather than ignoring the setting. |
+| **Account fields** | Name, country and experience level are written by `PATCH /api/profile`. |
+| **Email** | **Read-only.** Changing it needs a verification step that is not built. |
+| **Change Password** | Real. Uses the same endpoint as the reset flow, and signs out every other device. |
+
 ### Other
 
 `/settings` · `/email-preferences` · `/notifications` · `/onboarding` ·
@@ -389,7 +406,7 @@ All configuration lives in `.env`. **Never commit it.**
 
 ## 10. Database
 
-PostgreSQL. **39 models, 18 enums, 40 tables, 9 migrations.**
+PostgreSQL. **39 models, 18 enums, 40 tables, 10 migrations.**
 
 ### Core tables
 
@@ -403,6 +420,8 @@ PostgreSQL. **39 models, 18 enums, 40 tables, 9 migrations.**
 | Social | `Friendship`, `CommunityPost`, `PostLike`, `PostComment` |
 | Moderation | `BlockedUser`, `ContentReport` |
 | Other | `Bookmark`, `Note`, `Mission`, `Achievement`, `AIConversation`, `AIMessage`, `OutgoingEmail` |
+
+`Profile.preferences` holds the settings described below as a JSON column.
 
 ### Deliberate design decisions
 
@@ -433,8 +452,8 @@ psql "$DATABASE_URL"         # or query directly
 | Gate | Result |
 |---|---|
 | `npm run typecheck` | 0 errors |
-| `npm run lint` | **0 errors**, 133 warnings |
-| `npm test` | **318 passing**, 26 files |
+| `npm run lint` | **0 errors**, 127 warnings |
+| `npm test` | **333 passing**, 27 files |
 | `npm run test:e2e` | 7 passing |
 | `npm run build` | clean |
 | `npm run test:e2e` | 7 passing, against `bridgecoach_test` |
@@ -621,7 +640,7 @@ Stated plainly, because a manual that only lists strengths is marketing.
     means `prisma migrate reset`, which is deliberately not automated: Prisma
     blocks AI agents from running it without your explicit consent, and it is
     irreversible.
-16. **133 lint warnings remain** (unused variables, mostly). No errors.
+16. **127 lint warnings remain** (unused variables, mostly). No errors.
 17. **CI is configured but unverified.** `.github/workflows/ci.yml` runs the full
     gate plus a from-scratch migration job. It has never executed, because the
     repository has no remote — see §12.
