@@ -251,7 +251,7 @@ is in the verification and not only in the commit message.
 | `npx playwright test` | 7 passing |
 | `npm run build` | clean |
 | Migrations | 8, applied to dev and test |
-| Tables | 35 |
+| Tables | 38 |
 
 Test count: 264 → 298 across the sprint. The 34 new tests cover the approval
 state machine, admin authorisation, reset token lifecycle, mailbox privacy, the
