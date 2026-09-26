@@ -19,32 +19,42 @@ new bridge conventions.
 
 ### 58.1 — Foundation
 
-- [!] **58.1.1 Decide + document the database choice.** Recommended: SQLite + Prisma.
-      Rationale: zero external infrastructure, local dev = a file, typed schema,
-      `migrate` + `seed` are two commands, no native compile step. Document the
-      decision in `docs/verification/SPRINT_58_VERIFICATION.md` §2.
-- [ ] **58.1.2 Install and configure Prisma.** `prisma` + `@prisma/client`,
-      `prisma/schema.prisma`, `DATABASE_URL` in `.env.example` and `.env`.
-      Add scripts: `db:migrate`, `db:seed`, `db:reset`, `db:studio`.
-- [ ] **58.1.3 Schema + first migration.** Models per §4 of the sprint spec:
-      `User`, `Profile`, `Course`, `Lesson`, `LessonProgress`, `Hand`,
-      `PracticeSession`, `PracticeAction`, `Auction`, `AuctionAction`, `Quiz`,
-      `QuizAttempt`, `Achievement`, `UserAchievement`, `Mission`, `UserMission`,
-      `XPEvent`, `Bookmark`, `Note`, `AIConversation`, `AIMessage`,
-      `AuthorContent`, `AuthorDraft`, `AuthorRevision`.
-      Every private entity gets an explicit `userId` owner relation (§5).
-- [ ] **58.1.4 DB client singleton** `src/lib/db.ts` with a documented development
-      identity resolver (see 58.1.5). No `userId = "demo-user"` as permanent
-      architecture (§27) — use a swappable `getCurrentUserId()` that Sprint 59
-      replaces with real auth.
-- [ ] **58.1.5 Seed mechanism** `prisma/seed.ts` — deterministic, idempotent,
-      repeatable. Converts `src/services/mockData.ts` into dev seed data (§18).
-      Seed: courses, lessons, quizzes, achievements, missions, sample hands,
-      and a dev user. Must be clearly distinguishable from production data
-      (e.g. `isSeed` / `source` marker).
-- [ ] **58.1.6 Document local setup.** How to start the DB, run migrations, seed,
-      and reset dev data. Target: `docs/verification/SPRINT_58_VERIFICATION.md`
-      + a short section in `README.md`.
+- [x] **58.1.1 Decide + document the database choice.** **PostgreSQL 18 + Prisma 7.10**
+      with the `@prisma/adapter-pg` driver adapter. Rationale: PostgreSQL 18 is
+      already running locally (Postgres.app) and on the Oracle server, so there is
+      no new infrastructure to operate; Prisma 7 gives a typed schema, real
+      migrations, and an idempotent seed. Alternative considered and rejected:
+      SQLite + Prisma (rejected — a PostgreSQL instance already exists).
+      **Local dev vs server:** `localhost:5432/bridgecoach` locally; the Oracle
+      server host in production. Only the `DATABASE_URL` changes between them.
+- [x] **58.1.2 Install and configure Prisma.** `prisma` + `@prisma/client` +
+      `@prisma/adapter-pg` + `pg`; `prisma/schema.prisma`; `prisma7.config.ts`
+      (Prisma 7 keeps the datasource URL here, not in the schema);
+      `DATABASE_URL` in `.env` only — `.env.example` carries a placeholder and
+      the real file is gitignored. Scripts: `db:generate`, `db:migrate`,
+      `db:deploy`, `db:seed`, `db:reset`, `db:studio`, `db:validate`.
+- [x] **58.1.3 Schema + first migration.** All 22 models from §4 in
+      `prisma/schema.prisma`; migration `20260926092318_init` applied — 29 tables.
+      Every private entity has an explicit `userId` owner relation (§5).
+      Integrity rules are **database constraints**, not application code (§25):
+      `LessonProgress(userId, lessonId)`, `XPEvent(userId, type, reference)`,
+      `UserAchievement(userId, achievementId)`, `UserMission(userId, missionId)`,
+      `AuctionAction(auctionId, sequence)`, `PracticeAction(sessionId, sequence)`,
+      `AuthorRevision(contentId, version)`, `CourseProgress(userId, courseId)`.
+- [x] **58.1.4 DB client singleton** `src/lib/db.ts`. Uses the PrismaPg adapter
+      and caches the client on `globalThis` so dev hot reload does not leak pools.
+      `resolveUserId()` is the single ownership point; `DEV_USER_EMAIL` is the
+      documented temporary development identity (§27) that Sprint 59 replaces.
+- [x] **58.1.5 Seed mechanism** `prisma/seed.ts` — deterministic (no
+      `Date.now()`/`Math.random()` in stored values), idempotent (all upserts on
+      stable ids), and repeatable. Seeds 1 dev user (empty progression state,
+      no password hash), 1 course, 6 episodes, 8 lessons, 1 quiz + 8 questions,
+      12 achievements, 8 missions, 1 sample hand, and 1 auction stored as 10
+      **structured** actions. All static content flagged `isSeed: true` (§18).
+- [x] **58.1.6 Document local setup.** This file + `.env.example` +
+      `docs/verification/SPRINT_58_VERIFICATION.md` (§58.4.7). Commands:
+      `npm run db:migrate` · `npm run db:seed` · `npm run db:reset` ·
+      `npm run db:studio`.
 
 ### 58.2 — Persistence layer + API
 
