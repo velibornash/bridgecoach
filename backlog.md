@@ -179,7 +179,8 @@ new bridge conventions.
       Still open, deliberately: password reset (needs an email provider),
       in-process rate limiting, email verification, and Playwright still using the
       dev database.
-- [~] **60 — Owner account, admin approval, password reset.** Shipped ahead of the
+- [x] **60 — Owner account, admin approval, password reset.** Verification:
+      `docs/verification/SPRINT_60_VERIFICATION.md`. Shipped ahead of the
       social graph, because the graph was blocked on nothing and this was
       blocking real use. Owner account with `role`/`status`; registration creates
       a PENDING account that cannot sign in; `/admin` lists requests with
