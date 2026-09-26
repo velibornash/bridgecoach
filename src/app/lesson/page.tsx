@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useCallback, useMemo } from "react";
+import { use, useState, useCallback, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -14,9 +14,18 @@ import { NotesPanel } from "@/components/lesson/NotesPanel";
 import { VideoPlayer } from "@/components/video/VideoPlayer";
 import { UniversalLearningRenderer } from "@/components/learningEngine/UniversalLearningRenderer";
 import type { LearningBlock, BlockType } from "@/components/learningEngine/types";
-import { mockLessons, mockEpisodes, mockUser } from "@/services/mockData";
-import { getCourseProgress, getEpisodeProgress } from "@/services/lessonService";
-import type { LessonNote } from "@/types";
+import { fetchEpisodes, fetchLessons, getCourseProgress, getEpisodeProgressSync } from "@/services/lessonService";
+import type { ChapterProgress, Episode, Lesson, LessonNote } from "@/types";
+
+interface CourseProgressShape {
+  totalLessons: number;
+  completedLessons: number;
+  lockedLessons: number;
+  inProgressLessons: number;
+  completionPercent: number;
+  episodesCompleted: number;
+  episodesTotal: number;
+}
 
 export default function LessonPage({
   searchParams,
@@ -25,16 +34,56 @@ export default function LessonPage({
 }) {
   const params = use(searchParams);
   const episodeFilter = params?.episode;
+
+  // Lessons and progress are loaded from the database (Sprint 58 §19), not from
+  // mockData. `loading` guards the render so the page cannot crash on an empty
+  // list before the request resolves.
+  const [allLessons, setAllLessons] = useState<Lesson[]>([]);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [courseProgress, setCourseProgress] = useState<CourseProgressShape | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [lessonsResult, episodesResult, courseResult] = await Promise.all([
+        fetchLessons(),
+        fetchEpisodes(),
+        getCourseProgress(),
+      ]);
+      if (cancelled) return;
+      setAllLessons(lessonsResult.data ?? []);
+      setEpisodes(episodesResult.data ?? []);
+      setCourseProgress(courseResult);
+      setLoaded(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const available = useMemo(
-    () => mockLessons.filter((l) => !l.locked && (episodeFilter ? l.episodeId === episodeFilter : true)),
-    [episodeFilter]
+    () =>
+      allLessons.filter(
+        (l) => !l.locked && (episodeFilter ? l.episodeId === episodeFilter : true),
+      ),
+    [allLessons, episodeFilter],
   );
-  const startIndex = useMemo(() => {
-    const idx = available.findIndex((l) => l.id === mockUser.currentLessonId);
-    return idx >= 0 ? idx : available.findIndex((l) => !l.completed);
-  }, [available]);
-  const [currentIndex, setCurrentIndex] = useState(startIndex >= 0 ? startIndex : 0);
+
+  // Resume at the first incomplete lesson — real progress, not a fixture field.
+  const startIndex = useMemo(
+    () => Math.max(available.findIndex((l) => !l.completed), 0),
+    [available],
+  );
+  const [currentIndex, setCurrentIndex] = useState(startIndex);
   const lesson = available[currentIndex];
+  // Pure derivation from the loaded lessons.
+  const epProgress: ChapterProgress | null = lesson
+    ? getEpisodeProgressSync(lesson.episodeId, allLessons)
+    : null;
+  // Episode progress is a pure derivation of the loaded lessons, so it is
+  // computed rather than stored — no state, no effect, nothing to fall out of sync.
+
   const [bookmarked, setBookmarked] = useState(lesson?.bookmarked ?? false);
   const [notes, setNotes] = useState<LessonNote[]>([]);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -123,12 +172,12 @@ export default function LessonPage({
     setShowCompletion(false);
   }, []);
 
+  if (!loaded) return null;
   if (!lesson) return null;
+  if (!courseProgress || !epProgress) return null;
 
   const progress = Math.round(((currentIndex + 1) / total) * 100);
-  const episode = mockEpisodes.find((e) => e.id === lesson.episodeId);
-  const epProgress = getEpisodeProgress(lesson.episodeId);
-  const courseProgress = getCourseProgress();
+  const episode = episodes.find((e) => e.id === lesson.episodeId);
 
   const toggleBookmark = () => {
     setBookmarked((b) => !b);
@@ -415,7 +464,7 @@ export default function LessonPage({
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-warning">
                   <path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33" />
                 </svg>
-                <span className="text-sm font-bold text-warning">+{mockLessons.reduce((s, l) => s + l.xpReward, 0)} XP Total</span>
+                <span className="text-sm font-bold text-warning">+{allLessons.reduce((s, l) => s + l.xpReward, 0)} XP Total</span>
               </div>
               <div className="flex flex-col gap-2">
                 <Button variant="primary" size="lg" onClick={handleFinish}>

@@ -65,31 +65,52 @@ describe("LESSON: progress persists", () => {
 });
 
 describe("XP: awards are idempotent and derived", () => {
+  /**
+   * Uses a throwaway user so the assertion holds regardless of what other test
+   * files are doing to the shared development identity in parallel.
+   */
+  let xpUserId: string;
+
+  beforeAll(async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: `xp-test-${Date.now()}@bridgecoach.test`,
+        firstName: "Xp",
+        lastName: "Test",
+      },
+    });
+    xpUserId = user.id;
+  });
+
+  afterAll(async () => {
+    await prisma.user.delete({ where: { id: xpUserId } }).catch(() => undefined);
+  });
+
   it("does not double-award the same reference", async () => {
     const reference = `test:lesson:${Date.now()}`;
-    const first = await awardXp(userId, "LESSON_COMPLETED", reference, 42);
-    const second = await awardXp(userId, "LESSON_COMPLETED", reference, 42);
+    const first = await awardXp(xpUserId, "LESSON_COMPLETED", reference, 42);
+    const second = await awardXp(xpUserId, "LESSON_COMPLETED", reference, 42);
 
     expect(first.awarded).toBe(42);
     expect(second.awarded).toBe(0);
 
-    const events = await prisma.xPEvent.findMany({ where: { userId, reference } });
+    const events = await prisma.xPEvent.findMany({
+      where: { userId: xpUserId, reference },
+    });
     expect(events).toHaveLength(1);
-
-    await prisma.xPEvent.deleteMany({ where: { reference } });
-    await recomputeProgression(userId);
   });
 
   it("user.xp equals the sum of its applied XP events", async () => {
-    await recomputeProgression(userId);
+    await recomputeProgression(xpUserId);
     const [user, aggregate] = await Promise.all([
-      prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { xp: true } }),
+      prisma.user.findUniqueOrThrow({ where: { id: xpUserId }, select: { xp: true } }),
       prisma.xPEvent.aggregate({
-        where: { userId, status: "applied" },
+        where: { userId: xpUserId, status: "applied" },
         _sum: { amount: true },
       }),
     ]);
     expect(user.xp).toBe(aggregate._sum.amount ?? 0);
+    expect(user.xp).toBeGreaterThan(0);
   });
 });
 

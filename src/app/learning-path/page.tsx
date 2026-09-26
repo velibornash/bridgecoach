@@ -1,23 +1,58 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { Badge } from "@/components/ui/Badge";
 import { Progress } from "@/components/ui/Progress";
 import { EpisodeCard } from "@/components/dashboard/EpisodeCard";
-import { mockEpisodes, mockLessons } from "@/services/mockData";
-import { getCourseProgress } from "@/services/lessonService";
+import { fetchEpisodes, getCourseProgress } from "@/services/lessonService";
+import type { Episode } from "@/types";
 import Link from "next/link";
 
+interface CourseProgress {
+  totalLessons: number;
+  completedLessons: number;
+  inProgressLessons: number;
+  lockedLessons: number;
+  completionPercent: number;
+}
+
 export default function LearningPathPage() {
-  const totalLessons = mockEpisodes.reduce((s, e) => s + e.lessonCount, 0);
-  const completedLessons = mockEpisodes.reduce((s, e) => s + e.completedLessons, 0);
-  const totalXp = mockEpisodes.reduce((s, e) => s + e.totalXp, 0);
-  const overallPct = Math.round((completedLessons / totalLessons) * 100);
-  const course = getCourseProgress();
-  const unlockedCount = mockEpisodes.filter((e) => !e.locked).length;
-  const completeCount = mockEpisodes.filter((e) => e.completion === 100).length;
+  // Episodes and progress come from the seeded database via the service layer,
+  // not from mockData fixtures (Sprint 58 §19).
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [course, setCourse] = useState<CourseProgress>({
+    totalLessons: 0,
+    completedLessons: 0,
+    inProgressLessons: 0,
+    lockedLessons: 0,
+    completionPercent: 0,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [episodesResult, courseResult] = await Promise.all([
+        fetchEpisodes(),
+        getCourseProgress(),
+      ]);
+      if (cancelled) return;
+      setEpisodes(episodesResult.data ?? []);
+      setCourse(courseResult);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const totalLessons = course.totalLessons;
+  const completedLessons = course.completedLessons;
+  const totalXp = episodes.reduce((s, e) => s + e.totalXp, 0);
+  const overallPct = course.completionPercent;
+  const unlockedCount = episodes.filter((e) => !e.locked).length;
+  const completeCount = episodes.filter((e) => e.completion === 100).length;
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -32,7 +67,7 @@ export default function LearningPathPage() {
                   <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">
                     Learning Path
                   </h1>
-                  <Badge variant="primary">{mockEpisodes.length} Episodes</Badge>
+                  <Badge variant="primary">{episodes.length} Episodes</Badge>
                 </div>
                 <p className="mt-1 text-text-secondary">
                   Your structured journey from beginner to expert.
@@ -59,7 +94,7 @@ export default function LearningPathPage() {
                 <div className="text-xs text-text-tertiary mt-0.5">Lessons Done</div>
               </div>
               <div className="rounded-xl border border-border bg-bg-card p-4">
-                <div className="text-2xl font-bold text-text-primary">{completeCount}/{mockEpisodes.length}</div>
+                <div className="text-2xl font-bold text-text-primary">{completeCount}/{episodes.length}</div>
                 <div className="text-xs text-text-tertiary mt-0.5">Episodes Done</div>
               </div>
               <div className="rounded-xl border border-border bg-bg-card p-4">
@@ -100,7 +135,7 @@ export default function LearningPathPage() {
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
-              {mockEpisodes.map((episode, i) => (
+              {episodes.map((episode, i) => (
                 <EpisodeCard key={episode.id} episode={episode} index={i} />
               ))}
             </div>

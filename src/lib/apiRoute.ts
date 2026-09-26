@@ -53,17 +53,26 @@ export function forbidden(message = "Not permitted") {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RouteCtx = { params: Promise<any> };
 
-type Handler = (request: Request, ctx: RouteCtx) => Promise<NextResponse>;
+/**
+ * The wrapped handler. `ctx` is optional at the call site so a test can invoke a
+ * route with only a Request; Next.js always supplies it.
+ */
+type RouteHandler = (request: Request, ctx?: RouteCtx) => Promise<NextResponse>;
 
 /**
  * Wraps a route handler with uniform error mapping. Persistence failures are
  * never swallowed (§21): anything that is not an `ApiError` becomes a 500 with
  * the real error logged server-side.
  */
-export function handleRoute(handler: Handler): Handler {
-  return async (...args: Parameters<Handler>) => {
+export function handleRoute<H extends (request: Request, ctx: never) => Promise<NextResponse>>(
+  handler: H,
+): RouteHandler {
+  return async (request: Request, ctx?: RouteCtx) => {
     try {
-      return await handler(...args);
+      return await (handler as unknown as (
+        request: Request,
+        ctx?: RouteCtx,
+      ) => Promise<NextResponse>)(request, ctx);
     } catch (error) {
       if (error instanceof ApiError) {
         return NextResponse.json(

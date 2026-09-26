@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -63,9 +63,11 @@ const availableBlockTypes: { type: BlockType; label: string; icon: typeof FileTe
 ];
 
 export default function ContentAuthorStudioPage() {
-  const initial = useMemo(() => loadCurrentLesson(), []);
-  const [lessonTitle, setLessonTitle] = useState(initial.title);
-  const [blocks, setBlocks] = useState<LearningBlock[]>(initial.blocks);
+  // Drafts and the open lesson now come from the API (Sprint 58 §15). State
+  // starts empty and is filled in on mount so the editor renders immediately.
+  const [lessonTitle, setLessonTitle] = useState("");
+  const [blocks, setBlocks] = useState<LearningBlock[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"builder" | "preview" | "json">("builder");
 
   const [newBlockType, setNewBlockType] = useState<BlockType>("paragraph");
@@ -89,8 +91,24 @@ export default function ContentAuthorStudioPage() {
   const [boardVulnerability, setBoardVulnerability] = useState<"None" | "All" | "NS" | "EW">("None");
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [drafts, setDrafts] = useState<AuthorStudioDraft[]>(loadDrafts);
+  const [drafts, setDrafts] = useState<AuthorStudioDraft[]>([]);
   const [draftsOpen, setDraftsOpen] = useState(false);
+
+  // Load the open lesson and the draft library from the database on mount.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [current, library] = await Promise.all([loadCurrentLesson(), loadDrafts()]);
+      if (cancelled) return;
+      setLessonTitle(current.title);
+      setBlocks(current.blocks ?? []);
+      setDrafts(library);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -258,14 +276,13 @@ export default function ContentAuthorStudioPage() {
     });
   };
 
-  const saveDraft = () => {
+  const saveDraft = async () => {
     if (blocks.length === 0) {
       showToast("error", "Nothing to save yet");
       return;
     }
     const title = lessonTitle.trim() || "Untitled Lesson";
-    const draft: AuthorStudioDraft = { id: `d-${Date.now()}`, title, updatedAt: Date.now(), blocks };
-    setDrafts(persistDraft(draft));
+    setDrafts(await persistDraft({ title, blocks }));
     setLessonTitle(title);
     showToast("success", "Draft saved to library");
   };
@@ -278,8 +295,8 @@ export default function ContentAuthorStudioPage() {
     showToast("success", `Loaded "${draft.title}"`);
   };
 
-  const deleteDraft = (id: string) => {
-    setDrafts(persistDeleteDraft(id));
+  const deleteDraft = async (id: string) => {
+    setDrafts(await persistDeleteDraft(id));
     showToast("info", "Draft deleted");
   };
 
@@ -366,7 +383,10 @@ export default function ContentAuthorStudioPage() {
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-semibold text-text-primary truncate">{draft.title}</p>
                             <p className="text-[10px] text-text-tertiary">
-                              {draft.blocks.length} blocks · {new Date(draft.updatedAt).toLocaleDateString()}
+                              {draft.blocks.length} blocks ·{" "}
+                              {draft.updatedAt
+                                ? new Date(draft.updatedAt).toLocaleDateString()
+                                : "just now"}
                             </p>
                           </div>
                           <button

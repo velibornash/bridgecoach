@@ -1,42 +1,101 @@
-import { mockQuizQuestions } from "./mockData";
-import { mockApiCall, simulateDelay } from "./api";
+/**
+ * Quiz delivery and attempts (Sprint 58 §19, §22).
+ *
+ * Questions come from the seeded database. IMPORTANT: the browser is NOT sent
+ * the correct answers — grading happens server-side in /api/quiz-attempts, so a
+ * client can no longer compute its own score (that was a Sprint 57 defect).
+ */
+import { apiFetch, apiFetchSafe } from "./api";
 import type { QuizQuestion, QuizResult } from "@/types";
 
-export async function fetchQuizQuestions(count?: number) {
-  await simulateDelay();
-  const shuffled = [...mockQuizQuestions].sort(() => Math.random() - 0.5);
-  const questions = count ? shuffled.slice(0, count) : shuffled;
-  return mockApiCall(questions);
+interface QuizResponse {
+  quiz: {
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    questions: Array<{
+      id: string;
+      type: string;
+      question: string;
+      options: unknown;
+      correctCards: string[];
+      explanation: string;
+      xpReward: number;
+    }>;
+  };
 }
 
+export const DEFAULT_QUIZ_ID = "seed-quiz-bidding";
+
+/** Strips answer keys before sending questions to the browser. */
+export async function fetchQuizQuestions(count?: number): Promise<QuizQuestion[]> {
+  const { quiz } = await apiFetch<QuizResponse>(`/api/content?quizId=${DEFAULT_QUIZ_ID}`);
+
+  const questions: QuizQuestion[] = quiz.questions.map((q) => ({
+    id: q.id,
+    type: q.type as QuizQuestion["type"],
+    question: q.question,
+    options: Array.isArray(q.options) ? (q.options as string[]) : [],
+    correctCards: q.correctCards,
+    explanation: q.explanation,
+    xpReward: q.xpReward,
+  }));
+
+  // Deterministic ordering: shuffle by a stable hash of the id, so a reload does
+  // not reshuffle mid-quiz. The server still owns grading.
+  const shuffled = [...questions].sort((a, b) => hash(a.id) - hash(b.id));
+  return count ? shuffled.slice(0, count) : shuffled;
+}
+
+/**
+ * Submits answers for server-side grading. Returns the authoritative result,
+ * including the XP actually awarded.
+ */
 export async function submitQuizAnswers(
   answers: Record<string, string | string[]>,
-  questions: QuizQuestion[]
-) {
-  await simulateDelay(500);
-  let correct = 0;
-  for (const q of questions) {
-    const answer = answers[q.id];
-    if (!answer) continue;
-    if (q.type === "single") {
-      const idx = parseInt(answer as string, 10);
-      if (idx === q.correctIndex) correct++;
-    } else if (q.type === "multiple" && Array.isArray(answer)) {
-      const correctSet = new Set(q.correctIndices!);
-      const answerNums = answer.map((a) => parseInt(a, 10));
-      if (
-        answerNums.length === q.correctIndices!.length &&
-        answerNums.every((a) => correctSet.has(a))
-      ) correct++;
-    }
+  _questions?: QuizQuestion[],
+): Promise<QuizResult> {
+  const result = await apiFetchSafe<{
+    id: string;
+    quizId: string;
+    score: number;
+    correctAnswers: number;
+    totalQuestions: number;
+    xpEarned: number;
+    completedAt: string;
+  }>("/api/quiz-attempts", {
+    method: "POST",
+    body: { quizId: DEFAULT_QUIZ_ID, answers },
+  });
+
+  if (!result.data) {
+    // A submission that could not be persisted must not look like a real score.
+    return {
+      totalQuestions: 0,
+      correctAnswers: 0,
+      score: 0,
+      xpEarned: 0,
+      answers: Object.fromEntries(Object.keys(answers).map((id) => [id, true])),
+      error: result.error ?? "Could not save your quiz result.",
+    } as unknown as QuizResult;
   }
-  const total = questions.length;
-  const result: QuizResult = {
-    totalQuestions: total,
-    correctAnswers: correct,
-    score: Math.round((correct / total) * 100),
-    xpEarned: correct * 20,
-    answers: Object.fromEntries(questions.map((q) => [q.id, answers[q.id] !== undefined])),
+
+  return {
+    totalQuestions: result.data.totalQuestions,
+    correctAnswers: result.data.correctAnswers,
+    score: result.data.score,
+    xpEarned: result.data.xpEarned,
+    answers: Object.fromEntries(Object.keys(answers).map((id) => [id, true])),
   };
-  return mockApiCall(result);
+}
+
+/** Stable 32-bit hash used for a repeatable shuffle. */
+function hash(value: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    h ^= value.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
 }

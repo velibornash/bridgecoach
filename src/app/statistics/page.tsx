@@ -19,8 +19,8 @@ import {
   ConfidenceScore,
 } from "@/components/statistics";
 import { getLearningStats } from "@/services/statsService";
-import { mockUserStats } from "@/services/mockData";
 import type { LearningStats } from "@/types";
+import { mockUserStats } from "@/services/mockData";
 import { staggerContainer, fadeUp } from "@/design-system/motion";
 import { Clock, BookOpen, Target, Flame, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -32,7 +32,10 @@ export default function StatisticsPage() {
   const [heatmap] = useState(() => generateHeatmapData(12));
 
   useEffect(() => {
-    getLearningStats().then(setStats);
+    // getLearningStats resolves to null when the API has no data yet.
+    getLearningStats()
+      .then((result) => setStats(result))
+      .catch(() => setStats(null));
   }, []);
 
   if (!stats) {
