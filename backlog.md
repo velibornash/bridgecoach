@@ -297,6 +297,10 @@ new bridge conventions.
       automatically today.
 - [ ] **Add `/api` error + rate-limit conventions**, structured logging, and
       health checks before production.
+- [x] **/play and /replay record nothing.** Playing a hand wrote no rows, so the
+      replay had nothing real to show and used a hardcoded scenario presented as
+      "expert-played hands". Both fixed: `/play` records the deal, the auction and
+      the cards; `/replay` reads them and annotates only what the engine rejected.
 - [x] **Orphaned pages check.** 44 routes audited. Four more surfaces that
       reported work they never did: `/contact` ("Message sent!", text discarded),
       `/email-preferences` ("Preferences saved!", nothing stored, and a second

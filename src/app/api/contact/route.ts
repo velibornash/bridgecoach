@@ -73,8 +73,20 @@ export const POST = handleRoute(async (request: Request) => {
 
 export const GET = handleRoute(async () => {
   await requireAdmin();
+  /**
+   * Newest first, and that is the whole ordering.
+   *
+   * This previously sorted by `readAt` ascending with nulls first, so unread
+   * came first but a message you had *just* handled went to the back — the
+   * queue buried the row you were looking at, which is the opposite of what a
+   * triage queue should do. With enough messages it also fell outside the
+   * window entirely.
+   *
+   * Unread is a badge and a count, not a sort key. `createdAt desc` is the order
+   * a person actually reads a queue in: most recent at the top.
+   */
   const messages = await prisma.contactMessage.findMany({
-    orderBy: [{ readAt: { sort: "asc", nulls: "first" } }, { createdAt: "desc" }],
+    orderBy: { createdAt: "desc" },
     take: 100,
   });
   return NextResponse.json({

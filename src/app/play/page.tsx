@@ -11,6 +11,12 @@ import { BiddingBox, type Bid } from "@/components/biddingBox/BiddingBox";
 import { CardEngine } from "@/components/cardEngine/CardEngine";
 import type { BridgeCard, Suit } from "@/components/cardEngine/types";
 import { Badge } from "@/components/ui/Badge";
+import {
+  createHand,
+  createAuction,
+  type RecordedAction,
+} from "@/services/auctionService";
+import { recordPracticeSession, type PracticeActionInput } from "@/services/practiceService";
 
 type Player = 'north' | 'east' | 'south' | 'west';
 
@@ -32,14 +38,59 @@ export default function PlayDemoPage() {
     handsRef.current = hands;
   }, [hands]);
 
-  const handleDealComplete = useCallback((dealtHands: Record<string, BridgeCard[]>) => {
+  /**
+   * Bids and cards, accumulated so the hand can be recorded when play ends.
+   *
+   * This page used to keep everything in component state and write nothing, so
+   * `Hand` and `Auction` rows were never created by actually playing a hand.
+   * `/api/auctions` had nothing to return, and `/replay` was reading a hardcoded
+   * scenario instead of the player's own hands.
+   */
+  const bidCalls = useRef<RecordedAction[]>([]);
+  /**
+   * Cards go to a different table than bids. `AuctionAction` is auction calls
+   * only — its `type` is bid/pass/double/redouble — so a played card has no
+   * column there. `PracticeAction` is the one with a `card` field.
+   */
+  const cardCalls = useRef<PracticeActionInput[]>([]);
+  const handId = useRef<string | null>(null);
+
+  const handleDealComplete = useCallback(async (dealtHands: Record<string, BridgeCard[]>) => {
     setHands(dealtHands as Record<Player, BridgeCard[]>);
     setPhase('bidding');
     setTab('bidding');
+    bidCalls.current = [];
+    cardCalls.current = [];
+
+    // Store the deal. Engine notation is what the schema documents ("SA").
+    const notation = (cards: BridgeCard[]) =>
+      Object.fromEntries(cards.map((c) => [c.id, `${c.suit}${c.rank}`]));
+    const result = await createHand({
+      dealer: "S",
+      north: notation((dealtHands as Record<string, BridgeCard[]>).north ?? []),
+      east: notation((dealtHands as Record<string, BridgeCard[]>).east ?? []),
+      south: notation((dealtHands as Record<string, BridgeCard[]>).south ?? []),
+      west: notation((dealtHands as Record<string, BridgeCard[]>).west ?? []),
+    });
+    handId.current = result.data?.id ?? null;
   }, []);
 
   const handleBid = useCallback((bid: Bid) => {
     setCurrentBid(bid);
+    // Recorded as the call that was made. `engineLegal` is decided server-side
+    // from the engine's own rules, not asserted here.
+    //
+    // The strain is the trump suit as stored — a single letter. Notrump is a
+    // property of the contract, not one of the four `Suit` values, so it is not
+    // invented here.
+    bidCalls.current.push({
+      player: "S",
+      bid: {
+        type: bid.label === "Pass" ? "pass" : "bid",
+        level: bid.level,
+        strain: trumpSuit,
+      },
+    });
     if (bid.label !== 'Pass') {
       // Simulate opponents passing around the table, then start play
       setTimeout(() => {
@@ -47,7 +98,7 @@ export default function PlayDemoPage() {
         setTab('trick');
       }, 900);
     }
-  }, []);
+  }, [trumpSuit]);
 
   const playCardFor = (player: Player, card: BridgeCard) => {
     setPlayedCards((prev) => [...prev, { player, card, color: trumpSuit }]);
@@ -80,6 +131,9 @@ export default function PlayDemoPage() {
     if (playedCards.some((p) => p.player === 'south')) return;
     playCardFor('south', card);
 
+    // Card plays are recorded as practice actions, not auction actions.
+    cardCalls.current.push({ phase: "play", player: "S", card: `${card.suit}${card.rank}` });
+
     // Determine lead suit from the first played card
     const leadSuit = card.suit;
 
@@ -88,6 +142,41 @@ export default function PlayDemoPage() {
     setTimeout(() => autoPlayOpponent('north', leadSuit), 650);
     setTimeout(() => autoPlayOpponent('east', leadSuit), 1300);
   }, [playedCards, autoPlayOpponent]);
+
+  const recorded = useRef(false);
+  const [recording, setRecording] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+
+  /**
+   * Writes the finished hand: the auction to `Auction`/`AuctionAction`, the
+   * cards to a `PracticeSession`. Two tables because they are two different
+   * kinds of fact, and `AuctionAction` has no column for a played card.
+   *
+   * A failure is surfaced rather than swallowed — the hand is still playable,
+   * but the user is told it was not kept, so a silent loss does not look like a
+   * successful save.
+   */
+  const finishHand = useCallback(async () => {
+    if (!handId.current) {
+      setRecording("failed");
+      return;
+    }
+    setRecording("saving");
+    const auction = await createAuction({
+      handId: handId.current,
+      dealer: "S",
+      actions: bidCalls.current,
+      isComplete: true,
+    });
+    const practice = await recordPracticeSession({
+      actions: cardCalls.current,
+      isComplete: true,
+    });
+    if (auction.error && practice.error) {
+      setRecording("failed");
+      return;
+    }
+    setRecording("saved");
+  }, []);
 
   // Resolve the trick once all 4 cards are played
   useEffect(() => {
@@ -101,7 +190,15 @@ export default function PlayDemoPage() {
       const finishTimer = setTimeout(() => {
         setPlayedCards([]);
         setTrickWinner(null);
-        setCurrentTrick((t) => (t >= 13 ? 13 : t + 1));
+        setCurrentTrick((t) => {
+          const next = t >= 13 ? 13 : t + 1;
+          // Thirteen tricks ends the hand; record it once, then.
+          if (next === 13 && handId.current && !recorded.current) {
+            recorded.current = true;
+            void finishHand();
+          }
+          return next;
+        });
       }, 2200);
       return () => clearTimeout(finishTimer);
     }, 700);
@@ -146,6 +243,24 @@ export default function PlayDemoPage() {
                 </div>
               ))}
             </div>
+
+            {/*
+              The write is announced either way. A hand that saved silently would
+              be indistinguishable from one that was lost, and a hand that failed
+              to save must say so rather than letting the user assume it was kept.
+            */}
+            {recording !== "idle" && (
+              <p
+                className={`mb-4 text-center text-xs ${
+                  recording === "failed" ? "text-error" : "text-text-tertiary"
+                }`}
+              >
+                {recording === "saving" && "Saving this hand…"}
+                {recording === "saved" && "Hand saved. You can replay it from /replay."}
+                {recording === "failed" &&
+                  "This hand could not be saved, so it will not appear in your replay history."}
+              </p>
+            )}
 
             {tab === 'deal' && (
               <DealAnimation onComplete={handleDealComplete} size="lg" />

@@ -11,11 +11,12 @@ export default function ReplayPage() {
       <main className="py-8 sm:py-12">
         <Container className="max-w-5xl">
           <div className="mb-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">Hand Replayer</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-primary">Your Hands</span>
           </div>
           <h1 className="text-heading text-text-primary mb-2">Replay &amp; Review</h1>
           <p className="text-sm text-text-tertiary mb-6">
-            Step through expert-played hands, one card at a time, with coach annotations on every move.
+            Step through the hands you have played, one call at a time. Calls the
+            bidding engine rejected come with its reason.
           </p>
           <HandReplayer />
         </Container>

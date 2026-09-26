@@ -18,15 +18,17 @@ import {
   Share2
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { useApiResource } from "@/hooks/useApiResource";
+import { fetchAuctions, type AuctionRecord } from "@/services/auctionService";
 
-interface ReplayAction {
+export interface ReplayAction {
   player: "North" | "East" | "South" | "West";
   action: string; // e.g. "♠A" or "Pass"
   explanation?: string;
   isBestPlay?: boolean;
 }
 
-interface ReplayScenario {
+export interface ReplayScenario {
   id: string;
   title: string;
   contract: string;
@@ -34,23 +36,102 @@ interface ReplayScenario {
   actions: ReplayAction[];
 }
 
-const mockReplayScenario: ReplayScenario = {
-  id: "rs1",
-  title: "Opening Lead Defense Replay",
-  contract: "4♠ by South",
-  declarer: "South",
-  actions: [
-    { player: "West", action: "♥K", explanation: "Standard lead from King-Queen sequence.", isBestPlay: true },
-    { player: "North", action: "♥2", explanation: "Follows suit with low heart from dummy.", isBestPlay: true },
-    { player: "East", action: "♥7", explanation: "Encouraging signal, showing partner interest.", isBestPlay: true },
-    { player: "South", action: "♥A", explanation: "South wins with the Ace, retaining control.", isBestPlay: true },
-    { player: "South", action: "♠Q", explanation: "South attempts a trump drawing lead.", isBestPlay: false },
-    { player: "West", action: "♠K", explanation: "West makes a smart play to hold and cover.", isBestPlay: true }
-  ]
+/**
+ * Built from a real persisted auction.
+ *
+ * This was a hardcoded six-card scenario presented as "expert-played hands, one
+ * card at a time, with coach annotations on every move" — the plural and the
+ * "expert" were both false, and it was the only hand the page had because
+ * `/play` never wrote one. Both are now fixed: `/play` records hands, and this
+ * component reads the player's own.
+ *
+ * The "explanation" is the engine's own `engineReason` for a call it rejected,
+ * and nothing at all for one it accepted. The previous scenario marked six of
+ * six plays `isBestPlay: true`, which is a judgement nothing in the database
+ * supports.
+ */
+const PLAYER_NAMES: Record<string, ReplayAction["player"]> = {
+  N: "North",
+  E: "East",
+  S: "South",
+  W: "West",
 };
 
-export function HandReplayer() {
-  const [scenario] = useState<ReplayScenario>(mockReplayScenario);
+export function scenarioFromAuction(auction: AuctionRecord): ReplayScenario {
+  const actions: ReplayAction[] = auction.actions.map((a) => ({
+    player: PLAYER_NAMES[a.player] ?? "South",
+    action:
+      a.type === "bid" && a.level != null
+        ? `${a.level}${a.strain === "NT" ? "NT" : (a.strain ?? "")}`
+        : a.type === "pass"
+          ? "Pass"
+          : a.type === "double"
+            ? "X"
+            : a.type === "redouble"
+              ? "XX"
+              : a.type,
+    // Only present when the engine objected. A correct call gets no comment,
+    // because there is nothing to say about it.
+    explanation: a.engineReason ?? undefined,
+    isBestPlay: a.engineLegal,
+  }));
+
+  // The contract comes from the engine's own reconstruction of the recorded
+  // calls. `engine` is null when those rows could not be replayed, and a
+  // reconstructed contract is the only one worth showing — deriving a contract
+  // here would be a second bidding implementation.
+  const final = auction.engine?.finalContract ?? null;
+  const contractText =
+    final && final.level != null
+      ? `${final.level}${final.strain === "NT" ? "NT" : (final.strain ?? "")}`
+      : null;
+
+  return {
+    id: auction.id,
+    title: contractText
+      ? `${contractText} by ${PLAYER_NAMES[final?.declarer ?? auction.dealer] ?? "South"}`
+      : `Auction from ${new Date(auction.startedAt).toLocaleDateString()}`,
+    contract: contractText ?? "Auction still open",
+    declarer: PLAYER_NAMES[final?.declarer ?? auction.dealer] ?? "South",
+    actions,
+  };
+}
+
+/** Exported for the empty state and for tests. */
+export const EMPTY_SCENARIO: ReplayScenario = {
+  id: "empty",
+  title: "No hands yet",
+  contract: "—",
+  declarer: "—",
+  actions: [],
+};
+
+export function HandReplayer({
+  /** Injected scenarios. When omitted, the player's own auctions are read. */
+  providedScenarios,
+}: {
+  providedScenarios?: ReplayScenario[];
+} = {}) {
+  // The fetch is skipped entirely when scenarios are supplied, so an injected
+  // component never flashes the loading state or touches the network.
+  const { data: auctions, loading, error } = useApiResource(
+    async () => (providedScenarios ? { data: [], error: null, status: 200 } : await fetchAuctions()),
+    [providedScenarios === undefined],
+  );
+
+  // Most recent first, matching the endpoint's ordering, and only auctions that
+  // actually recorded a call — an auction with no actions is not replayable and
+  // would render as an empty stepper.
+  const scenarios =
+    providedScenarios ??
+    (auctions ?? []).filter((a) => a.actions.length > 0).map(scenarioFromAuction);
+  // Only a real fetch can be loading. An injected component is never in flight.
+  const isLoading = providedScenarios === undefined && loading;
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const scenario =
+    scenarios.find((s) => s.id === selectedId) ??
+    (scenarios.length > 0 ? scenarios[0] : EMPTY_SCENARIO);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -83,8 +164,72 @@ export function HandReplayer() {
 
   const currentAction = scenario.actions[currentIndex];
 
+  // No recorded hands is a real state, and it needs saying. The previous version
+  // always had its one hardcoded hand, so this branch could not be reached and
+  // the page could not be empty.
+  if (isLoading) {
+    return (
+      <GlassCard variant="premium" hover={false} className="p-6 my-6">
+        <p className="text-sm text-text-tertiary">Reading your hands…</p>
+      </GlassCard>
+    );
+  }
+
+  if (error) {
+    return (
+      <GlassCard variant="premium" hover={false} className="p-6 my-6">
+        <p className="text-sm text-error">{error}</p>
+      </GlassCard>
+    );
+  }
+
+  if (scenarios.length === 0) {
+    return (
+      <GlassCard variant="premium" hover={false} className="p-6 my-6">
+        <h3 className="text-sm font-semibold text-text-primary">No hands to replay yet</h3>
+        <p className="mt-1 text-xs text-text-tertiary">
+          Replay shows the auctions you have actually played. Nothing is shown here
+          until you play a hand — a demonstration hand would not be yours.
+        </p>
+        <a
+          href="/play"
+          className="mt-3 inline-block text-xs font-medium text-primary hover:underline"
+        >
+          Play a hand
+        </a>
+      </GlassCard>
+    );
+  }
+
   return (
     <GlassCard variant="premium" hover={false} className="p-6 my-6 border-indigo-500/20">
+      {scenarios.length > 1 && (
+        <div className="mb-5 flex flex-wrap gap-1.5">
+          {scenarios.slice(0, 12).map((s) => (
+            <button
+              key={s.id}
+              onClick={() => {
+                setSelectedId(s.id);
+                setCurrentIndex(0);
+                setIsPlaying(false);
+              }}
+              className={`rounded-lg px-2.5 py-1 text-[10px] font-medium transition-colors ${
+                s.id === scenario.id
+                  ? "bg-primary text-white"
+                  : "bg-bg-secondary text-text-tertiary hover:text-text-secondary"
+              }`}
+            >
+              {s.title}
+            </button>
+          ))}
+          {scenarios.length > 12 && (
+            <span className="self-center text-[10px] text-text-tertiary">
+              +{scenarios.length - 12} more
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-border/80">
         <div>
           <div className="flex items-center gap-2 mb-1">

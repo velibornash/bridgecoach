@@ -1227,3 +1227,77 @@ time and it is recorded here so the next `kill -9` is not a surprise.
 
 typecheck 0 · lint 0 errors, 30 warnings · 347 unit/integration · 7 E2E ·
 build clean
+
+---
+
+## Session 20 — the core loop, which recorded nothing
+
+**Commit:** see git log for the session-20 commit
+
+The route audit from the last session flagged only `/onboarding`, so I widened
+the check to interactive controls with no API call anywhere in their import graph.
+It printed one page. **Then I checked `/play` and `/replay` by hand and found the
+two worst problems in the project.**
+
+### `/play` never saved a hand
+
+It deals, takes bids and plays cards entirely in `useState`. No `Hand` row, no
+`Auction` row, no `AuctionAction`. Playing a hand left no trace.
+
+That is not one gap but two, causally linked: `/api/auctions` GET existed and had
+nothing to return, which is why `/replay` had nothing real to show.
+
+`/play` now records the deal on completion, the auction when thirteen tricks are
+played, and the cards to a practice session. Two tables, because they are two
+kinds of fact: `AuctionAction` has no column for a played card — its `type` is
+bid/pass/double/redouble — so cards go to `PracticeAction`, which has one. My
+first attempt pushed a card play onto `bidCalls` as a `pass`, which would have
+been a fabricated call in the user's own auction history.
+
+The save is announced both ways. A hand that saved silently is indistinguishable
+from one that was lost, which is the same failure as a lie that is too polite.
+
+### `/replay` showed one invented hand, called them "expert-played"
+
+`HandReplayer` held a hardcoded six-card scenario under the heading "step through
+expert-played hands, one card at a time, with coach annotations on every move".
+Both the plural and the "expert" were false. Six of six plays were marked
+`isBestPlay: true` — a judgement nothing in the database supports — and every move
+had a hand-written annotation.
+
+It now builds scenarios from the player's own auctions. The annotation is the
+engine's own `engineReason`, and it appears **only** for calls the engine
+rejected; there is nothing to say about a call it accepted. The contract comes
+from the engine's reconstruction of the recorded rows, not from a second bidding
+implementation, and a row that cannot be reconstructed says "auction still open"
+rather than guessing.
+
+An empty history renders an empty state. The previous version could not be empty,
+because it always had its one hand.
+
+### The existing replay tests were testing a fixture, not the component
+
+`replay.test.tsx` asserted on the hardcoded scenario's titles — so it was coupled
+to the data, not to the navigation logic it claimed to cover. `HandReplayer` now
+takes an optional `scenarios` prop and skips the fetch when it is supplied, which
+is a legitimate injection seam and not a test-only hook. The four tests are
+unchanged and now test what they say they test.
+
+### A queue that buried the message you were reading
+
+Found while fixing a test: `GET /api/contact` sorted by `readAt` ascending with
+nulls first, so unread came first and a message you had *just handled* went to
+the back. The opposite of a triage queue, and with enough messages it fell
+outside the 100-row window entirely. Now `createdAt desc`, with unread as a badge
+and a count rather than a sort key.
+
+### Also found
+
+`/onboarding` — 813 lines, 26 interactive controls, no API call anywhere, and no
+route links to it. Left alone and recorded: it may be a deliberate design-time
+prototype, and converting it is a design decision rather than a bug fix.
+
+### Gate
+
+typecheck 0 · lint 0 errors, 31 warnings · **353 unit/integration** (was 347) ·
+7 E2E · build clean

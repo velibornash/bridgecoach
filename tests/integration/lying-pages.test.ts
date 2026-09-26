@@ -100,6 +100,7 @@ describe("the contact form actually stores the message", () => {
 
     const stored = await prisma.contactMessage.findFirstOrThrow({
       where: { email: message().email },
+      orderBy: { createdAt: "desc" },
     });
     expect(stored.subject).toBe("Question about bidding");
     expect(stored.body).toContain("balanced hand");
@@ -125,6 +126,7 @@ describe("the contact form actually stores the message", () => {
     await POST(post("http://localhost/api/contact", message()));
     const row = await prisma.contactMessage.findFirstOrThrow({
       where: { email: message().email },
+      orderBy: { createdAt: "desc" },
     });
 
     asUser(ownerId, "owner");
