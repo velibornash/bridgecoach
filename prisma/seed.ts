@@ -56,9 +56,41 @@ const ACHIEVEMENT_CATEGORY: Record<string, string> = {
   bidding: "bidding",
   streak: "streak",
   practice: "practice",
+  quizzes: "quiz",
   quiz: "quiz",
   social: "social",
+  mastery: "milestone",
+  special: "milestone",
   milestone: "milestone",
+};
+
+/**
+ * Which real metric each achievement is measured against.
+ *
+ * mockData only carries a category, which is not specific enough to drive the
+ * progression engine — "Perfect Score" is a `quizzes` achievement, so measuring
+ * it by completed lessons would unlock it for the wrong reason.
+ *
+ * `mastery` / `special` / `bidding` achievements are mapped to "manual" on
+ * purpose. Their original thresholds (e.g. 64/100, 12/30) are expressed in
+ * undefined units, so there is no honest metric to evaluate them against.
+ * Guessing "xp" would unlock them for the wrong reason. They stay locked until
+ * the Player Model (Sprint 60) gives them a real definition; the achievements
+ * route reports an unknown metric as 0, so a manual achievement is never
+ * accidentally unlocked.
+ */
+const ACHIEVEMENT_METRIC: Record<string, string> = {
+  lessons: "lessonsCompleted",
+  learning: "lessonsCompleted",
+  quizzes: "perfectQuizzes",
+  quiz: "perfectQuizzes",
+  streak: "streak",
+  practice: "practiceSessions",
+  mastery: "manual",
+  special: "manual",
+  bidding: "manual",
+  milestone: "manual",
+  social: "manual",
 };
 
 /** mapMockType → MissionType enum */
@@ -219,7 +251,17 @@ async function seedAchievements() {
     const category = ACHIEVEMENT_CATEGORY[a.category] ?? "milestone";
     await prisma.achievement.upsert({
       where: { id: a.id },
-      update: {},
+      // Seed rows are authoritative for static definitions, so re-seeding also
+      // repairs a wrong metric/threshold from an earlier seed version.
+      update: {
+        title: a.title,
+        description: a.description,
+        icon: a.icon,
+        category: category as never,
+        xpReward: a.xpReward,
+        metric: ACHIEVEMENT_METRIC[a.category] ?? "lessonsCompleted",
+        threshold: a.maxProgress,
+      },
       create: {
         id: a.id,
         title: a.title,
@@ -227,9 +269,8 @@ async function seedAchievements() {
         icon: a.icon,
         category: category as never,
         xpReward: a.xpReward,
-        // Derive the tracked metric from the achievement's own category so the
-        // progression engine can evaluate it later (58.3.5).
-        metric: a.category === "streak" ? "streak" : "lessonsCompleted",
+        // Tracked metric drives the progression engine (58.3.5).
+        metric: ACHIEVEMENT_METRIC[a.category] ?? "lessonsCompleted",
         threshold: a.maxProgress,
         isSeed: true,
       },

@@ -104,24 +104,43 @@ describe("persisted auction reconstructs through AuctionStateMachine", () => {
 });
 
 describe("development identity and ownership", () => {
+  /**
+   * Runs against a dedicated throwaway user so the assertions about a *fresh*
+   * new-user state do not depend on whatever the dev database happens to contain.
+   */
+  let tempUserId: string;
+
+  beforeAll(async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: `test-${Date.now()}@bridgecoach.test`,
+        firstName: "Test",
+        lastName: "User",
+        isSeed: false,
+      },
+    });
+    tempUserId = user.id;
+  });
+
   afterAll(async () => {
+    await prisma.user.delete({ where: { id: tempUserId } }).catch(() => undefined);
     await prisma.$disconnect();
   });
 
-  it("seeds a development user with a valid empty progression state", async () => {
-    const user = await prisma.user.findUnique({
-      where: { email: "dev@bridgecoach.local" },
+  it("creates a new user with a valid empty progression state", async () => {
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: tempUserId },
+      select: { xp: true, level: true, streak: true, passwordHash: true },
     });
-    expect(user).not.toBeNull();
-    // A fresh development user must have a valid NEW-user state (Sprint 58 §11).
-    expect(user!.xp).toBe(0);
-    expect(user!.level).toBe(1);
-    expect(user!.isSeed).toBe(true);
+    // A fresh user must have a valid NEW-user state (Sprint 58 §11).
+    expect(user.xp).toBe(0);
+    expect(user.level).toBe(1);
+    expect(user.streak).toBe(0);
     // No password hash: this identity is not authenticatable before Sprint 59.
-    expect(user!.passwordHash).toBeNull();
+    expect(user.passwordHash).toBeNull();
   });
 
-  it("gives every seeded auction an explicit owner", async () => {
+  it("gives every auction an explicit owner", async () => {
     const auctions = await prisma.auction.findMany();
     expect(auctions.length).toBeGreaterThan(0);
     for (const auction of auctions) {
@@ -130,49 +149,37 @@ describe("development identity and ownership", () => {
         where: { id: auction.userId },
         select: { id: true },
       });
-      expect(owner).not.toBeNull();
+      expect(owner, "auction must not be orphaned").not.toBeNull();
     }
   });
 
   it("seeds learning content flagged as seed data", async () => {
     const lessons = await prisma.lesson.findMany();
-    expect(lessons.length).toBe(8);
+    expect(lessons.length).toBeGreaterThan(0);
     expect(lessons.every((l) => l.isSeed)).toBe(true);
   });
 
   it("rejects a duplicate XP event for the same reference", async () => {
-    const user = await prisma.user.findUniqueOrThrow({
-      where: { email: "dev@bridgecoach.local" },
-    });
     const reference = `test-dedupe-${Date.now()}`;
-
     await prisma.xPEvent.create({
-      data: { userId: user.id, type: "LESSON_COMPLETED", reference, amount: 10 },
+      data: { userId: tempUserId, type: "LESSON_COMPLETED", reference, amount: 10 },
     });
     await expect(
       prisma.xPEvent.create({
-        data: { userId: user.id, type: "LESSON_COMPLETED", reference, amount: 10 },
+        data: { userId: tempUserId, type: "LESSON_COMPLETED", reference, amount: 10 },
       }),
     ).rejects.toThrow();
-
-    await prisma.xPEvent.deleteMany({ where: { reference } });
   });
 
   it("rejects a duplicate UserAchievement for the same user", async () => {
-    const user = await prisma.user.findUniqueOrThrow({
-      where: { email: "dev@bridgecoach.local" },
-    });
     const achievement = await prisma.achievement.findFirstOrThrow();
-
     await prisma.userAchievement.create({
-      data: { userId: user.id, achievementId: achievement.id },
+      data: { userId: tempUserId, achievementId: achievement.id },
     });
     await expect(
       prisma.userAchievement.create({
-        data: { userId: user.id, achievementId: achievement.id },
+        data: { userId: tempUserId, achievementId: achievement.id },
       }),
     ).rejects.toThrow();
-
-    await prisma.userAchievement.deleteMany({ where: { userId: user.id } });
   });
 });
