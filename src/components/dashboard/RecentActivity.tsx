@@ -2,7 +2,7 @@
 
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { Card } from "@/components/ui/Card";
-import { mockActivity } from "@/services/mockData";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 
 const typeIcons: Record<string, React.ReactNode> = {
   lesson: (
@@ -33,6 +33,10 @@ const typeIcons: Record<string, React.ReactNode> = {
 };
 
 export function RecentActivity() {
+  // Real activity feed from persisted rows (Sprint 58 §11).
+  const { data } = useDashboardData();
+  const activity = data?.recentActivity ?? [];
+  if (activity.length === 0) return null;
   return (
     <AnimatedSection delay={0.35}>
       <Card>
@@ -44,7 +48,7 @@ export function RecentActivity() {
         </div>
 
         <div className="space-y-3">
-          {mockActivity.map((activity) => (
+          {activity.map((activity) => (
             <div
               key={activity.id}
               className="flex items-center gap-3 rounded-lg py-2"
@@ -53,8 +57,8 @@ export function RecentActivity() {
                 {typeIcons[activity.type]}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm text-text-secondary">{activity.description}</div>
-                <div className="text-xs text-text-tertiary">{activity.timestamp}</div>
+                <div className="text-sm text-text-secondary">{activity.title}</div>
+                <div className="text-xs text-text-tertiary">{new Date(activity.createdAt).toLocaleDateString()}</div>
               </div>
               {activity.xp && (
                 <div className="text-xs font-semibold text-primary">

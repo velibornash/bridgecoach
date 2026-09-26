@@ -208,15 +208,55 @@ catalog, XP progress, achievements grid, and onboarding. Static *content*
 derived from persisted rows. Smoke E2E still passes, so the dashboard renders
 correctly from real data.
 
-### Still on `mockData` (30 files)
+### Still on `mockData` (~22 files after session 6)
 
-Dashboard sub-components (`Achievements`, `ContinueLearning`, `LearningPath`,
-`RecentActivity`, `Statistics`, `TodaysMission`, `DailyChallenge`,
-`PremiumHero`), profile, statistics widgets, leaderboard, friends, community,
-rewards, certificates, notifications, search, flashcards, catalog, notes,
-bookmarks, XP progress, achievements grid, video captions, and the two landing
-components (`Features`, `Testimonials` — the latter two are legitimately static
-marketing content).
+`/profile`, `/profile/[id]`, statistics widgets, `/leaderboard`, `/friends`,
+`/community`, `/rewards`, `/certificates`, `/notifications`, `/search`,
+`/flashcards`, `/catalog`, `/notes`, `/bookmarks`, `/missions`, `/quiz`
+question loading, `XPProgress`, `AchievementGrid`, video captions, and the
+landing `Features` / `Testimonials` components — the last two are legitimately
+static marketing content and will stay.
+
+---
+
+## Session 6 — Dashboard sub-components off mockData (58.2.2 continued)
+
+**Commit:** see git log for the session-6 commit
+
+### Components migrated
+
+| Component | Data source |
+|---|---|
+| `Achievements` | `/api/achievements` via `useApiResource`; renders `null` when genuinely empty |
+| `ContinueLearning` | `nextLesson` from the dashboard context |
+| `LearningPath` | `/api/content` + `/api/progress` via `useApiResource` |
+| `RecentActivity` | `recentActivity` from the dashboard context |
+| `Statistics` | `/api/stats` (persisted shape) — the fixture's "48 lessons / 78% / 2450 XP" is gone |
+| `TodaysMission` | `/api/missions`, first incomplete mission |
+| `DailyChallenge` | `/api/missions` daily row — replaces a fixture whose dates were generated relative to `Date.now()` |
+| `PremiumHero` | dashboard context + real next lesson; streak max now uses `longestStreak` instead of a hardcoded 30 |
+
+### Schema change
+
+Added `Achievement.rarity` with migration `20260926110032_add_achievement_rarity`.
+`mockData` carried a `rarity` per achievement and the UI styles achievement cards
+by it, but the first schema draft dropped it. Restored rather than deriving it,
+because the values already existed in real content.
+
+### `useApiResource` extended
+
+It now accepts a loader that returns either the `ApiResponse` envelope or a bare
+value/`null`, so `getLearningStats`-style loaders and `fetchLessons`-style
+loaders can both use the same hook.
+
+### New E2E coverage
+
+`tests/e2e/dashboard-real-data.spec.ts` (3 tests):
+- the dashboard shows the real XP total and the user's real first name
+- **"Bob Smith" must not appear anywhere** — the fixture user is gone
+- a real lesson completion is reflected, and the page shows the real level
+  rather than the hardcoded "Level 7"
+- the statistics page renders without crashing on the real dataset
 
 ---
 
@@ -226,7 +266,7 @@ marketing content).
 |---|---|
 | 58.1 Foundation (DB, schema, migration, seed, client) | ✅ |
 | 58.2.1 API routes (13 files) | ✅ |
-| 58.2.2 Service layer + `mockData` consumers | 🔄 api.ts, lesson, quiz, achievements, stats, challenge, authorStudio services + `/learning-path`, `/lesson`, dashboard page, `DashboardHeader`, `WelcomeHeader`, `XPBar` done; ~30 component/page consumers left |
+| 58.2.2 Service layer + `mockData` consumers | 🔄 services + all 12 dashboard components + `/learning-path` + `/lesson` done; ~22 page/component consumers left (profile, statistics widgets, leaderboard, friends, community, rewards, certificates, notifications, search, flashcards, catalog, notes, bookmarks, XP progress, achievements grid) |
 | 58.2.3 Author Studio off localStorage | ✅ database authoritative, localStorage is cache only |
 | 58.2.4 AI conversation persistence | ✅ |
 | 58.3.1–58.3.8 Domain wiring | ✅ |

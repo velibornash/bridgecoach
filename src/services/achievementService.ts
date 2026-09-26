@@ -23,6 +23,7 @@ interface AchievementsResponse {
     icon: string;
     category: string;
     xpReward: number;
+    rarity: string;
     metric: string;
     threshold: number;
     progress: number;
@@ -38,6 +39,7 @@ export interface AchievementState {
   icon: string;
   category: string;
   xpReward: number;
+  rarity: string;
   metric: string;
   threshold: number;
   progress: number;
@@ -57,6 +59,7 @@ export async function fetchAchievements(): Promise<ApiResponseLike<AchievementSt
         icon: a.icon,
         category: a.category,
         xpReward: a.xpReward,
+        rarity: a.rarity,
         metric: a.metric,
         threshold: a.threshold,
         progress: a.progress,

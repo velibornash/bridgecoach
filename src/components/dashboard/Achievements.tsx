@@ -3,7 +3,8 @@
 import { motion } from "framer-motion";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { Card } from "@/components/ui/Card";
-import { mockAchievements } from "@/services/mockData";
+import { useApiResource } from "@/hooks/useApiResource";
+import { fetchAchievements } from "@/services/achievementService";
 import Link from "next/link";
 
 const rarityColors: Record<string, string> = {
@@ -14,8 +15,13 @@ const rarityColors: Record<string, string> = {
 };
 
 export function Achievements() {
-  const unlocked = mockAchievements.filter((a) => a.unlocked);
-  const total = mockAchievements.length;
+  // Real unlock state from persisted activity (Sprint 58 §13).
+  const { data: achievements, isEmpty } = useApiResource(fetchAchievements);
+  const list = achievements ?? [];
+  const unlocked = list.filter((a) => a.unlocked);
+  const total = list.length;
+
+  if (isEmpty) return null;
 
   return (
     <AnimatedSection delay={0.25}>
@@ -33,7 +39,7 @@ export function Achievements() {
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          {mockAchievements.slice(0, 6).map((achievement) => (
+          {list.slice(0, 6).map((achievement) => (
             <div
               key={achievement.id}
               className={`flex flex-col items-center gap-1.5 rounded-xl p-3 text-center transition-all duration-150 ${

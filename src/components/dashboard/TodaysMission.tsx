@@ -4,7 +4,8 @@ import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { Card } from "@/components/ui/Card";
 import { Progress } from "@/components/ui/Progress";
 import { Button } from "@/components/ui/Button";
-import { mockDailyMission } from "@/services/mockData";
+import { useApiResource } from "@/hooks/useApiResource";
+import { fetchMissions } from "@/services/challengeService";
 
 const missionIcons: Record<string, React.ReactNode> = {
   quiz: (
@@ -30,8 +31,12 @@ const missionIcons: Record<string, React.ReactNode> = {
 };
 
 export function TodaysMission() {
-  const mission = mockDailyMission;
-  const pct = Math.round((mission.progress / mission.maxProgress) * 100);
+  // Real mission progress from persisted activity (Sprint 58 §13).
+  const { data: missions, isEmpty } = useApiResource(fetchMissions);
+  const mission = missions?.find((m) => !m.completed) ?? missions?.[0];
+  if (!mission) return null;
+  const pct =
+    mission.target === 0 ? 0 : Math.round((mission.progress / mission.target) * 100);
 
   return (
     <AnimatedSection delay={0.2}>
@@ -53,9 +58,9 @@ export function TodaysMission() {
           <div className="mt-4">
             <div className="flex items-center justify-between text-sm mb-1.5">
               <span className="text-text-tertiary">Progress</span>
-              <span className="text-text-secondary font-medium">{mission.progress}/{mission.maxProgress}</span>
+              <span className="text-text-secondary font-medium">{mission.progress}/{mission.target}</span>
             </div>
-            <Progress value={mission.progress} max={mission.maxProgress} />
+            <Progress value={mission.progress} max={mission.target} />
           </div>
 
           <div className="mt-4 flex items-center justify-between">

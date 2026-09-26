@@ -508,6 +508,7 @@ model Achievement {
   icon        String              @default("trophy")
   category    AchievementCategory @default(milestone)
   xpReward    Int                 @default(50)
+  rarity      String              @default("common")
   // Metric the achievement tracks: "lessonsCompleted" | "streak" | "xp" | ...
   metric      String
   threshold   Int

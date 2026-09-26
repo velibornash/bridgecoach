@@ -3,10 +3,20 @@
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { mockLessons } from "@/services/mockData";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 
 export function ContinueLearning() {
-  const nextLesson = mockLessons.find((l) => !l.completed && !l.locked);
+  // The real next lesson comes from /api/dashboard (Sprint 58 §11).
+  const { data } = useDashboardData();
+  const nextLesson = data?.nextLesson
+    ? {
+        id: data.nextLesson.id,
+        title: data.nextLesson.title,
+        description: data.nextLesson.description,
+        duration: data.nextLesson.duration,
+        xpReward: data.nextLesson.xpReward,
+      }
+    : null;
 
   if (!nextLesson) return null;
 

@@ -6,16 +6,20 @@ import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { mockDailyChallenges } from "@/services/mockData";
+import { useApiResource } from "@/hooks/useApiResource";
+import { fetchTodaysChallenge } from "@/services/challengeService";
 import { triggerXpAnimation } from "@/components/xp/XPAnimation";
 import Link from "next/link";
 
 const typeIcons: Record<string, string> = { quiz: "🧪", puzzle: "🧩", practice: "📝", streak: "🔥" };
 
 export function DailyChallenge() {
-  const today = new Date().toISOString().split("T")[0];
-  const challenge = mockDailyChallenges.find((c) => c.date === today) || mockDailyChallenges[0];
-  const [completed, setCompleted] = useState(challenge.completed);
+  // Real daily challenge derived from a seeded Mission row (Sprint 58 §13).
+  // The old fixture generated its dates relative to Date.now().
+  const { data: challenge } = useApiResource(fetchTodaysChallenge);
+  const [completed, setCompleted] = useState(false);
+
+  if (!challenge) return null;
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {

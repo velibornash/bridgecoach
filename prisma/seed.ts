@@ -259,6 +259,7 @@ async function seedAchievements() {
         icon: a.icon,
         category: category as never,
         xpReward: a.xpReward,
+        rarity: a.rarity,
         metric: ACHIEVEMENT_METRIC[a.category] ?? "lessonsCompleted",
         threshold: a.maxProgress,
       },
@@ -269,6 +270,7 @@ async function seedAchievements() {
         icon: a.icon,
         category: category as never,
         xpReward: a.xpReward,
+        rarity: a.rarity,
         // Tracked metric drives the progression engine (58.3.5).
         metric: ACHIEVEMENT_METRIC[a.category] ?? "lessonsCompleted",
         threshold: a.maxProgress,

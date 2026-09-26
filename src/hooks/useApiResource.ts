@@ -23,7 +23,7 @@ export interface ApiResource<T> {
 }
 
 export function useApiResource<T>(
-  loader: () => Promise<{ data: T | null; error: string | null; status: number }>,
+  loader: () => Promise<{ data: T | null; error: string | null; status: number } | T | null>,
   deps: unknown[] = [],
 ): ApiResource<T> {
   const [data, setData] = useState<T | null>(null);
@@ -40,8 +40,14 @@ export function useApiResource<T>(
       // State is only touched after an await, so the effect never triggers a
       // cascading synchronous render.
       try {
-        const result = await loader();
+        const raw = await loader();
         if (cancelled) return;
+        // Accept both the ApiResponse envelope and a bare value|null.
+        const result =
+          raw !== null && typeof raw === "object" && "error" in raw
+            ? (raw as { data: T | null; error: string | null })
+            : ({ data: raw as T | null, error: null } as const);
+
         if (result.error) {
           setError(result.error);
           setData(null);

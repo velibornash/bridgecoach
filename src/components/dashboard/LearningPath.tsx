@@ -4,9 +4,14 @@ import Link from "next/link";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { mockLessons } from "@/services/mockData";
+import { useApiResource } from "@/hooks/useApiResource";
+import { fetchLessons } from "@/services/lessonService";
 
 export function LearningPath() {
+  // Real lessons with real completion (Sprint 58 §6).
+  const { data: lessons, isEmpty } = useApiResource(fetchLessons);
+  const list = lessons ?? [];
+  if (isEmpty) return null;
   return (
     <AnimatedSection delay={0.3}>
       <div>
@@ -25,7 +30,7 @@ export function LearningPath() {
         </div>
 
         <div className="space-y-3">
-          {mockLessons.slice(0, 6).map((lesson, i) => (
+          {list.slice(0, 6).map((lesson, i) => (
             <div key={lesson.id}>
               <div
                 className={`group flex items-center gap-4 rounded-xl p-4 transition-all duration-150 ${

@@ -42,6 +42,34 @@ function toChallenge(m: MissionsResponse["missions"][number]): DailyChallengeDat
   };
 }
 
+export interface MissionState {
+  id: string;
+  title: string;
+  description: string;
+  type: string;
+  category: string;
+  icon: string;
+  xpReward: number;
+  metric: string;
+  target: number;
+  progress: number;
+  completed: boolean;
+  completedAt: string | null;
+}
+
+/** All missions with the user's real progress merged in. */
+export async function fetchMissions(): Promise<{
+  data: MissionState[] | null;
+  error: string | null;
+  status: number;
+}> {
+  const result = await apiFetchSafe<MissionsResponse>("/api/missions");
+  if (!result.data) {
+    return { data: null, error: result.error, status: result.status };
+  }
+  return { data: result.data.missions, error: null, status: 200 };
+}
+
 export async function fetchTodaysChallenge() {
   const result = await apiFetchSafe<MissionsResponse>("/api/missions");
   if (!result.data) {

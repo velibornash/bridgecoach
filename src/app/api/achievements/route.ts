@@ -85,6 +85,7 @@ export const GET = handleRoute(async () =>
           icon: a.icon,
           category: a.category,
           xpReward: a.xpReward,
+          rarity: a.rarity,
           metric: a.metric,
           threshold: a.threshold,
           progress: state?.progress ?? (measuredValid ? Math.min(measured, a.threshold) : 0),

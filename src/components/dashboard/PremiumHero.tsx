@@ -9,7 +9,9 @@ import { Typography } from "@/components/ui/Typography";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { PremiumMetric } from "@/components/ui/PremiumMetric";
 import { Icon } from "@/components/icons/Icon";
-import { mockUser, mockLessons } from "@/services/mockData";
+import { useApiResource } from "@/hooks/useApiResource";
+import { fetchLessons } from "@/services/lessonService";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 import { fadeUp, staggerContainer } from "@/design-system/motion";
 
 function getGreeting(): string {
@@ -20,11 +22,15 @@ function getGreeting(): string {
 }
 
 export function PremiumHero() {
-  const nextLesson = mockLessons.find((l) => l.id === mockUser.currentLessonId)
-    ?? mockLessons.find((l) => !l.completed && !l.locked);
+  // Real progression and a real next lesson (Sprint 58 §11).
+  const { data } = useDashboardData();
+  const { data: lessons } = useApiResource(fetchLessons);
+  const nextLesson = lessons?.find((l) => !l.completed && !l.locked);
 
   const lessonProgress = nextLesson
-    ? Math.round((nextLesson.sectionsCompleted.length / Math.max(nextLesson.content.length, 1)) * 100)
+    ? Math.round(
+        (nextLesson.sectionsCompleted.length / Math.max(nextLesson.content.length, 1)) * 100,
+      )
     : 0;
 
   const dailyGoal = 3;
@@ -53,21 +59,21 @@ export function PremiumHero() {
               {/* Left — emotional center */}
               <motion.div variants={fadeUp} className="space-y-4">
                 <p className="text-label text-premium">
-                  Level {mockUser.level}
+                  Level {data?.progression.level ?? 1}
                 </p>
 
                 <Typography variant="hero">
-                  {getGreeting()}, {mockUser.firstName}.
+                  {getGreeting()}, {data?.user.firstName ?? "there"}.
                 </Typography>
 
                 <p className="text-lg text-text-secondary font-light">
                   Continue your journey.
                 </p>
 
-                {mockUser.streak > 0 && (
+                {(data?.progression.streak ?? 0) > 0 && (
                   <div className="flex items-center gap-2 text-sm text-xp">
                     <Icon icon={Flame} size={16} />
-                    <span>{mockUser.streak}-day learning streak</span>
+                    <span>{data?.progression.streak}-day learning streak</span>
                   </div>
                 )}
 
@@ -91,7 +97,7 @@ export function PremiumHero() {
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
                   <PremiumMetric icon={BookOpen} label="This Week" value={12} max={15} />
                   <PremiumMetric icon={Target} label="Accuracy" value={84} max={100} suffix="%" />
-                  <PremiumMetric icon={Flame} label="Streak" value={mockUser.streak} max={30} suffix="d" />
+                  <PremiumMetric icon={Flame} label="Streak" value={data?.progression.streak ?? 0} max={Math.max(data?.progression.longestStreak ?? 0, 1)} suffix="d" />
                 </div>
               </motion.div>
 
