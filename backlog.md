@@ -167,13 +167,17 @@ new bridge conventions.
 
 ### P1 — Security & correctness debt
 
-- [ ] **59 — Real authentication** (spec not yet written). Replace hardcoded
-      `mockUser` (`src/services/mockData.ts:11`) with real sign-in, hashed
-      passwords, server sessions/cookies, and route protection. This unblocks
-      friends / leaderboard / public profile, which are currently fake.
-      Replace the dead `src/services/authService.ts` (0 importers, hardcoded
-      password check at line 81) and the disposable-token `src/services/auth.ts`.
-      Swap the dev identity resolver in `src/lib/db.ts` for the real session.
+- [ ] **59 — Real authentication.** Plan written and awaiting approval:
+      `docs/SPRINT_59_PLAN.md`. Three decisions are needed first (session storage,
+      dev-user handling, hashing algorithm).
+      Summary: server-side sessions in a signed `httpOnly` cookie, `bcryptjs`
+      hashing, a `Session` + `AuthEvent` table, `/api/auth/*` endpoints on the
+      existing route scaffolding, Next.js middleware for route protection, and
+      `resolveUserId()` in `src/lib/db.ts` swapped from the dev identity to the
+      session — that one function is the only seam Sprint 58 left open.
+      Unblocks `/leaderboard`, `/friends`, `/community`, `/profile/[id]`, makes the
+      AI rate limit enforceable per user, and deletes `mockLogin` plus the dead
+      `authService.ts`.
 - [x] **Secure the AI endpoints.** DONE in the Sprint 58 follow-up. Rate limiting
       added (`src/lib/ai/rateLimit.ts`, per-endpoint limits, capped bucket map),
       `provider`/`model` are now pinned server-side so a caller cannot steer to an
