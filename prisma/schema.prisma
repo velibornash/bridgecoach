@@ -639,6 +639,9 @@ model Note {
   title      String
   content    String
   tags       String[] @default([])
+  // Pinning is an existing product feature (Sprint 58 §14 preserves it), so it
+  // is persisted rather than kept in component state.
+  pinned     Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

@@ -7,7 +7,11 @@ import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Progress } from "@/components/ui/Progress";
-import { mockUser, mockUserStats, mockAchievements, mockCertificates, mockLessons, mockActivity } from "@/services/mockData";
+import { useApiResource } from "@/hooks/useApiResource";
+import { fetchDashboard } from "@/services/userService";
+import { getPersistedStats } from "@/services/statsService";
+import { fetchAchievements } from "@/services/achievementService";
+import { fetchBookmarks } from "@/services/bookmarksService";
 import { Icon } from "@/components/icons/Icon";
 
 const countryFlags: Record<string, string> = {
@@ -23,9 +27,37 @@ const experienceLabels: Record<string, string> = {
 };
 
 export default function ProfilePage() {
-  const name = `${mockUser.firstName} ${mockUser.lastName}`;
-  const unlockedAchievements = mockAchievements.filter((a) => a.unlocked);
-  const bookmarked = mockLessons.filter((l) => l.bookmarked);
+  // Real persisted state (Sprint 58 §11, §12). The previous version rendered a
+  // fixture: 12/48 lessons, 78% average, 2450 XP, 28 hours, 3840 cards played.
+  const { data: dashboard, loading } = useApiResource(fetchDashboard);
+  const { data: stats } = useApiResource(getPersistedStats);
+  const { data: achievementList } = useApiResource(fetchAchievements);
+  const { data: bookmarkList } = useApiResource(fetchBookmarks);
+
+  if (loading || !dashboard) {
+    return (
+      <div className="min-h-screen bg-bg-primary">
+        <DashboardHeader />
+        <main className="py-8 sm:py-12">
+          <Container className="max-w-3xl">
+            <p className="text-sm text-text-tertiary">Loading your profile…</p>
+          </Container>
+        </main>
+      </div>
+    );
+  }
+
+  const user = dashboard.user;
+  const progression = dashboard.progression;
+  const learning = stats?.learning;
+  const practice = stats?.practice;
+  const achievements = achievementList ?? [];
+  const unlockedAchievements = achievements.filter((a) => a.unlocked);
+  const name = `${user.firstName} ${user.lastName}`.trim() || "Player";
+  const activity = dashboard.recentActivity;
+  const bookmarked = bookmarkList ?? [];
+  // "Cards played" was a fixture metric with no real source, so it is omitted
+  // rather than invented.
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -46,15 +78,15 @@ export default function ProfilePage() {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-xl font-bold text-text-primary">{name}</h1>
-                  <span className="text-lg">{countryFlags[mockUser.country] || "🌍"}</span>
+                  <span className="text-lg">{countryFlags[user.country] || "🌍"}</span>
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <Badge variant="primary">Level {mockUser.level}</Badge>
-                  <Badge variant="warning"><Icon icon="🔥" size={12} className="mr-1" />{mockUser.streak}-day streak</Badge>
-                  <span className="text-xs text-text-tertiary">{experienceLabels[mockUser.experienceLevel]}</span>
+                  <Badge variant="primary">Level {progression.level}</Badge>
+                  <Badge variant="warning"><Icon icon="🔥" size={12} className="mr-1" />{progression.streak}-day streak</Badge>
+                  <span className="text-xs text-text-tertiary">{experienceLabels[user.experienceLevel as keyof typeof experienceLabels] ?? user.experienceLevel}</span>
                 </div>
                 <p className="mt-1 text-xs text-text-tertiary">
-                  Member since {new Date(mockUser.joinedAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                  Member since {new Date(user.joinedAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </p>
               </div>
             </div>
@@ -63,11 +95,11 @@ export default function ProfilePage() {
             <div className="mt-5">
               <div className="flex items-center justify-between text-xs mb-1.5">
                 <span className="text-text-secondary">XP Progress</span>
-                <span className="text-text-primary font-mono font-medium">{mockUser.xp.toLocaleString()} / {mockUser.xpToNextLevel.toLocaleString()}</span>
+                <span className="text-text-primary font-mono font-medium">{progression.xp.toLocaleString()} / {progression.xpToNextLevel.toLocaleString()}</span>
               </div>
-              <Progress value={(mockUser.xp / mockUser.xpToNextLevel) * 100} />
+              <Progress value={(progression.xp / Math.max(progression.xpToNextLevel, 1)) * 100} />
               <p className="mt-1 text-[11px] text-text-tertiary text-right">
-                {(mockUser.xpToNextLevel - mockUser.xp).toLocaleString()} XP to Level {mockUser.level + 1}
+                {Math.max(progression.xpToNextLevel - progression.xp, 0).toLocaleString()} XP to Level {progression.level + 1}
               </p>
             </div>
           </Card>
@@ -77,14 +109,13 @@ export default function ProfilePage() {
             <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Statistics</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "Lessons Done", value: `${mockUserStats.completedLessons}/${mockUserStats.totalLessons}`, icon: "📖", color: "from-indigo-500 to-indigo-600" },
-                { label: "Avg Score", value: `${mockUserStats.averageScore}%`, icon: "🎯", color: "from-emerald-500 to-teal-600" },
-                { label: "Total XP", value: mockUserStats.totalXpEarned.toLocaleString(), icon: "⚡", color: "from-amber-500 to-orange-600" },
-                { label: "Streak", value: `${mockUserStats.longestStreak} days`, icon: "🔥", color: "from-rose-500 to-pink-600" },
-                { label: "Hours Learned", value: mockUserStats.totalHours, icon: "⏱️", color: "from-violet-500 to-purple-600" },
-                { label: "Cards Played", value: mockUserStats.cardsPlayed.toLocaleString(), icon: "🃏", color: "from-cyan-500 to-blue-600" },
-                { label: "Bid Accuracy", value: `${Math.round((mockUserStats.correctBids / mockUserStats.totalBids) * 100)}%`, icon: "📊", color: "from-lime-500 to-green-600" },
-                { label: "Days Active", value: mockUserStats.daysActive, icon: "📅", color: "from-sky-500 to-indigo-600" },
+                { label: "Lessons Done", value: `${learning?.lessonsCompleted ?? 0}/${learning?.totalLessons ?? 0}`, icon: "📖", color: "from-indigo-500 to-indigo-600" },
+                { label: "Avg Score", value: `${learning?.averageQuizScore ?? 0}%`, icon: "🎯", color: "from-emerald-500 to-teal-600" },
+                { label: "Total XP", value: progression.lifetimeXp.toLocaleString(), icon: "⚡", color: "from-amber-500 to-orange-600" },
+                { label: "Streak", value: `${progression.longestStreak} days`, icon: "🔥", color: "from-rose-500 to-pink-600" },
+                { label: "Practice Time", value: `${Math.round(practice?.totalPracticeMinutes ?? 0)} min`, icon: "⏱️", color: "from-violet-500 to-purple-600" },
+                { label: "Bid Accuracy", value: `${practice?.bidAccuracy ?? 0}%`, icon: "📊", color: "from-lime-500 to-green-600" },
+                { label: "Days Active", value: learning?.daysActive ?? 0, icon: "📅", color: "from-sky-500 to-indigo-600" },
               ].map((stat, i) => (
                 <motion.div
                   key={stat.label}
@@ -108,10 +139,10 @@ export default function ProfilePage() {
           <div className="mt-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider">Achievements</h2>
-              <span className="text-xs text-text-tertiary">{unlockedAchievements.length}/{mockAchievements.length}</span>
+              <span className="text-xs text-text-tertiary">{unlockedAchievements.length}/{achievements.length}</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {mockAchievements.map((a) => (
+              {achievements.map((a) => (
                 <div
                   key={a.id}
                   className={`rounded-xl border p-3.5 transition-all ${
@@ -138,33 +169,6 @@ export default function ProfilePage() {
           </div>
 
           {/* Certificates */}
-          {mockCertificates.length > 0 && (
-            <div className="mt-6">
-              <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Certificates</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {mockCertificates.map((cert) => (
-                  <div
-                    key={cert.id}
-                    className={`rounded-xl border border-border bg-gradient-to-br ${cert.gradient} p-4 relative overflow-hidden`}
-                  >
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-bl-full" />
-                    <div className="relative">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white/20 mb-3">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                          <path d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-sm font-bold text-white">{cert.title}</h3>
-                      <p className="text-xs text-white/70 mt-0.5">{cert.description}</p>
-                      <p className="text-[10px] text-white/50 mt-2">
-                        Earned {new Date(cert.earnedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Bookmarked Lessons */}
           <div className="mt-6">
@@ -182,7 +186,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-text-primary truncate">{l.title}</p>
-                      <p className="text-[11px] text-text-tertiary">{l.duration} · {l.category}</p>
+                      <p className="text-[11px] text-text-tertiary">{new Date(l.createdAt).toLocaleDateString()}</p>
                     </div>
                   </div>
                 ))}
@@ -194,7 +198,7 @@ export default function ProfilePage() {
           <div className="mt-6 mb-8">
             <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Learning History</h2>
             <div className="space-y-2">
-              {mockActivity.map((act) => (
+              {activity.map((act) => (
                 <div key={act.id} className="flex items-center gap-3 rounded-xl border border-border bg-bg-card p-3">
                   <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                     act.type === "lesson" ? "bg-primary/10" :
@@ -209,8 +213,8 @@ export default function ProfilePage() {
                     {act.type === "xp" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-violet-400"><path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-text-primary truncate">{act.description}</p>
-                    <p className="text-[10px] text-text-tertiary">{act.timestamp}</p>
+                    <p className="text-xs font-medium text-text-primary truncate">{act.title}</p>
+                    <p className="text-[10px] text-text-tertiary">{new Date(act.createdAt).toLocaleDateString()}</p>
                   </div>
                   {act.xp && (
                     <span className="text-[11px] font-semibold text-warning shrink-0">+{act.xp} XP</span>

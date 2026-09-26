@@ -208,14 +208,18 @@ catalog, XP progress, achievements grid, and onboarding. Static *content*
 derived from persisted rows. Smoke E2E still passes, so the dashboard renders
 correctly from real data.
 
-### Still on `mockData` (~22 files after session 6)
+### Still on `mockData` (~19 files after session 7)
 
-`/profile`, `/profile/[id]`, statistics widgets, `/leaderboard`, `/friends`,
+`/profile/[id]` (public profile), statistics widgets, `/leaderboard`, `/friends`,
 `/community`, `/rewards`, `/certificates`, `/notifications`, `/search`,
-`/flashcards`, `/catalog`, `/notes`, `/bookmarks`, `/missions`, `/quiz`
-question loading, `XPProgress`, `AchievementGrid`, video captions, and the
-landing `Features` / `Testimonials` components — the last two are legitimately
-static marketing content and will stay.
+`/flashcards`, `/catalog`, `/missions`, `/quiz`, `XPProgress`,
+`AchievementGrid`, video captions, and the landing `Features` / `Testimonials`
+components — the last two are legitimately static marketing content and will stay.
+
+**Needs a product decision, not just wiring:** `/leaderboard`, `/friends`,
+`/community` and `/profile/[id]` all describe *other users*. There is only one
+user in the database, so these cannot show real data until Sprint 59 auth exists.
+They should not be faked in the meantime — see `backlog.md`.
 
 ---
 
@@ -260,13 +264,56 @@ loaders can both use the same hook.
 
 ---
 
+## Session 7 — Profile, Notes, Bookmarks off mockData (58.2.2 continued)
+
+**Commit:** see git log for the session-7 commit
+
+### Components migrated
+
+| Page | Data source | What was fake before |
+|---|---|---|
+| `/profile` | `/api/dashboard` + `/api/stats` + `/api/achievements` + `/api/bookmarks` | 12/48 lessons, 78% avg, 2450 XP, 28 hours, **3840 cards played**, 187/245 bids, 2 fake certificates, fixture "favorite lessons" |
+| `/notes` | new `notesService` → `/api/notes` | `useState(mockAllNotes)` — every create/edit/delete was lost on refresh |
+| `/bookmarks` | new `bookmarksService` → `/api/bookmarks` | `useState(mockBookmarks)` — the page could not save anything at all |
+
+### Two fields the schema was missing
+
+- **`Note.pinned`** (migration `20260926111027_add_note_pinned`) — pinning is an
+  existing product feature, so it is persisted rather than kept in component state.
+- `Bookmark.type` replaces the UI's `category` field name; the route now returns
+  `pinned` on GET, POST and PATCH.
+
+### Bug found by testing, now regression-tested
+
+`POST /api/notes` accepted `pinned` but **never wrote it to the database**, and
+`GET` omitted the field entirely — so a pinned note silently lost its pin on the
+next read. Caught by curling the API before trusting the UI. Both handlers fixed,
+and `tests/integration/authorStudio.test.ts` now has a dedicated regression test
+(`POST persists pinned and GET returns it`) so it cannot come back.
+
+### Metrics removed rather than faked
+
+- **"Cards Played: 3840"** — deleted from the profile. There is no real source for
+  it, and inventing one is the exact problem Sprint 58 exists to fix.
+- **Certificates section** — removed. Two static certificates were rendered as if
+  earned. Real certificates should be derived from lesson completion; that is
+  queued in `backlog.md` rather than faked here.
+- "Hours Learned" → "Practice Time" showing real minutes from persisted sessions.
+
+### State after this commit
+
+- Tests: **194** unit/integration, 7 E2E
+- typecheck 0 · lint 0 errors · build clean
+
+---
+
 ## Current state
 
 | Item | Status |
 |---|---|
 | 58.1 Foundation (DB, schema, migration, seed, client) | ✅ |
 | 58.2.1 API routes (13 files) | ✅ |
-| 58.2.2 Service layer + `mockData` consumers | 🔄 services + all 12 dashboard components + `/learning-path` + `/lesson` done; ~22 page/component consumers left (profile, statistics widgets, leaderboard, friends, community, rewards, certificates, notifications, search, flashcards, catalog, notes, bookmarks, XP progress, achievements grid) |
+| 58.2.2 Service layer + `mockData` consumers | 🔄 services + 12 dashboard components + `/learning-path` + `/lesson` + `/profile` + `/notes` + `/bookmarks` done; ~19 left (leaderboard, friends, community, rewards, certificates, notifications, search, flashcards, catalog, missions, quiz, statistics widgets, XPProgress, AchievementGrid, video captions) |
 | 58.2.3 Author Studio off localStorage | ✅ database authoritative, localStorage is cache only |
 | 58.2.4 AI conversation persistence | ✅ |
 | 58.3.1–58.3.8 Domain wiring | ✅ |

@@ -17,6 +17,7 @@ interface NotePatch {
   content?: unknown;
   tags?: unknown;
   lessonId?: unknown;
+  pinned?: unknown;
 }
 
 export const PATCH = handleRoute(
@@ -51,6 +52,7 @@ export const PATCH = handleRoute(
             ? { tags: body.tags.filter((t): t is string => typeof t === "string") }
             : {}),
           ...(typeof body.lessonId === "string" ? { lessonId: body.lessonId } : {}),
+          ...(typeof body.pinned === "boolean" ? { pinned: body.pinned } : {}),
         },
       });
 
@@ -60,6 +62,7 @@ export const PATCH = handleRoute(
         title: note.title,
         content: note.content,
         tags: note.tags,
+        pinned: note.pinned,
         createdAt: note.createdAt.toISOString(),
         updatedAt: note.updatedAt.toISOString(),
       });

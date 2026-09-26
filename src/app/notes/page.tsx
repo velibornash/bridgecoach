@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -8,48 +8,89 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
-import { mockAllNotes } from "@/services/mockData";
-import type { LessonNote } from "@/types";
+import {
+  fetchNotes,
+  deleteNote as deleteNoteApi,
+  updateNote as updateNoteApi,
+  type NoteRecord,
+} from "@/services/notesService";
 
 export default function NotesPage() {
-  const [notes, setNotes] = useState<LessonNote[]>(mockAllNotes);
+  // Notes live in PostgreSQL (Sprint 58 §14). They previously came from a
+  // fixture and every edit was lost on refresh.
+  const [notes, setNotes] = useState<NoteRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
+  const reload = useCallback(async () => {
+    const result = await fetchNotes();
+    setNotes(result.data ?? []);
+    setLoadError(result.error);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
   const filtered = useMemo(() => {
     if (!search.trim()) return notes;
     const q = search.toLowerCase();
-    return notes.filter((n) => n.text.toLowerCase().includes(q) || (n.lessonTitle || "").toLowerCase().includes(q));
+    return notes.filter(
+      (n) =>
+        n.content.toLowerCase().includes(q) || n.title.toLowerCase().includes(q),
+    );
   }, [notes, search]);
 
   const pinned = filtered.filter((n) => n.pinned);
   const unpinned = filtered.filter((n) => !n.pinned);
 
-  const togglePin = (id: string) => {
-    setNotes((prev) => prev.map((n) => n.id === id ? { ...n, pinned: !n.pinned } : n));
-    showToast("success", "Note pin toggled");
+  const togglePin = async (id: string) => {
+    const target = notes.find((n) => n.id === id);
+    if (!target) return;
+    // Optimistic update, reverted by reload() if the write failed.
+    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, pinned: !n.pinned } : n)));
+    const result = await updateNoteApi(id, { pinned: !target.pinned });
+    if (result.error) {
+      showToast("error", result.error);
+    } else {
+      showToast("success", "Note pin toggled");
+    }
+    reload();
   };
 
-  const deleteNote = (id: string) => {
+  const deleteNote = async (id: string) => {
+    const result = await deleteNoteApi(id);
+    if (result.error) {
+      showToast("error", result.error);
+      return;
+    }
     setNotes((prev) => prev.filter((n) => n.id !== id));
     showToast("info", "Note deleted");
   };
 
-  const startEdit = (note: LessonNote) => {
+  const startEdit = (note: NoteRecord) => {
     setEditingId(note.id);
-    setEditText(note.text);
+    setEditText(note.content);
   };
 
-  const saveEdit = () => {
-    if (!editText.trim()) return;
-    setNotes((prev) => prev.map((n) => n.id === editingId ? { ...n, text: editText } : n));
+  const saveEdit = async () => {
+    if (!editText.trim() || !editingId) return;
+    const result = await updateNoteApi(editingId, { content: editText });
+    if (result.error) {
+      showToast("error", result.error);
+      return;
+    }
     setEditingId(null);
     setEditText("");
     showToast("success", "Note updated");
+    reload();
   };
 
-  const renderNote = (note: LessonNote) => (
+  const renderNote = (note: NoteRecord) => (
     <motion.div
       key={note.id}
       layout
@@ -71,9 +112,9 @@ export default function NotesPage() {
         </button>
 
         <div className="flex-1 min-w-0">
-          {note.lessonTitle && (
+          {note.lessonId && (
             <div className="flex items-center gap-1.5 mb-1">
-              <Badge variant="default">{note.lessonTitle}</Badge>
+              <Badge variant="default">Lesson</Badge>
             </div>
           )}
 
@@ -91,12 +132,12 @@ export default function NotesPage() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">{note.text}</p>
+            <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">{note.content}</p>
           )}
 
           <div className="flex items-center gap-3 mt-2">
             <span className="text-[10px] text-text-tertiary">
-              {new Date(note.timestamp).toLocaleDateString()}
+              {new Date(note.updatedAt).toLocaleDateString()}
             </span>
             {editingId !== note.id && (
               <>
@@ -127,7 +168,13 @@ export default function NotesPage() {
         <Container className="max-w-2xl">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-text-primary">Notes</h1>
-            <p className="text-sm text-text-tertiary mt-1">{notes.length} notes across all lessons</p>
+            <p className="text-sm text-text-tertiary mt-1">
+              {loading
+                ? "Loading your notes…"
+                : loadError
+                  ? loadError
+                  : `${notes.length} note${notes.length === 1 ? "" : "s"} across all lessons`}
+            </p>
           </div>
 
           {/* Search */}

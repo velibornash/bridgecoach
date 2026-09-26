@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Badge } from "@/components/ui/Badge";
 import { showToast } from "@/components/ui/Toast";
-import { mockBookmarks } from "@/services/mockData";
+import { fetchBookmarks, deleteBookmark, type BookmarkRecord } from "@/services/bookmarksService";
 import { EmptyState } from "@/components/ui/EmptyState";
 import Link from "next/link";
 import type { BookmarkCategory } from "@/types";
@@ -20,12 +20,30 @@ const categoryMeta: Record<string, { icon: typeof BookOpen; label: string; color
 };
 
 export default function BookmarksPage() {
-  const [bookmarks, setBookmarks] = useState(mockBookmarks);
+  // Bookmarks live in PostgreSQL (Sprint 58 §14). The page previously read a
+  // fixture and could not save anything at all.
+  const [bookmarks, setBookmarks] = useState<BookmarkRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [filter, setFilter] = useState<BookmarkCategory | "all">("all");
 
-  const filtered = filter === "all" ? bookmarks : bookmarks.filter((b) => b.category === filter);
+  useEffect(() => {
+    (async () => {
+      const result = await fetchBookmarks();
+      setBookmarks(result.data ?? []);
+      setLoadError(result.error);
+      setLoading(false);
+    })();
+  }, []);
 
-  const removeBookmark = (id: string) => {
+  const filtered = filter === "all" ? bookmarks : bookmarks.filter((b) => b.type === filter);
+
+  const removeBookmark = async (id: string) => {
+    const result = await deleteBookmark(id);
+    if (result.error) {
+      showToast("error", result.error);
+      return;
+    }
     setBookmarks((prev) => prev.filter((b) => b.id !== id));
     showToast("info", "Bookmark removed");
   };
@@ -37,13 +55,15 @@ export default function BookmarksPage() {
         <Container className="max-w-2xl">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-text-primary">Bookmarks</h1>
-            <p className="text-sm text-text-tertiary mt-1">{bookmarks.length} saved items</p>
+            <p className="text-sm text-text-tertiary mt-1">
+              {loading ? "Loading…" : loadError ?? `${bookmarks.length} saved item${bookmarks.length === 1 ? "" : "s"}`}
+            </p>
           </div>
 
           {/* Category filters */}
           <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
             {(["all", "lesson", "video", "article"] as const).map((cat) => {
-              const count = cat === "all" ? bookmarks.length : bookmarks.filter((b) => b.category === cat).length;
+              const count = cat === "all" ? bookmarks.length : bookmarks.filter((b) => b.type === cat).length;
               return (
                 <button
                   key={cat}
@@ -78,12 +98,12 @@ export default function BookmarksPage() {
                   className="group relative"
                 >
                   <Link
-                    href={bm.href}
+                    href={bm.lessonId ? `/lesson?id=${bm.lessonId}` : "#"}
                     className="block rounded-xl border border-border bg-bg-card p-4 hover:border-primary/20 transition-all h-full"
                   >
                     <div className="flex items-start gap-3">
-                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${categoryMeta[bm.category]?.color || "from-primary to-blue-600"}`}>
-                          <Icon icon={categoryMeta[bm.category]?.icon || FileText} size={18} className="text-white" />
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${categoryMeta[bm.type]?.color || "from-primary to-blue-600"}`}>
+                          <Icon icon={categoryMeta[bm.type]?.icon || FileText} size={18} className="text-white" />
                         </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -91,8 +111,8 @@ export default function BookmarksPage() {
                         </div>
                         <p className="text-xs text-text-tertiary mt-0.5 line-clamp-1">{bm.description}</p>
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="default">{bm.category}</Badge>
-                          <span className="text-[10px] text-text-tertiary">{bm.addedAt}</span>
+                          <Badge variant="default">{bm.type}</Badge>
+                          <span className="text-[10px] text-text-tertiary">{new Date(bm.createdAt).toLocaleDateString()}</span>
                         </div>
                       </div>
                     </div>

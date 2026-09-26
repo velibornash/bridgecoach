@@ -32,6 +32,7 @@ export const GET = handleRoute(async () =>
         title: n.title,
         content: n.content,
         tags: n.tags,
+        pinned: n.pinned,
         createdAt: n.createdAt.toISOString(),
         updatedAt: n.updatedAt.toISOString(),
       })),
@@ -44,6 +45,7 @@ interface NoteBody {
   title?: unknown;
   content?: unknown;
   tags?: unknown;
+  pinned?: unknown;
 }
 
 function parseTags(value: unknown): string[] {
@@ -78,6 +80,7 @@ export const POST = handleRoute(async (request: Request) =>
         title,
         content,
         tags: parseTags(body.tags),
+        pinned: body.pinned === true,
       },
     });
 
@@ -88,6 +91,7 @@ export const POST = handleRoute(async (request: Request) =>
         title: note.title,
         content: note.content,
         tags: note.tags,
+        pinned: note.pinned,
         createdAt: note.createdAt.toISOString(),
         updatedAt: note.updatedAt.toISOString(),
       },
