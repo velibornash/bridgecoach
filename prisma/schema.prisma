@@ -165,6 +165,11 @@ model User {
   country   String   @default("US")
   sex       Sex?
   experienceLevel ExperienceLevel @default(new)
+  // Sprint 60: who may administer the app, and whether this account may sign in
+  // at all. A newly registered account is PENDING and cannot create a session;
+  // an OWNER approves it from /admin.
+  role      UserRole   @default(user)
+  status    UserStatus @default(pending)
   joinedAt  DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -181,6 +186,7 @@ model User {
 
   sessions         Session[]
   authEvents       AuthEvent[]
+  resetTokens      PasswordResetToken[]
   profile          Profile?
   lessonProgress   LessonProgress[]
   courseProgress   CourseProgress[]
@@ -196,10 +202,29 @@ model User {
   conversations    AIConversation[]
   authorContents   AuthorContent[]
   authorDrafts     AuthorDraft[]
+  registrationDecisions RegistrationRequest[] @relation("RegistrationDecidedBy")
   activity         Activity[]
 
   @@index([lastActiveAt])
   @@index([isSeed])
+  @@index([status])
+  @@index([role])
+}
+
+enum UserRole {
+  owner
+  admin
+  user
+}
+
+enum UserStatus {
+  // Registered but not yet approved. Cannot sign in: resolveUserId() refuses a
+  // session for a non-active account, so approval is enforced at the same place
+  // as authentication rather than only in the UI.
+  pending
+  active
+  rejected
+  suspended
 }
 
 /// A server-side login session.
@@ -791,4 +816,67 @@ model AuthorRevision {
 
   @@unique([contentId, version])
   @@index([contentId, version])
+}
+
+/// A single-use password reset token (Sprint 60).
+///
+/// Only the SHA-256 hash is stored, same reasoning as sessions: a database leak
+/// must not hand out working reset links. `usedAt` makes a token single-use, so
+/// replaying an old email cannot change a password twice.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Outgoing email, kept so the flow is verifiable without a paid provider.
+///
+/// In development every message is recorded here and the admin page can read it,
+/// which means the password reset flow can be completed end to end offline. With
+/// RESEND_API_KEY set, a real message is sent through Resend's free tier and the
+/// row is retained as a delivery record.
+///
+/// The body is stored because in development it is the only place the reset link
+/// exists. `to` is always present, which is why this table must never be exposed
+/// to a non-administrator.
+model OutgoingEmail {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  body      String
+  provider  String
+  status    String   @default("queued")
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// A registration request awaiting an administrator's decision.
+model RegistrationRequest {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  firstName String
+  lastName  String
+  country   String    @default("US")
+  experienceLevel ExperienceLevel @default(new)
+  status    String    @default("pending")
+  note      String?
+  decidedBy String?
+  decidedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  decidedByUser User? @relation("RegistrationDecidedBy", fields: [decidedBy], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdAt])
 }

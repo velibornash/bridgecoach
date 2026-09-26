@@ -38,6 +38,7 @@ import {
   SESSION_COOKIE,
 } from "@/lib/session";
 import { checkRateLimit, clientKey } from "@/lib/ai/rateLimit";
+import { notifyOwnerOfRegistration } from "@/lib/mailer";
 import type { ExperienceLevel, Sex } from "@/generated/prisma/client";
 
 export const runtime = "nodejs";
@@ -100,6 +101,9 @@ export const POST = async (request: Request) =>
       throw badRequest("An account with that email already exists", "EMAIL_TAKEN");
     }
 
+    // Sprint 60: a new account is PENDING. No session is created here — the
+    // account exists, but it cannot be used until an owner approves it, and
+    // createSession() is deliberately not called.
     const user = await prisma.user.create({
       data: {
         email,
@@ -112,17 +116,45 @@ export const POST = async (request: Request) =>
             ? (body.experienceLevel as ExperienceLevel)
             : "beginner",
         sex: typeof body.sex === "string" ? (body.sex as Sex) : null,
+        role: "user",
+        status: "pending",
       },
       select: { id: true, email: true, firstName: true, lastName: true },
     });
 
     await prisma.profile.create({ data: { userId: user.id } });
-    const { token, expiresAt } = await createSession(user.id, meta);
+    await prisma.registrationRequest.create({
+      data: {
+        email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        country: typeof body.country === "string" ? body.country : "US",
+        experienceLevel:
+          typeof body.experienceLevel === "string"
+            ? (body.experienceLevel as ExperienceLevel)
+            : "beginner",
+        status: "pending",
+      },
+    });
     await record({ userId: user.id, type: "SIGN_UP", ip, ok: true });
 
-    const response = NextResponse.json({ user }, { status: 201 });
-    response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expiresAt));
-    return response;
+    // The owner is notified so the request does not sit unseen. A failure here
+    // must not lose the registration, so it is logged and the response is
+    // unchanged: the account exists either way.
+    await notifyOwnerOfRegistration(user).catch((error) => {
+      console.error("[auth] owner notification failed", error);
+    });
+
+    return NextResponse.json(
+      {
+        user,
+        status: "pending",
+        message:
+          "Your account has been created and is waiting for approval. " +
+          "You will be able to sign in once an administrator approves it.",
+      },
+      { status: 201 },
+    );
   })(request);
 
 interface LoginBody {
@@ -162,6 +194,8 @@ export const PUT = async (request: Request) =>
         firstName: true,
         lastName: true,
         passwordHash: true,
+        status: true,
+        role: true,
       },
     });
 
@@ -198,12 +232,39 @@ export const PUT = async (request: Request) =>
       );
     }
 
+    // Checked AFTER the password comparison, and this ordering is the point.
+    // Answering "this account is pending" before verifying would let anyone
+    // enumerate which addresses are registered and awaiting approval. Reaching
+    // here means the caller already proved they own the account, so the extra
+    // detail discloses nothing new.
+    if (user.status !== "active") {
+      await prisma.session.deleteMany({ where: { userId: user.id } });
+      await record({ userId: user.id, type: "SIGN_IN_FAILED", ip, ok: false });
+      return NextResponse.json(
+        {
+          error:
+            user.status === "pending"
+              ? "Your account is waiting for approval. You will be able to sign in once an administrator approves it."
+              : "This account has been suspended. Contact support.",
+          code: user.status === "pending" ? "ACCOUNT_PENDING" : "ACCOUNT_SUSPENDED",
+        },
+        { status: 403 },
+      );
+    }
+
     const { token, expiresAt } = await createSession(user.id, meta);
     await record({ userId: user.id, type: "SIGN_IN", ip, ok: true });
     await prisma.user.update({ where: { id: user.id }, data: { lastActiveAt: new Date() } });
 
     const response = NextResponse.json({
-      user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      },
+      status: user.status,
     });
     response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expiresAt));
     return response;

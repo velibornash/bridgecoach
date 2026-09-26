@@ -53,6 +53,9 @@ const PUBLIC_PATHS = new Set([
   "/auth/login",
   "/auth/register",
   "/auth/forgot-password",
+  // Reached from an emailed link; the token in the query string is the
+  // authorisation, and the visitor has no session.
+  "/reset-password",
 ]);
 
 /** If signed in, these are pointless — send the user where they meant to go. */

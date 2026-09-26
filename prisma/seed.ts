@@ -35,7 +35,7 @@ if (!connectionString) {
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
-const DEV_USER_EMAIL = process.env.DEV_USER_EMAIL ?? "dev@bridgecoach.local";
+const DEV_USER_EMAIL = process.env.DEV_USER_EMAIL ?? "velja.jagodina@gmail.com";
 
 /**
  * Password for the seeded development identity.
@@ -115,25 +115,38 @@ const MISSION_TYPE: Record<string, "daily" | "weekly" | "season" | "main" | "sid
 };
 
 async function seedUser() {
+  // Hashed once, outside the upsert, because both branches need it. Previously
+  // this was only computed inside `create`, and `update` was empty — so running
+  // the seed a second time after setting DEV_USER_PASSWORD did nothing at all,
+  // and the account stayed unable to sign in with no error to explain why.
+  const passwordHash = DEV_USER_PASSWORD ? await hashPassword(DEV_USER_PASSWORD) : null;
+
   const user = await prisma.user.upsert({
     where: { email: DEV_USER_EMAIL },
-    update: {},
+    update: {
+      // Re-hash on every seed. A hash is salted, so this changes the stored
+      // value each time even for the same password, which is correct; what
+      // matters is that a later password takes effect.
+      ...(passwordHash ? { passwordHash } : {}),
+      // The owner account must be able to sign in and to administer, or the
+      // admin page has nobody who can reach it.
+      role: "owner",
+      status: "active",
+    },
     create: {
-      id: "seed-user-dev",
+      id: "seed-user-owner",
       email: DEV_USER_EMAIL,
-      // No passwordHash: this identity is not authenticatable (Sprint 59).
-      firstName: "Dev",
-      lastName: "User",
-      country: "US",
-      experienceLevel: "beginner",
+      firstName: "Velja",
+      lastName: "J.",
+      country: "RS",
+      experienceLevel: "advanced",
+      role: "owner",
+      status: "active",
       joinedAt: SEED_JOINED_AT,
       lastActiveAt: SEED_JOINED_AT,
       isSeed: true,
-      // Hashed here rather than in a migration so the plaintext never persists.
-      ...(DEV_USER_PASSWORD
-        ? { passwordHash: await hashPassword(DEV_USER_PASSWORD) }
-        : {}),
-      // A fresh development user starts with a valid EMPTY state (Sprint 58 §11):
+      ...(passwordHash ? { passwordHash } : {}),
+      // A fresh account starts with a valid EMPTY state (Sprint 58 §11):
       // xp 0, level 1, no progress rows. Progression below is not seeded.
     },
   });

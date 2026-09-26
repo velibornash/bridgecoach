@@ -64,6 +64,8 @@ async function asUser(userId: string): Promise<void> {
     email,
     firstName: "",
     lastName: "",
+    role: "user" as const,
+    status: "active" as const,
   });
 }
 

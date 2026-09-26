@@ -179,7 +179,14 @@ new bridge conventions.
       Still open, deliberately: password reset (needs an email provider),
       in-process rate limiting, email verification, and Playwright still using the
       dev database.
-- [ ] **60 — Social graph.** `/friends` and `/community` are still labelled
+- [~] **60 — Owner account, admin approval, password reset.** Shipped ahead of the
+      social graph, because the graph was blocked on nothing and this was
+      blocking real use. Owner account with `role`/`status`; registration creates
+      a PENDING account that cannot sign in; `/admin` lists requests with
+      approve/reject; password reset with hashed single-use tokens, delivered via
+      a local dev mailbox or Resend's free tier. The social-graph half is
+      untouched and still open below.
+- [ ] **60b — Social graph.** `/friends` and `/community` are still labelled
       sample data. Unblocked by Sprint 59; they are blocked on a missing data
       model, not on auth. Needs `Friendship` (request/accept state machine, and a
       decision on who may send a request) and `Post`/`Like`/`Comment` (with

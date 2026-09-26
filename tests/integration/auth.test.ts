@@ -120,7 +120,7 @@ describe("auth endpoints", () => {
     expect((await wrongPassword.json()).error).toBe((await unknownEmail.json()).error);
   });
 
-  it("registers a user, sets an httpOnly cookie, and never returns the token", async () => {
+  it("registers a user as PENDING, with no session and no token", async () => {
     const { POST } = await import("@/app/api/auth/route");
     const email = `fresh-${Date.now()}@test.local`;
     const response = await POST(
@@ -137,15 +137,63 @@ describe("auth endpoints", () => {
     // The token must not appear anywhere in the response body.
     expect(JSON.stringify(body)).not.toMatch(/session|token/i);
 
+    // Sprint 60: a new account waits for approval, so registration must NOT
+    // hand out a session. Before this, a cookie was set here and the account
+    // was immediately usable.
+    expect(body.status).toBe("pending");
+    const cookie = response.headers.get("set-cookie") ?? "";
+    expect(cookie).not.toContain("bridgecoach_session");
+
+    const created = await prisma.user.findUniqueOrThrow({ where: { email } });
+    expect(created.status).toBe("pending");
+    expect(created.role).toBe("user");
+    expect(created.passwordHash).toBeTruthy();
+    expect(created.passwordHash).not.toContain("bridge123");
+
+    // And the request lands on the owner's list.
+    const request = await prisma.registrationRequest.findUniqueOrThrow({
+      where: { email },
+    });
+    expect(request.status).toBe("pending");
+
+    await prisma.registrationRequest.delete({ where: { email } });
+    await prisma.user.delete({ where: { id: created.id } });
+  });
+
+  it("sets an httpOnly cookie once the account is approved", async () => {
+    // Sign-in is the only place a session is created now, so the cookie
+    // assertions live here.
+    const { PUT } = await import("@/app/api/auth/route");
+    const email = `approved-${Date.now()}@test.local`;
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: await hashPassword("bridge123"),
+        firstName: "Approved",
+        lastName: "User",
+        role: "user",
+        status: "active",
+      },
+    });
+
+    const response = await PUT(
+      new Request("http://localhost/api/auth", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: "bridge123" }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).user.role).toBe("user");
+
     const cookie = response.headers.get("set-cookie") ?? "";
     expect(cookie).toContain("bridgecoach_session");
     expect(cookie.toLowerCase()).toContain("httponly");
     expect(cookie.toLowerCase()).toContain("samesite=lax");
 
-    const created = await prisma.user.findUniqueOrThrow({ where: { email } });
-    expect(created.passwordHash).toBeTruthy();
-    expect(created.passwordHash).not.toContain("bridge123");
-    await prisma.user.delete({ where: { id: created.id } });
+    await prisma.session.deleteMany({ where: { userId: user.id } });
+    await prisma.user.delete({ where: { id: user.id } });
   });
 
   it("records an audit event for both success and failure", async () => {

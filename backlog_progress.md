@@ -766,3 +766,98 @@ and 121 lint warnings left standing.
 
 typecheck 0 · lint 0 errors · **264 unit/integration** (was 255) · 7 E2E · build
 clean · 31 tables · migrations up to date
+
+---
+
+## Session 15 — owner account, admin approval, password reset
+
+**Commit:** see git log for the session-15 commit
+
+### The account question had a typo in it
+
+The first message gave the password as `It@lij@2026.` — with a full stop. I read
+it as part of the password, so the seeded hash was for a password that was never
+mentioned again. The second message wrote it without the stop. That surfaced as
+a 401 on the owner sign-in, and the fix was one line in `.env` plus a re-seed.
+
+Worth writing down because the failure mode was silent: the seed reported
+"Password: set", and login simply failed with "Email or password is incorrect",
+which is indistinguishable from a wrong password. An owner account that cannot
+sign in should not present as a credential problem.
+
+### Seed bug: `update: {}`
+
+`prisma/seed.ts` computed the password hash only inside the `create` branch, and
+`update` was empty. So running the seed a second time after setting
+`DEV_USER_PASSWORD` did nothing at all, with no error. The hash is now computed
+once outside the upsert and applied in both branches. The owner account is also
+forced to `role: owner, status: active` on every seed, or the admin page would
+have nobody who can reach it.
+
+### Registration now creates a PENDING account
+
+A new account exists but cannot sign in until approved. Two design points:
+
+- **The status check lives in `getSessionUser()`, not in the login handler.** A
+  session row can outlive a status change, so checking only at sign-in would
+  leave every already-issued cookie working after a suspension. Suspending an
+  account now takes effect on the next request.
+- **The "pending" message is returned only after the password compares
+  correctly.** Answering earlier would turn the sign-in form into a membership
+  oracle. Reaching that branch means the caller already proved ownership of the
+  account, so the extra detail leaks nothing.
+
+Registration also no longer issues a session. `createSession()` is simply not
+called, and a test asserts the `Set-Cookie` header is absent.
+
+### Password reset, on a free tier
+
+Three situations, none of them pretended:
+
+| Situation | Behaviour |
+|---|---|
+| Development, no `RESEND_API_KEY` | Message written to `OutgoingEmail`, readable at `/admin` |
+| Any environment, `RESEND_API_KEY` set | Sent via Resend (free: 3,000/month, 100/day, no card) and logged |
+| Production, no key | **Throws.** A reset that silently does nothing is worse than one that fails loudly, because the user is told to check for a message that will never arrive |
+
+The local mailbox is what makes the flow *testable* rather than merely
+implemented: the whole reset path was completed over HTTP with no account
+anywhere. Tokens are stored as SHA-256 hashes and are single-use, and a reset
+revokes every other session — a reset is the remedy for a suspected compromise,
+so leaving the old sessions alive would defeat the point.
+
+The request endpoint answers 202 for every input, known address or not, and the
+throttle case returns the same body as the success case. Otherwise the form
+becomes a way to list registered addresses, which needs no rate limit to defeat.
+
+### The mailbox is a separate admin-only route
+
+`OutgoingEmail` rows contain password reset links. The registration list is safe
+to show an administrator; the mailbox is not safe to show anyone else, so it is
+its own route with its own `requireAdmin()`.
+
+### Four defects found along the way
+
+1. **`createSession(userId, email)`** — the second argument is a metadata object,
+   not an address. A test that passed an email was silently storing a garbage
+   user agent.
+2. **`const request = ...` shadowed the `Request`** in the admin route, producing
+   `Property 'status' does not exist on type 'Request'` — five errors from one
+   name.
+3. **A test read the same `Response` body twice.** `Body is unusable: Body has
+   already been read`. The test, not the code.
+4. **`metadata` exported from a `"use client"` file** broke the build. Moved to a
+   layout, which is the only place it can legally live.
+
+### Mutation-checked, again
+
+| Mutation | Result |
+|---|---|
+| `requireAdmin` accepts any signed-in user | **3 tests fail** |
+| Pending status returned before the password check | **1 test fails** |
+| Reset token reusable (drop the `usedAt` check) | **1 test fails** |
+
+### Gate
+
+typecheck 0 · lint 0 errors · **281 unit/integration** (was 264) · 7 E2E · build
+clean

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Container } from "@/components/ui/Container";
 import { showToast } from "@/components/ui/Toast";
 import { validateEmail } from "@/services/authClient";
+import { apiFetchSafe } from "@/services/api";
 import { SUPPORT_EMAIL } from "@/lib/siteConfig";
 
 export default function ForgotPasswordPage() {
@@ -62,16 +63,14 @@ export default function ForgotPasswordPage() {
                       <path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                     </svg>
                   </div>
-                  <h1 className="text-2xl font-bold text-text-primary">
-                    Reset is not available yet
-                  </h1>
+                  <h1 className="text-2xl font-bold text-text-primary">Check your email</h1>
                   <p className="mt-2 text-sm text-text-secondary leading-relaxed">
-                    Self-service password reset is not built yet — it needs a
-                    transactional email provider. We have <strong className="text-text-primary">not</strong>{" "}
-                    sent anything to <strong className="text-text-primary">{email}</strong>.
+                    If <strong className="text-text-primary">{email}</strong> has an
+                    account, a reset link is on its way. It works once and expires in
+                    an hour.
                   </p>
-                  <p className="mt-4 text-sm text-text-secondary leading-relaxed">
-                    To regain access, email{" "}
+                  <p className="mt-4 text-sm text-text-tertiary">
+                    Nothing arrived? Email{" "}
                     <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium text-primary hover:underline">
                       {SUPPORT_EMAIL}
                     </a>{" "}

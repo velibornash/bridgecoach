@@ -73,6 +73,8 @@ export interface SessionUser {
   email: string;
   firstName: string;
   lastName: string;
+  role: "owner" | "admin" | "user";
+  status: "pending" | "active" | "rejected" | "suspended";
 }
 
 /** Creates a session row and returns the signed cookie value. */
@@ -111,13 +113,36 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   const session = await prisma.session.findUnique({
     where: { tokenHash: hashToken(token) },
-    include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          status: true,
+        },
+      },
+    },
   });
 
   if (!session) return null;
 
   if (session.expiresAt.getTime() <= Date.now()) {
     // Expired: drop the row so the table does not accumulate dead sessions.
+    await prisma.session.delete({ where: { id: session.id } }).catch(() => undefined);
+    return null;
+  }
+
+  // Approval is enforced HERE, not in the sign-in handler and not in the UI.
+  //
+  // A session row can outlive a status change: an administrator suspending or
+  // rejecting an account must take effect on the next request, not at the next
+  // sign-in. Checking only in the login route would leave every already-issued
+  // cookie working. A revoked account also has its sessions deleted by the
+  // approval endpoint, and this is the second line for anything that slips past.
+  if (session.user.status !== "active") {
     await prisma.session.delete({ where: { id: session.id } }).catch(() => undefined);
     return null;
   }
