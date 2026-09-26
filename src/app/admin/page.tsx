@@ -31,6 +31,16 @@ interface RegistrationRequest {
   decidedAt: string | null;
 }
 
+interface ContactRow {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  body: string;
+  read: boolean;
+  createdAt: string;
+}
+
 interface ReportRow {
   id: string;
   targetType: string;
@@ -67,19 +77,22 @@ export default function AdminPage() {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [mail, setMail] = useState<MailRow[]>([]);
   const [reports, setReports] = useState<ReportRow[]>([]);
+  const [messages, setMessages] = useState<ContactRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [openMail, setOpenMail] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [registrations, mailbox, queue] = await Promise.all([
+    const [registrations, mailbox, queue, inbox] = await Promise.all([
       apiFetchSafe<{ requests: RegistrationRequest[]; counts: Record<string, number> }>(
         "/api/admin/registrations",
       ),
       apiFetchSafe<{ messages: MailRow[] }>("/api/admin/mailbox"),
       apiFetchSafe<{ reports: ReportRow[] }>("/api/reports"),
+      apiFetchSafe<{ messages: ContactRow[] }>("/api/contact"),
     ]);
     if (queue.data) setReports(queue.data.reports);
+    if (inbox.data) setMessages(inbox.data.messages);
     if (registrations.data) {
       setRequests(registrations.data.requests);
       setCounts(registrations.data.counts);
@@ -93,6 +106,15 @@ export default function AdminPage() {
     // render a "loaded" state that is really "not loaded yet".
     void load();
   });
+
+  const markRead = async (id: string) => {
+    const result = await apiFetchSafe("/api/contact", { method: "PATCH", body: { id } });
+    if (result.error) {
+      showToast("error", result.error);
+      return;
+    }
+    await load();
+  };
 
   const resolveReport = async (reportId: string) => {
     const result = await apiFetchSafe("/api/reports", {
@@ -280,6 +302,59 @@ export default function AdminPage() {
                         The reported content no longer exists.
                       </p>
                     )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="mt-10">
+            <h2 className="text-sm font-bold text-text-primary">
+              Contact messages ({messages.filter((m) => !m.read).length} unread)
+            </h2>
+            <p className="mt-1 text-xs text-text-tertiary">
+              Submitted from the public contact form. Stored in the database rather
+              than emailed, because no mail provider is guaranteed.
+            </p>
+            {messages.length === 0 ? (
+              <p className="mt-3 text-sm text-text-tertiary">No messages.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {messages.map((m) => (
+                  <li
+                    key={m.id}
+                    className={`rounded-xl border px-4 py-3 ${
+                      m.read ? "border-border bg-bg-card" : "border-primary/30 bg-primary/5"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold text-text-primary">{m.subject}</p>
+                      <span className="text-xs text-text-secondary">
+                        {m.name} ·{" "}
+                        <a
+                          href={`mailto:${m.email}`}
+                          className="text-primary hover:underline"
+                        >
+                          {m.email}
+                        </a>
+                      </span>
+                      <span className="text-[10px] text-text-tertiary">
+                        {formatDate(m.createdAt)}
+                      </span>
+                      {!m.read && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="ml-auto"
+                          onClick={() => markRead(m.id)}
+                        >
+                          Mark read
+                        </Button>
+                      )}
+                    </div>
+                    <p className="mt-2 whitespace-pre-wrap text-xs text-text-secondary">
+                      {m.body}
+                    </p>
                   </li>
                 ))}
               </ul>

@@ -1031,3 +1031,23 @@ model ContentReport {
   /// One report per user per target, so holding the button cannot flood the queue.
   @@unique([reporterId, targetType, targetId])
 }
+
+/// A message submitted through the public contact form (Sprint 60 follow-up).
+///
+/// The form previously showed "Message sent! We'll respond within 24 hours" and
+/// discarded the text. Storing it means the owner can actually read what was
+/// sent, which is the minimum needed to make that sentence true.
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  body      String
+  /// Triaged at /admin rather than emailed, because no mail provider is
+  /// guaranteed to be configured and a queue cannot silently fail.
+  status    String   @default("open")
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([status, createdAt])
+}

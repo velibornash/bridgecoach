@@ -286,7 +286,12 @@ new bridge conventions.
       automatically today.
 - [ ] **Add `/api` error + rate-limit conventions**, structured logging, and
       health checks before production.
-- [ ] **Orphaned pages check.** 42 `page.tsx` routes; confirm every one is
+- [x] **Orphaned pages check.** 44 routes audited. Four more surfaces that
+      reported work they never did: `/contact` ("Message sent!", text discarded),
+      `/email-preferences` ("Preferences saved!", nothing stored, and a second
+      invented key set), `/certificates` ("Certificate downloaded!", no file),
+      and `/practice`, which never called the `/api/practice` endpoint built for
+      it in Sprint 58. All four now write for real.
       reachable and intentional (e.g. `/maintenance`, `/offline`).
 - [x] **Remove `test-results/` noise** from the working tree (gitignored, but
       Playwright leaves artefacts locally).

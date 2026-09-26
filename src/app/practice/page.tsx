@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -11,6 +11,7 @@ import { CardEngine, createDeck, shuffleDeck, type BridgeCard, type Suit } from 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
+import { recordPracticeSession, type PracticeActionInput } from "@/services/practiceService";
 
 export default function PracticePage() {
   const [phase, setPhase] = useState<'menu' | 'dealing' | 'playing' | 'result'>('menu');
@@ -26,8 +27,84 @@ export default function PracticePage() {
   const [tricksTotal, setTricksTotal] = useState(0);
   const [showHand, setShowHand] = useState(true);
 
+  /**
+   * Actions are accumulated in a ref rather than state because they are appended
+   * on every bid and every card played, and re-rendering the whole table on each
+   * one to keep an array in sync is not worth it. The ref is also what
+   * `beforeunload` can read synchronously, which state cannot.
+   */
+  const actions = useRef<PracticeActionInput[]>([]);
+  const startedAt = useRef<number | null>(null);
+  const saved = useRef(false);
+  /**
+   * The count is mirrored into state because the button's label needs it during
+   * render, and reading a ref while rendering is not allowed — the value would
+   * be whatever the last commit happened to leave behind. The ref remains the
+   * source of truth for the payload; this is only a display counter.
+   */
+  const [actionCount, setActionCount] = useState(0);
+  const track = (action: PracticeActionInput) => {
+    actions.current.push(action);
+    setActionCount(actions.current.length);
+  };
+
+  useEffect(() => {
+    /**
+     * Save on the way out.
+     *
+     * `sendBeacon` rather than `fetch`: a normal request started during unload is
+     * cancelled, and the whole point is to capture the session the user is
+     * leaving. A drill abandoned halfway is still evidence of what was
+     * attempted, which is what a skill model is built from — so this fires
+     * regardless of how the drill ended.
+     */
+    const flush = () => {
+      if (saved.current || startedAt.current === null || actions.current.length === 0) return;
+      saved.current = true;
+      const payload = JSON.stringify({
+        actions: actions.current,
+        isComplete: false,
+        durationMs: Date.now() - startedAt.current,
+      });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(
+          "/api/practice",
+          new Blob([payload], { type: "application/json" }),
+        );
+      }
+    };
+
+    window.addEventListener("beforeunload", flush);
+    return () => {
+      window.removeEventListener("beforeunload", flush);
+      flush();
+    };
+  }, []);
+
+  const finishPractice = useCallback(async () => {
+    if (actions.current.length === 0) {
+      showToast("info", "Nothing was played, so there is nothing to save.");
+      return;
+    }
+    const result = await recordPracticeSession({
+      actions: actions.current,
+      isComplete: false,
+      durationMs: startedAt.current ? Date.now() - startedAt.current : undefined,
+    });
+    if (result.error) {
+      showToast("error", `Could not save this session: ${result.error}`);
+      return;
+    }
+    saved.current = true;
+    showToast("success", `Session saved — ${actions.current.length} actions recorded.`);
+  }, []);
+
   const startPractice = () => {
     const deck = shuffleDeck(createDeck());
+    actions.current = [];
+    setActionCount(0);
+    saved.current = false;
+    startedAt.current = Date.now();
     setHands({
       north: deck.filter((_, i) => i % 4 === 0).map((c) => ({ ...c, faceUp: true })),
       east: deck.filter((_, i) => i % 4 === 1).map((c) => ({ ...c, faceUp: true })),
@@ -49,12 +126,17 @@ export default function PracticePage() {
       setContract(`${bid.label}`);
       setCurrentBid(bid.label);
       setTricksTotal(bid.level || 7);
+      // Recorded as an attempt, not a grade. This page is free play, so there is
+      // no correctness to assert here - the engine feedback on the tactical page
+      // is where judgement lives.
+      track({ phase: "bidding", player: "south", call: bid.label });
       showToast('success', `Contract: ${bid.label}`);
     }
   }, []);
 
   const handlePlayCard = useCallback((card: BridgeCard) => {
     setSelectedCard(card);
+    track({ phase: "play", player: "south", card: `${card.suit}${card.rank}` });
     setShowHand(false);
     setTimeout(() => {
       setSelectedCard(null);
@@ -71,9 +153,19 @@ export default function PracticePage() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h1 className="text-2xl font-bold text-text-primary">Practice Mode</h1>
-                <p className="text-sm text-text-tertiary mt-1">No scoring, just explore bridge at your pace</p>
+                <p className="text-sm text-text-tertiary mt-1">
+                  No scoring, just explore bridge at your pace. Bids and cards are
+                  recorded so your practice history builds up.
+                </p>
               </div>
-              <Badge variant="success">Free Play</Badge>
+              <div className="flex items-center gap-3">
+                {actionCount > 0 && (
+                  <Button variant="secondary" size="sm" onClick={finishPractice}>
+                    Save session ({actionCount})
+                  </Button>
+                )}
+                <Badge variant="success">Free Play</Badge>
+              </div>
             </div>
 
             {phase === 'menu' && (

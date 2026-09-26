@@ -945,3 +945,83 @@ diff, because the diff looks correct.
 
 typecheck 0 · lint **0 errors, 127 warnings** (was 139 — deleting the orphan and
 its imports) · **333 unit/integration** (was 318) · 7 E2E · build clean
+
+---
+
+## Session 17 — the route audit, and what it found
+
+**Commit:** see git log for the session-17 commit
+
+The backlog carried "Orphaned pages check: 44 `page.tsx` routes; confirm every one
+is reachable and does something real." I had deferred it twice as low value. So
+far every "known gap" I had actually looked at turned out to be a real problem,
+so I wrote a script instead of reading 44 files.
+
+It flags pages containing `showToast` with no API call in the file. Eleven matched;
+following their imports killed the false positives, leaving four.
+
+### `/contact` — "Message sent! We'll respond within 24 hours."
+
+The text was discarded. There was no mail provider, and the form did not even
+have a name or email field, so a reply was impossible in principle.
+
+Messages now go to `ContactMessage` and appear at `/admin`. A honeypot field
+catches bots, and a bot that fills it gets a 201 and no row — an error would tell
+it it had been caught. Rate limited per client at 5/hour, because this is the one
+endpoint that accepts anonymous writes.
+
+The confirmation deliberately does not promise a reply, because nobody has
+committed to sending one.
+
+### `/email-preferences` — two vocabularies for one setting
+
+This page had `newsletter`, `reminders`, `marketing`, `weekly_report`,
+`product_updates`. `/settings` had a different six. Neither was stored anywhere.
+
+Both are now views of the same `Profile.preferences.notifications` map, keyed by
+the six names the server recognises. Two pages inventing two vocabularies for one
+setting is how a preference ends up looking saved on one screen and lost on
+another.
+
+### `/certificates` — "Certificate downloaded!"
+
+Nothing was downloaded. It now generates a real PDF.
+
+The button said "Download PDF", so I did not quietly rename it to match a text
+file — a certificate someone prints should not reflow. The PDF is written by hand
+because it is one page of text in a known layout, and a PDF library would be a
+dependency for that. An HTML file named `.pdf` was the other option and produces
+a file that does not open.
+
+The output was validated outside the app: macOS reports
+`com.adobe.pdf`, one page, and all five xref offsets resolve to their objects.
+Hand-rolled binary formats are exactly the kind of thing that works until it does
+not, so it was checked rather than assumed.
+
+### `/practice` never called the API built for it
+
+`/api/practice` shipped in Sprint 58 with `PracticeSession`, `PracticeAction`,
+engine feedback and a score. The page called neither it nor anything else, so
+every drill vanished on refresh — and the Player Model had nothing to mine.
+
+It now records bids and cards played. The page says "No scoring", so it records no
+score: a drill abandoned halfway is still evidence of what was attempted, which
+is what a skill model is built from. The session is flushed with `sendBeacon` on
+unload, because a normal request started during unload is cancelled and capturing
+the session the user is leaving is the entire point.
+
+### A note on the audit method
+
+The first heuristic produced eleven hits and eight were false positives — pages
+reaching the API through a service one import away. Following imports one level
+was enough to separate them. The four real ones all shared one shape: a success
+toast wired to a click handler with no write behind it.
+
+Toasts are not assertions. A green "Saved!" looks identical whether or not a
+request was made, which is why these survived four sprints of work whose theme was
+removing exactly this kind of lie.
+
+### Gate
+
+typecheck 0 · lint 0 errors, 131 warnings · **340 unit/integration** (was 333) ·
+7 E2E · build clean

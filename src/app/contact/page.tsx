@@ -7,6 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
+import { submitContactMessage } from "@/services/contactService";
 import { Icon } from "@/components/icons/Icon";
 import { Info, MessageSquare, Bug, Lightbulb } from "lucide-react";
 import { SUPPORT_EMAIL } from "@/lib/siteConfig";
@@ -22,16 +23,46 @@ const contactTypes: { id: ContactType; label: string; icon: string; desc: string
 
 export default function ContactPage() {
   const [type, setType] = useState<ContactType>("support");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  // Honeypot. Hidden from humans, filled by bots.
+  const [website, setWebsite] = useState("");
+  const [sending, setSending] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  /**
+   * Really sends it.
+   *
+   * This used to show "Message sent! We'll respond within 24 hours" and discard
+   * the text — no record, no queue, and not even fields to reply to. The message
+   * now goes to `ContactMessage`, which the owner reads at `/admin`.
+   *
+   * The confirmation deliberately does not promise a reply, because nobody has
+   * committed to sending one.
+   */
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subject.trim() || !message.trim()) {
-      showToast("error", "Please fill in all fields");
+    if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
+      showToast("error", "Please fill in every field");
       return;
     }
-    showToast("success", `Message sent! We'll respond within 24 hours.`);
+    setSending(true);
+    const result = await submitContactMessage({
+      name: name.trim(),
+      email: email.trim(),
+      subject: subject.trim(),
+      message: message.trim(),
+      website,
+    });
+    setSending(false);
+    if (result.error) {
+      showToast("error", `Could not send: ${result.error}`);
+      return;
+    }
+    showToast("success", "Message received. It is queued for the owner to read.");
+    setName("");
+    setEmail("");
     setSubject("");
     setMessage("");
   };
@@ -44,7 +75,9 @@ export default function ContactPage() {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="text-2xl font-bold text-text-primary mb-2">Contact Us</h1>
             <p className="text-sm text-text-tertiary mb-8">
-              Have a question or suggestion? We&apos;d love to hear from you.
+              Have a question or suggestion? Send it here and it will be queued for
+              the app owner to read. Messages are stored in the application&apos;s
+              database, not emailed.
             </p>
 
             {/* Type selector */}
@@ -72,7 +105,43 @@ export default function ContactPage() {
             <Card>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="text-xs font-medium text-text-secondary">Email</label>
+                  <label className="text-xs font-medium text-text-secondary">Your name</label>
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Jane Bridge"
+                    className="mt-1 w-full rounded-lg border border-border bg-bg-secondary px-3 py-2.5 text-sm text-text-primary outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-text-secondary">
+                    Your email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="mt-1 w-full rounded-lg border border-border bg-bg-secondary px-3 py-2.5 text-sm text-text-primary outline-none focus:border-primary"
+                  />
+                </div>
+                {/* Honeypot: off-screen, not display:none, so it is filled by bots
+                    and skipped by screen readers and humans alike. */}
+                <div aria-hidden="true" className="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden">
+                  <label htmlFor="company-website">Company website</label>
+                  <input
+                    id="company-website"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-text-secondary">
+                    Our address
+                  </label>
                   <input
                     value={SUPPORT_EMAIL}
                     readOnly
@@ -110,7 +179,7 @@ export default function ContactPage() {
                 </div>
 
                 <div className="flex justify-end gap-3">
-                  <Button type="submit">
+                  <Button type="submit" disabled={sending}>
                     Send {type === "bug" ? "Bug Report" : type === "feature" ? "Request" : "Message"}
                   </Button>
                 </div>
