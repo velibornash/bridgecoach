@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Container } from "@/components/ui/Container";
 import { showToast } from "@/components/ui/Toast";
-import { mockForgotPassword, validateEmail } from "@/services/auth";
+import { validateEmail } from "@/services/authClient";
+import { SUPPORT_EMAIL } from "@/lib/siteConfig";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -20,15 +21,11 @@ export default function ForgotPasswordPage() {
     const err = validateEmail(email);
     if (err) { setError(err); return; }
 
-    setIsLoading(true);
-    try {
-      await mockForgotPassword(email);
-      setIsSent(true);
-    } catch (err) {
-      showToast("error", err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setIsLoading(false);
-    }
+    // Password reset is NOT implemented. It needs an email provider, which is
+    // out of scope for Sprint 59. This used to call a mock that resolved after a
+    // delay and implied an email had been sent — which was a lie to the user.
+    // Saying so plainly is the honest behaviour; see docs/SPRINT_59_PLAN.md §12.
+    setIsSent(true);
   };
 
   return (
@@ -65,18 +62,28 @@ export default function ForgotPasswordPage() {
                       <path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                     </svg>
                   </div>
-                  <h1 className="text-2xl font-bold text-text-primary">Check your email</h1>
+                  <h1 className="text-2xl font-bold text-text-primary">
+                    Reset is not available yet
+                  </h1>
                   <p className="mt-2 text-sm text-text-secondary leading-relaxed">
-                    We sent a password reset link to <strong className="text-text-primary">{email}</strong>.
-                    It may take a minute to arrive.
+                    Self-service password reset is not built yet — it needs a
+                    transactional email provider. We have <strong className="text-text-primary">not</strong>{" "}
+                    sent anything to <strong className="text-text-primary">{email}</strong>.
+                  </p>
+                  <p className="mt-4 text-sm text-text-secondary leading-relaxed">
+                    To regain access, email{" "}
+                    <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium text-primary hover:underline">
+                      {SUPPORT_EMAIL}
+                    </a>{" "}
+                    from the address on the account.
                   </p>
                   <p className="mt-6 text-sm text-text-tertiary">
-                    Didn&apos;t receive it?{" "}
+                    Changed your mind?{" "}
                     <button
                       onClick={() => setIsSent(false)}
                       className="font-medium text-primary hover:text-primary-hover transition-colors"
                     >
-                      Send again
+                      Go back
                     </button>
                   </p>
                 </motion.div>

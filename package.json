@@ -21,7 +21,8 @@
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
-    "db:test:setup": "DATABASE_URL=\"$TEST_DATABASE_URL\" prisma migrate deploy && DATABASE_URL=\"$TEST_DATABASE_URL\" prisma db seed",
+    "db:test:url": "node scripts/print-test-db-url.mjs",
+    "db:test:setup": "DATABASE_URL=\"$(npm run --silent db:test:url)\" prisma migrate deploy && DATABASE_URL=\"$(npm run --silent db:test:url)\" prisma db seed",
     "db:validate": "prisma validate"
   },
   "dependencies": {

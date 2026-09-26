@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { existsSync, readFileSync } from "node:fs";
-import { parse as parseEnv } from "dotenv";
+import { resolveTestDatabaseUrl, readEnvFile } from "./scripts/test-db.mjs";
 
 /**
  * Integration tests talk to a real PostgreSQL instance (Sprint 58).
@@ -21,26 +21,8 @@ import { parse as parseEnv } from "dotenv";
  */
 const DB_ENV_KEYS = ["DATABASE_URL", "DEV_USER_EMAIL", "ALLOW_DEV_IDENTITY"] as const;
 
-function resolveTestDatabaseUrl(): string | undefined {
-  if (process.env.TEST_DATABASE_URL) return process.env.TEST_DATABASE_URL;
-
-  if (existsSync(".env.test")) {
-    const testEnv = parseEnv(readFileSync(".env.test"));
-    if (testEnv.DATABASE_URL) return testEnv.DATABASE_URL;
-  }
-
-  if (existsSync(".env")) {
-    const devEnv = parseEnv(readFileSync(".env"));
-    const devUrl = devEnv.DATABASE_URL;
-    if (devUrl) {
-      // postgresql://user:pass@host:5432/name?params -> name_test
-      const swapped = devUrl.replace(/\/([^/?]+)(\?|$)/, "/$1_test$2");
-      if (swapped !== devUrl) return swapped;
-    }
-  }
-  return undefined;
-}
-
+// Shared with the `db:test:setup` npm script so the two can never disagree about
+// which database is the test database.
 const testDatabaseUrl = resolveTestDatabaseUrl();
 if (!testDatabaseUrl && existsSync(".env")) {
   console.warn(
@@ -68,7 +50,7 @@ process.env.ALLOW_DEV_IDENTITY = "true";
  * provider env being absent, so importing the whole file would break it.
  */
 if (existsSync(".env")) {
-  const devEnv = parseEnv(readFileSync(".env"));
+  const devEnv: Record<string, string> = readEnvFile(".env");
   for (const key of DB_ENV_KEYS) {
     if (devEnv[key] && key !== "DATABASE_URL") {
       process.env[key] = devEnv[key];

@@ -10,7 +10,14 @@ import { Select } from "@/components/ui/Select";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Container } from "@/components/ui/Container";
 import { showToast } from "@/components/ui/Toast";
-import { mockRegister, validateEmail, validatePassword, validateRequired, countries, experienceLevels } from "@/services/auth";
+import {
+  register as registerRequest,
+  validateEmail,
+  validatePassword,
+  validateRequired,
+  countries,
+  experienceLevels,
+} from "@/services/authClient";
 import type { ExperienceLevel } from "@/types";
 
 interface FieldErrors {
@@ -67,18 +74,18 @@ export default function RegisterPage() {
     if (!validate()) return;
 
     setIsLoading(true);
-    try {
-      await mockRegister({
-        ...form,
-        experienceLevel: form.experienceLevel as ExperienceLevel,
-      });
+    const result = await registerRequest({
+      ...form,
+      experienceLevel: form.experienceLevel as string,
+    });
+    if (result.ok) {
       showToast("success", "Account created! Welcome to Bridge Coach.");
-      setTimeout(() => router.push("/dashboard"), 1000);
-    } catch (err) {
-      showToast("error", err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setIsLoading(false);
+      router.push("/dashboard");
+      router.refresh();
+      return;
     }
+    showToast("error", result.error);
+    setIsLoading(false);
   };
 
   return (

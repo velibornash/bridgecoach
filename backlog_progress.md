@@ -634,8 +634,79 @@ isolation tests now do.
 
 typecheck 0 · lint 0 errors · **232 unit/integration** (was 213) · 7 E2E · build clean
 
-### Still open in Sprint 59
+---
 
-Client migration (login/register pages, deleting `mockLogin` and the dead
-`authService.ts`), route-protection middleware, the four multi-user pages, and
-re-keying the AI rate limiter per user.
+## Session 13 — Sprint 59 client, proxy, and per-user quotas
+
+**Commit:** see git log for the session-13 commit
+
+### Dev identity configured
+
+`DEV_USER_EMAIL=velja.jagodinaa@gmail.com`, with a password set via
+`DEV_USER_PASSWORD` so the account can actually sign in. The old placeholder
+user was deleted, along with its auctions — deleting the user cascaded, which is
+why the test database suddenly had no seed data.
+
+### `proxy.ts`, not `middleware.ts`
+
+Next 16 renamed the convention. Reading `node_modules/next/dist/docs/` first
+paid off immediately, because the docs also state two things that shaped the
+whole design:
+
+1. Proxy "can run outside of your application's main runtime" and shared modules
+   must not be relied on. So there is **no Prisma and no `src/lib/session.ts`
+   import** in it. A cookie-presence check is all it can honestly do.
+2. Proxy is recommended "as a last resort".
+
+So the split is deliberate: the proxy redirects for UX, and `resolveUserId()`
+enforces. A test asserts the matcher never catches `/api/*`, because a redirect
+to an HTML sign-in page in place of a JSON 401 breaks every client error path.
+
+### The bug Playwright found
+
+The dev identity was honoured by `resolveUserId()` but not by the proxy, so a
+developer with no cookie was bounced off `/dashboard` while the API would have
+served the request. The app was broken, not safe. Both layers now agree, and
+three tests pin that agreement — including that production honours neither.
+
+### Rate limits are now charged to the user id
+
+`x-forwarded-for` is a header the caller chooses. Quota enforcement now keys on
+`user:<id>`, falling back to `anon:<address>` only when there is no session. One
+account cannot spread usage across addresses, and a crafted user id cannot
+impersonate another bucket.
+
+### Four lint errors, three of them real bugs
+
+Clearing the remaining lint errors surfaced Sprint 57/58 debt:
+
+- **`DailyChallenge` had `if (!challenge) return null` between two hooks.** The
+  hook count changes from 2 to 4 the moment the challenge loads, and React throws
+  "Rendered more hooks than during the previous render". It had been sitting
+  behind a loading state.
+- **`notes/page.tsx` hand-rolled the `useApiResource` hook**, and its comment
+  claimed a failed pin was reverted by `reload()`. It was not: the failure branch
+  returned first, so a rejected pin stayed flipped until a manual refresh. Now
+  writes refetch and the list can only ever show what the server stored.
+- **`PremiumHero` sets state in an effect on purpose**, to read the clock after
+  mount and avoid a hydration mismatch. That one gets a disable with a reason;
+  "fixing" it would reintroduce the mismatch.
+
+**Lint errors went 5 → 0.** The project had never been at zero.
+
+### `db:test:setup` was silently broken
+
+It read an unset `TEST_DATABASE_URL` and ran migrations against an empty URL, so
+it reported a Prisma error about a missing connection while the real fault was
+the script. The test runner derived the URL by a different route, and the two had
+drifted. Both now call one module, which fails loudly with an explanation.
+
+### The production guard was verified by breaking it
+
+Six tests now cover production safety, and the important one was mutation-checked:
+removing the `NODE_ENV === "production"` short-circuit makes it fail, so it is
+not a test that passes for its own reasons.
+
+### Gate
+
+typecheck 0 · **lint 0 errors (first time)** · 255 unit/integration · 7 E2E · build clean

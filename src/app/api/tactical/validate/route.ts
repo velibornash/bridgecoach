@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { complete, isAiConfigured } from "@/lib/ai/gateway";
 import { AiGatewayError } from "@/lib/ai/types";
-import { AI_RATE_LIMITS, checkRateLimit, clientKey, pinnedProvider } from "@/lib/ai/rateLimit";
+import { AI_RATE_LIMITS, checkRateLimit, rateLimitKey, pinnedProvider } from "@/lib/ai/rateLimit";
+import { getSessionUser } from "@/lib/session";
 import {
   AuctionStateMachine,
   LegalBidValidator,
@@ -73,7 +74,11 @@ function extractJson(raw: string): { correct: boolean; suggestedBid: string; exp
 }
 
 export async function POST(request: NextRequest) {
-  const limit = checkRateLimit(`validate:${clientKey(request)}`, AI_RATE_LIMITS.bidding);
+  const session = await getSessionUser();
+  const limit = checkRateLimit(
+    `validate:${rateLimitKey(request, session?.id ?? null)}`,
+    AI_RATE_LIMITS.bidding,
+  );
   if (!limit.allowed) {
     return NextResponse.json(
       {

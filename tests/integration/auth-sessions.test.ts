@@ -5,10 +5,11 @@
  * read it". Before Sprint 59 there was exactly one user in the database, so no
  * test could assert ownership was real. Now it can, and it does.
  */
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import { describe, expect, it, beforeAll, afterAll, afterEach } from "vitest";
 import { hashPassword, verifyPassword, validatePasswordStrength, fakeVerify } from "@/lib/password";
 import { createHash } from "node:crypto";
-import { prisma } from "@/lib/db";
+import { prisma, resolveUserId } from "@/lib/db";
+import { assertProductionConfig } from "@/lib/session";
 
 const PASSWORD = "bridge123";
 
@@ -283,3 +284,75 @@ describe("production safety", () => {
     }
   });
 });
+
+/**
+ * Production safety.
+ *
+ * These are the assertions that matter most in the whole sprint. Everything
+ * else can be wrong in a way that annoys a user; getting this wrong hands an
+ * unauthenticated visitor somebody else's data in production.
+ *
+ * Each test mutates process.env and restores it, so ordering does not matter.
+ */
+describe("the development identity cannot reach production", () => {
+  const realNodeEnv = process.env.NODE_ENV;
+  const realAllowDev = process.env.ALLOW_DEV_IDENTITY;
+  const realDevEmail = process.env.DEV_USER_EMAIL;
+
+  afterEach(() => {
+    setEnv("NODE_ENV", realNodeEnv);
+    setEnv("ALLOW_DEV_IDENTITY", realAllowDev);
+    setEnv("DEV_USER_EMAIL", realDevEmail);
+  });
+
+  it("refuses a request with no session in production, even with the flag on", async () => {
+    setEnv("NODE_ENV", "production");
+    setEnv("ALLOW_DEV_IDENTITY", "true");
+
+    // The dev user genuinely exists in the test database, so if the guard were
+    // missing this would succeed and return an id instead of throwing.
+    const existing = await prisma.user.findFirst({
+      where: { email: process.env.DEV_USER_EMAIL },
+      select: { id: true },
+    });
+    expect(existing).not.toBeNull();
+
+    await expect(resolveUserId()).rejects.toThrow(/signed in/i);
+  });
+
+  it("refuses when ALLOW_DEV_IDENTITY is misspelled", async () => {
+    setEnv("NODE_ENV", "production");
+    setEnv("ALLOW_DEV_IDENTITY", "ture");
+    await expect(resolveUserId()).rejects.toThrow(/signed in/i);
+  });
+
+  it("refuses when the flag has the wrong case", async () => {
+    setEnv("NODE_ENV", "production");
+    setEnv("ALLOW_DEV_IDENTITY", "TRUE");
+    await expect(resolveUserId()).rejects.toThrow(/signed in/i);
+  });
+
+  it("still resolves the development identity outside production", async () => {
+    setEnv("NODE_ENV", "development");
+    setEnv("ALLOW_DEV_IDENTITY", "true");
+    // The whole point of the fallback: local work does not demand a sign-in.
+    await expect(resolveUserId()).resolves.toEqual(expect.any(String));
+  });
+
+  it("requires a session secret in production", () => {
+    setEnv("NODE_ENV", "production");
+    delete process.env.SESSION_SECRET;
+    expect(() => assertProductionConfig()).toThrow();
+  });
+
+  it("starts in production once a secret is present", () => {
+    setEnv("NODE_ENV", "production");
+    setEnv("SESSION_SECRET", "x".repeat(32));
+    expect(() => assertProductionConfig()).not.toThrow();
+  });
+});
+
+function setEnv(key: string, value: string | undefined): void {
+  if (value === undefined) delete process.env[key];
+  else process.env[key] = value;
+}

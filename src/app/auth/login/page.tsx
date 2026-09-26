@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { showToast } from "@/components/ui/Toast";
-import { mockLogin, validateEmail } from "@/services/auth";
+import { login as loginRequest, validateEmail } from "@/services/authClient";
 import { AnimatedSuitsBackground } from "@/components/bridge/AnimatedSuitsBackground";
 import { FloatingCards } from "@/components/bridge/FloatingCards";
 import { SuitSymbol } from "@/components/bridge/SuitSymbol";
@@ -125,7 +125,7 @@ function ShowcasePanel() {
   );
 }
 
-function LoginForm() {
+function LoginForm({ next }: { next: string | null }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -147,15 +147,20 @@ function LoginForm() {
     if (!validate()) return;
 
     setIsLoading(true);
-    try {
-      await mockLogin({ email, password, rememberMe: false });
-      showToast("success", "Welcome back! Redirecting to your dashboard...");
-      setTimeout(() => router.push("/dashboard"), 800);
-    } catch (err) {
-      showToast("error", err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setIsLoading(false);
+    // A real session cookie is set by the server. Nothing is stored in
+    // JavaScript, so there is no token for a script to steal.
+    const result = await loginRequest(email, password);
+    if (result.ok) {
+      showToast("success", `Welcome back, ${result.user.firstName}!`);
+      // Return the user to where they were headed, not always the dashboard.
+      // `next` comes from the proxy redirect; it is a path we produced, but it
+      // is still request input, so it is restricted to a same-site path.
+      router.push(safeRedirect(next));
+      router.refresh();
+      return;
     }
+    showToast("error", result.error);
+    setIsLoading(false);
   };
 
   return (
@@ -302,11 +307,38 @@ function LoginForm() {
   );
 }
 
-export default function LoginPage() {
+/**
+ * `searchParams` is read here, in the server component, and passed down as a
+ * prop. Calling `useSearchParams()` in the client form instead forces the whole
+ * page into client-side rendering, which breaks the static prerender of this
+ * route at build time.
+ */
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const params = await searchParams;
   return (
     <div className="flex min-h-screen flex-col bg-bg-primary lg:grid lg:grid-cols-2">
       <ShowcasePanel />
-      <LoginForm />
+      <LoginForm next={params.next ?? null} />
     </div>
   );
+}
+
+/**
+ * Resolves a post-sign-in destination.
+ *
+ * Rejects anything that is not a plain same-site path. A redirect target taken
+ * from request input is an open-redirect vector: `//evil.example` and
+ * `https://evil.example` both point off-site, and `/\evil.example` is treated
+ * as protocol-relative by some browsers.
+ */
+function safeRedirect(next: string | null): string {
+  if (!next) return "/dashboard";
+  if (!next.startsWith("/")) return "/dashboard";
+  if (next.startsWith("//") || next.startsWith("/\\")) return "/dashboard";
+  if (/^\/\//.test(next)) return "/dashboard";
+  return next;
 }

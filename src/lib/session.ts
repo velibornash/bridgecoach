@@ -13,7 +13,7 @@
  *    database lookup, and it is `httpOnly` so no script can read it.
  */
 
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 
@@ -51,7 +51,6 @@ function hashToken(token: string): string {
 
 function sign(value: string): string {
   // HMAC over the token; the secret never leaves the server.
-  const { createHmac } = require("node:crypto") as typeof import("node:crypto");
   return createHmac("sha256", sessionSecret()).update(value).digest("base64url");
 }
 

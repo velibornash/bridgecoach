@@ -26,6 +26,12 @@ export function PremiumHero() {
   // and client disagree, which React reported as a hydration mismatch.
   const [greeting, setGreeting] = useState("");
   useEffect(() => {
+    // Setting state in an effect is correct here, and the lint rule that
+    // objects is the wrong rule for this case: the alternative is reading the
+    // clock during render, which makes the server's markup and the client's
+    // first render disagree and produces a hydration mismatch. Reading the
+    // clock after mount is the standard fix, not a workaround.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGreeting(greetingFor(new Date().getHours()));
   }, []);
 

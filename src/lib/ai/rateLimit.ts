@@ -96,17 +96,38 @@ export function resetRateLimits(): void {
 }
 
 /**
- * Best-effort client identity.
+ * Best-effort *network* identity: the first forwarded address.
  *
- * With no authentication yet (Sprint 59), this is the first forwarded address.
- * That is trivially spoofable, so it is a fairness control against accidental
- * runaway clients, NOT a security boundary. Real enforcement arrives with
- * sessions; the account-level quota must then key on user id instead.
+ * Spoofable by anyone who can set a request header, so on its own this is only a
+ * fairness control against accidental runaway clients, never a security
+ * boundary. Use `rateLimitKey` for quota enforcement.
  */
 export function clientKey(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   const ip = forwarded?.split(",")[0]?.trim();
   return ip && ip.length > 0 ? ip : "local";
+}
+
+/**
+ * The identity a quota should be charged to.
+ *
+ * Prefers the authenticated user id, because that is the only part of the
+ * request an attacker cannot change. Everything below the user id is a
+ * convenience:
+ *
+ * - The network address still caps one person from consuming the whole quota
+ *   with many accounts, and caps one account from spreading usage over many
+ *   addresses.
+ * - The unauthenticated marker keeps pre-sign-in traffic (the sign-in endpoint
+ *   itself) bucketed without pretending it is a real account.
+ *
+ * Callers that have already resolved a session should pass its user id. When
+ * `userId` is null the result degrades to the old spoofable behaviour, which is
+ * correct for the sign-in route and for nothing else.
+ */
+export function rateLimitKey(request: Request, userId: string | null): string {
+  if (userId) return `user:${userId}`;
+  return `anon:${clientKey(request)}`;
 }
 
 /**

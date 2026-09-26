@@ -18,10 +18,10 @@ export function DailyChallenge() {
   // The old fixture generated its dates relative to Date.now().
   const { data: challenge } = useApiResource(fetchTodaysChallenge);
   const [completed, setCompleted] = useState(false);
-
-  if (!challenge) return null;
   const [timeLeft, setTimeLeft] = useState("");
 
+  // Countdown to midnight. Runs whether or not the challenge has loaded, so the
+  // hook order stays constant across the loading -> loaded transition.
   useEffect(() => {
     const update = () => {
       const now = new Date();
@@ -35,6 +35,11 @@ export function DailyChallenge() {
     const interval = setInterval(update, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Every hook above runs unconditionally. An early return placed between hooks
+  // changes the hook count between renders, and React throws "Rendered more
+  // hooks than during the previous render" the moment the challenge arrives.
+  if (!challenge) return null;
 
   const handleComplete = () => {
     if (completed) return;

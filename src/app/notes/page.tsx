@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { useApiResource } from "@/hooks/useApiResource";
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -18,25 +19,21 @@ import {
 export default function NotesPage() {
   // Notes live in PostgreSQL (Sprint 58 §14). They previously came from a
   // fixture and every edit was lost on refresh.
-  const [notes, setNotes] = useState<NoteRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // The shared loading hook (Sprint 58 §21) instead of a hand-rolled
+  // fetch/useEffect pair, which duplicated its four states and tripped the
+  // setState-in-effect rule.
+  const { data: notes, loading, error: loadError, reload } = useApiResource<NoteRecord[]>(
+    async () => {
+      const result = await fetchNotes();
+      return { data: result.data ?? [], error: result.error, status: 200 };
+    },
+  );
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
-  const reload = useCallback(async () => {
-    const result = await fetchNotes();
-    setNotes(result.data ?? []);
-    setLoadError(result.error);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    reload();
-  }, [reload]);
-
   const filtered = useMemo(() => {
+    if (!notes) return [];
     if (!search.trim()) return notes;
     const q = search.toLowerCase();
     return notes.filter(
@@ -48,17 +45,20 @@ export default function NotesPage() {
   const pinned = filtered.filter((n) => n.pinned);
   const unpinned = filtered.filter((n) => !n.pinned);
 
+  // Writes do not patch local state. They refetch instead, so the list can only
+  // ever show what the server actually stored. An earlier version applied an
+  // optimistic update and claimed reload() would revert it on failure — it did
+  // not, because the failure branch returned before reaching reload(), so a
+  // rejected pin stayed flipped on screen until a manual refresh.
   const togglePin = async (id: string) => {
-    const target = notes.find((n) => n.id === id);
+    const target = notes?.find((n) => n.id === id);
     if (!target) return;
-    // Optimistic update, reverted by reload() if the write failed.
-    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, pinned: !n.pinned } : n)));
     const result = await updateNoteApi(id, { pinned: !target.pinned });
     if (result.error) {
       showToast("error", result.error);
-    } else {
-      showToast("success", "Note pin toggled");
+      return;
     }
+    showToast("success", "Note pin toggled");
     reload();
   };
 
@@ -68,8 +68,8 @@ export default function NotesPage() {
       showToast("error", result.error);
       return;
     }
-    setNotes((prev) => prev.filter((n) => n.id !== id));
     showToast("info", "Note deleted");
+    reload();
   };
 
   const startEdit = (note: NoteRecord) => {
@@ -173,7 +173,7 @@ export default function NotesPage() {
                 ? "Loading your notes…"
                 : loadError
                   ? loadError
-                  : `${notes.length} note${notes.length === 1 ? "" : "s"} across all lessons`}
+                  : `${notes?.length ?? 0} note${notes?.length === 1 ? "" : "s"} across all lessons`}
             </p>
           </div>
 
