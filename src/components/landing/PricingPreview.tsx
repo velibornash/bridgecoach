@@ -7,57 +7,51 @@ import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import Link from "next/link";
 
+/**
+ * One plan, because there is one.
+ *
+ * This is a second copy of the pricing that `/pricing` used to carry, on the
+ * HOMEPAGE, and it was missed by the earlier pass that rewrote the pricing page.
+ * It sold $9 Premium and $99 Lifetime, promised "All 200+ lessons" on an
+ * application with eight, and advertised "Start Free Trial" and "Partner
+ * matching" for features that do not exist.
+ *
+ * A visitor landing on the homepage met the invented version first and the
+ * corrected one only if they went looking for it, which makes this the more
+ * consequential of the two — and it survived a pass that specifically went
+ * looking for exactly this. Searching for the prices I had removed would have
+ * caught it; checking the component the page imports would have caught it
+ * sooner.
+ *
+ * Keep this in step with `/pricing` by having both read the same source rather
+ * than by remembering to update two files.
+ */
 const plans = [
   {
-    name: "Free",
+    name: "Everything",
     price: "$0",
     period: "forever",
-    description: "Start your bridge journey with solid fundamentals.",
+    description: "The whole application, at no cost, while it is in beta.",
     features: [
-      "First 10 lessons",
-      "Basic quizzes",
-      "Daily challenges",
-      "XP tracking",
-      "Community access",
+      "Every lesson in the catalogue",
+      "Server-graded quizzes",
+      "Bidding practice with a real engine",
+      "Hand replay and analysis",
+      "XP, levels, streaks and achievements",
+      "AI coach (bring your own key)",
+      "Leaderboard, friends and community",
     ],
-    cta: "Start Free",
-    variant: "outline" as const,
-    highlight: false,
-  },
-  {
-    name: "Premium",
-    price: "$9",
-    period: "/month",
-    description: "The complete learning experience. Cancel anytime.",
-    features: [
-      "All 200+ lessons",
-      "Advanced quizzes",
-      "AI Coach feedback",
-      "Unlimited daily challenges",
-      "Achievement system",
-      "Partner matching",
-      "Priority support",
-    ],
-    cta: "Start Free Trial",
+    cta: "Create an account",
     variant: "primary" as const,
     highlight: true,
   },
-  {
-    name: "Lifetime",
-    price: "$99",
-    period: "one-time",
-    description: "One payment. Lifetime access. Forever updates.",
-    features: [
-      "Everything in Premium",
-      "Future content updates",
-      "Early access to features",
-      "Exclusive community role",
-      "Beta features",
-    ],
-    cta: "Get Lifetime",
-    variant: "outline" as const,
-    highlight: false,
-  },
+];
+
+/** Not built, listed so the absence reads as a decision rather than an omission. */
+const notYetBuilt = [
+  "Paid tiers and payment processing",
+  "Email delivery outside development",
+  "Live tournaments and expert analysis",
 ];
 
 export function PricingPreview() {
@@ -69,11 +63,12 @@ export function PricingPreview() {
             Simple, Transparent Pricing
           </h2>
           <p className="mt-4 text-lg text-text-secondary">
-            Start free. Upgrade when you are ready. No hidden fees.
+            Everything is free while Bridge Coach is in beta, and there is no
+            checkout. Nothing is charged and no card details are collected.
           </p>
         </AnimatedSection>
 
-        <div className="mt-16 grid gap-8 lg:grid-cols-3">
+        <div className="mt-16 mx-auto grid max-w-2xl gap-8">
           {plans.map((plan, i) => (
             <AnimatedSection key={plan.name} delay={i * 0.1}>
               <Card
@@ -119,6 +114,27 @@ export function PricingPreview() {
           ))}
         </div>
       </Container>
+        <AnimatedSection delay={0.2}>
+          <div className="mx-auto mt-12 max-w-2xl rounded-xl border border-border bg-bg-card p-5">
+            <h3 className="text-sm font-semibold text-text-primary">
+              Not built yet
+            </h3>
+            <p className="mt-1 text-xs text-text-tertiary">
+              Listed so the absence is deliberate rather than looking like an
+              oversight. None of it is sold or promised anywhere on this site.
+            </p>
+            <ul className="mt-3 space-y-1.5">
+              {notYetBuilt.map((item) => (
+                <li key={item} className="flex gap-2 text-xs text-text-secondary">
+                  <span className="text-text-tertiary" aria-hidden>
+                    &mdash;
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </AnimatedSection>
     </section>
   );
 }

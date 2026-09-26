@@ -1156,3 +1156,74 @@ async-component bug, which was not cosmetic at all.
 
 typecheck 0 · lint **0 errors, 30 warnings** (was 131) · 347 unit/integration ·
 7 E2E · build clean
+
+---
+
+## Session 19b — a live check that caught what the tests could not
+
+**Commit:** see git log for the session-19b commit
+
+The final pass was to verify the session's claims over HTTP rather than trusting
+the test suite. Three of four held immediately. The fourth did not.
+
+### `PricingPreview` — the same lie, on the homepage
+
+I had rewritten `/pricing` and the Hero in the previous commit and written in the
+commit message that the invented tiers were gone. `curl http://localhost:3000/ |
+grep '200+'` returned a hit.
+
+`src/components/landing/PricingPreview.tsx` is a **second copy of the pricing**,
+rendered on the **homepage**, and it still sold $9 Premium and $99 Lifetime,
+promised "All 200+ lessons" on an application with eight, and advertised "Start
+Free Trial" and "Partner matching". My earlier pass searched for the prices it had
+already removed on `/pricing` and did not look at the component the landing page
+imports.
+
+This is the more consequential of the two mistakes, because a visitor meets the
+homepage version first and only finds the corrected page if they go looking. It
+survived a pass whose stated purpose was exactly this, which is the part worth
+remembering: I had verified the page I had edited rather than the page being
+rendered.
+
+Both now read from the same shape, and the comment in each says to keep them in
+step by sharing a source rather than by remembering.
+
+### A billing toggle for billing that does not exist
+
+On `/pricing`, an annual/monthly switch that discounted $9 to $7 and $19 to $15,
+under a heading promising "All plans include a 7-day free trial". All of it
+survived my first pass because I replaced the `plans` array and never looked at
+what was rendered around it. Removed, along with the `discounted()` helper.
+
+### What the live check actually cleared
+
+Verified absent from the rendered pages, script tags stripped so React's flight
+payload (`"$9b"`, `"$92"` — which my first grep misread as prices) could not
+produce a false hit:
+
+`50K+` · `200+ lessons` · `15K+` · `$9` · `$19` · `$99` · `9.99` · `19.99` ·
+`6 lessons` · `money-back` · `PayPal` · `Apple Pay` — **all zero**, on the
+homepage, `/pricing` and `/faq`.
+
+### Also checked and correct
+
+- Skill profile: three skills with 0 attempts return `null`, Defence with 9
+  returns 100, and the overall figure averages only the one reported skill.
+  `reported 1 / 4` — the honesty rule working on real data.
+- Contact form: 201, and the row is in the database.
+- Search for `notrump` finds the lesson whose JSON body says "Notrump".
+- Settings preferences persist.
+
+### A note on the database connections
+
+`npm test` failed once with `FATAL: sorry, too many clients already` — 90 idle
+connections. Those came from every `npm run dev` I launched during this session
+and then killed with `kill -9`, which gives the process no chance to close its
+pool. Checked properly: the test suite opens and closes cleanly, zero connections
+before and after. Not a product bug, but it is why the E2E run failed the first
+time and it is recorded here so the next `kill -9` is not a surprise.
+
+### Gate
+
+typecheck 0 · lint 0 errors, 30 warnings · 347 unit/integration · 7 E2E ·
+build clean

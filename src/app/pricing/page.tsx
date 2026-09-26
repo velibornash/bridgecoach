@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -80,14 +79,8 @@ const CheckIcon = () => (
 );
 
 export default function PricingPage() {
-  const [annual, setAnnual] = useState(true);
-
-  const discounted = (price: string) => {
-    if (price === "$9") return annual ? "$7" : "$9";
-    if (price === "$19") return annual ? "$15" : "$19";
-    return price;
-  };
-
+  // No billing-period toggle: there is no billing. The toggle discounted $9 to
+  // $7 and $19 to $15, which is a price a visitor could have acted on.
   return (
     <main className="min-h-screen bg-bg-primary">
       <Navbar />
@@ -100,29 +93,10 @@ export default function PricingPage() {
               Simple, Transparent Pricing
             </h1>
             <p className="mt-4 text-lg text-text-secondary max-w-2xl mx-auto">
-              Start free. Upgrade when you are ready. All plans include a 7-day free trial.
+              Everything is free while Bridge Coach is in beta. There is no
+              checkout, nothing is charged, and no card details are collected.
             </p>
 
-            {/* Toggle */}
-            <div className="mt-8 inline-flex items-center gap-3 rounded-full bg-bg-secondary p-1">
-              <button
-                onClick={() => setAnnual(false)}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-                  !annual ? "bg-primary text-white" : "text-text-tertiary hover:text-text-secondary"
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setAnnual(true)}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-                  annual ? "bg-primary text-white" : "text-text-tertiary hover:text-text-secondary"
-                }`}
-              >
-                Annual
-                <span className="ml-1.5 text-[10px] text-white/70">Save up to 20%</span>
-              </button>
-            </div>
           </div>
 
           {/* Plans grid */}
@@ -151,16 +125,10 @@ export default function PricingPage() {
                     <h3 className="text-lg font-semibold text-text-primary">{plan.name}</h3>
                     <div className="mt-3 flex items-baseline gap-1">
                       <span className="text-3xl font-bold text-text-primary">
-                        {discounted(plan.price)}
+                        {plan.price}
                       </span>
                       <span className="text-sm text-text-tertiary">{plan.period}</span>
                     </div>
-                    {annual && plan.price !== "$0" && plan.price !== "Custom" && (
-                      <p className="mt-1 text-xs text-success">
-                        <s className="text-text-tertiary mr-1">{plan.price}</s>
-                        {discounted(plan.price)}/mo billed annually
-                      </p>
-                    )}
                     <p className="mt-2 text-sm text-text-secondary">{plan.description}</p>
                   </div>
 
