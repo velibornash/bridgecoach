@@ -18,9 +18,10 @@ import {
   MasteryPanel,
   ConfidenceScore,
 } from "@/components/statistics";
-import { getLearningStats } from "@/services/statsService";
+import { getLearningStats, getActivityHeatmap, getPersistedStats } from "@/services/statsService";
+import { useApiResource } from "@/hooks/useApiResource";
+import { fetchDashboard } from "@/services/userService";
 import type { LearningStats } from "@/types";
-import { mockUserStats } from "@/services/mockData";
 import { staggerContainer, fadeUp } from "@/design-system/motion";
 import { Clock, BookOpen, Target, Flame, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -29,7 +30,15 @@ import { ProgressionMasteryWidget } from "@/components/progression/ProgressionMa
 export default function StatisticsPage() {
   const router = useRouter();
   const [stats, setStats] = useState<LearningStats | null>(null);
-  const [heatmap] = useState(() => generateHeatmapData(12));
+  // Real activity heatmap from persisted XP events. The old generator used
+  // Math.random(), so the chart was different on every render.
+  const { data: persisted } = useApiResource(getPersistedStats);
+  const { data: dashboard } = useApiResource(fetchDashboard);
+  const [heatmap, setHeatmap] = useState<Awaited<ReturnType<typeof getActivityHeatmap>>>([]);
+
+  useEffect(() => {
+    getActivityHeatmap().then(setHeatmap).catch(() => setHeatmap([]));
+  }, []);
 
   useEffect(() => {
     // getLearningStats resolves to null when the API has no data yet.
@@ -81,14 +90,15 @@ export default function StatisticsPage() {
   const masteryStats = {
     lessonsCompleted: stats.lessonsFinished,
     coursesCompleted: stats.categoryBreakdown.filter((c) => c.completed >= c.total).length,
-    handsSolved: mockUserStats.correctBids,
+    handsSolved: persisted?.practice.legalBids ?? 0,
     accuracy: stats.quizAccuracy,
-    averageThinkingTime: 14.5,
+    // Thinking time is not tracked yet. Reporting a made-up 14.5s would be
+    // worse than reporting nothing, so the widget receives 0.
+    averageThinkingTime: 0,
     weakAreas: sortedCategories.slice(0, 2).map((c) => c.category),
     strongAreas: sortedCategories.slice(-2).map((c) => c.category),
     streak: stats.currentStreak,
     confidenceScore: stats.averageScore,
-    bridgeRating: 1540,
   };
 
   return (
@@ -129,7 +139,7 @@ export default function StatisticsPage() {
                   <LearningHeatmap data={heatmap} />
                   <StreakCalendar
                     currentStreak={stats.currentStreak}
-                    longestStreak={mockUserStats.longestStreak}
+                    longestStreak={dashboard?.progression.longestStreak ?? 0}
                   />
                 </div>
 

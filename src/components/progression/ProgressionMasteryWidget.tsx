@@ -11,20 +11,15 @@ interface ProgressionMasteryWidgetProps {
   stats?: ProgressionStats;
 }
 
-const defaultStats: ProgressionStats = {
-  lessonsCompleted: 15,
-  coursesCompleted: 3,
-  handsSolved: 42,
-  accuracy: 84,
-  averageThinkingTime: 14.5,
-  weakAreas: ["Slams", "Takeout Doubles"],
-  strongAreas: ["Opening Bids", "Signals"],
-  streak: 7,
-  confidenceScore: 78,
-  bridgeRating: 1540,
-};
+/**
+ * There is deliberately NO default. The previous fallback invented 15 lessons,
+ * 84% accuracy, a 7-day streak and a 1540 rating, which meant a caller that
+ * forgot to pass stats silently rendered a fictional skill profile instead of
+ * showing nothing. Callers must supply real data (Sprint 58 §12).
+ */
+export function ProgressionMasteryWidget({ stats }: ProgressionMasteryWidgetProps) {
+  if (!stats) return null;
 
-export function ProgressionMasteryWidget({ stats = defaultStats }: ProgressionMasteryWidgetProps) {
   const masteries = ProgressEngine.calculateMastery(stats);
   const calculatedRating = ProgressEngine.calculateBridgeRating(stats);
   const confidence = ProgressEngine.calculateConfidence(stats);

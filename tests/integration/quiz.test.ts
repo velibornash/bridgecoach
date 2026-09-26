@@ -10,6 +10,7 @@ import { prisma, resolveUserId } from "@/lib/db";
 import { GET as getContent } from "@/app/api/content/route";
 import { POST as postAttempt } from "@/app/api/quiz-attempts/route";
 import { GET as getAttempts } from "@/app/api/quiz-attempts/route";
+import { POST as postCheck } from "@/app/api/quiz/check/route";
 
 const QUIZ_ID = "seed-quiz-bidding";
 
@@ -136,5 +137,51 @@ describe("quiz: attempt history", () => {
     for (const attempt of createdAttemptIds) {
       expect(body.attempts.some((a) => a.id === attempt)).toBe(true);
     }
+  });
+});
+
+describe("quiz: per-answer grading keeps the key on the server", () => {
+  async function check(body: unknown) {
+    return postCheck(
+      new Request("http://localhost/api/quiz/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+    );
+  }
+
+  it("returns the verdict and the correct index for one question", async () => {
+    const correct = await (await check({ questionId: "q1", answer: "1" })).json();
+    expect(correct.correct).toBe(true);
+    expect(correct.correctIndex).toBe(1);
+    expect(typeof correct.explanation).toBe("string");
+  });
+
+  it("marks a wrong answer incorrect without leaking other answers", async () => {
+    const wrong = await (await check({ questionId: "q1", answer: "0" })).json();
+    expect(wrong.correct).toBe(false);
+    // Only the asked-about question is described; no full key is returned.
+    expect(Object.keys(wrong).sort()).toEqual(
+      ["correct", "correctIndex", "explanation", "questionId", "xpReward"].sort(),
+    );
+  });
+
+  it("grades multiple-choice answers", async () => {
+    // q3 correctIndices = [0, 2, 3]
+    const right = await (await check({ questionId: "q3", answer: ["0", "2", "3"] })).json();
+    expect(right.correct).toBe(true);
+    expect(right.correctIndices).toEqual([0, 2, 3]);
+
+    const wrong = await (await check({ questionId: "q3", answer: ["0", "1"] })).json();
+    expect(wrong.correct).toBe(false);
+  });
+
+  it("rejects a missing questionId with 400", async () => {
+    expect((await check({ answer: "1" })).status).toBe(400);
+  });
+
+  it("404s an unknown questionId", async () => {
+    expect((await check({ questionId: "nope", answer: "1" })).status).toBe(404);
   });
 });

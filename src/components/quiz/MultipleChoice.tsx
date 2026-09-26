@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { QuizQuestion } from "@/types";
+import { checkAnswer } from "@/services/quizService";
 
 interface MultipleChoiceProps {
   question: QuizQuestion;
@@ -22,21 +23,25 @@ export function MultipleChoice({ question, onAnswer, answered }: MultipleChoiceP
     setSelected(next);
   };
 
-  const handleSubmit = () => {
+  // Correct options come from the server verdict, not from the shipped question.
+  const [correctIndices, setCorrectIndices] = useState<number[] | null>(null);
+
+  const handleSubmit = async () => {
     if (answered || selected.length === 0) return;
-    const correctSet = new Set(question.correctIndices!);
-    const selectedSet = new Set(selected);
-    const isCorrect =
-      selected.length === question.correctIndices!.length &&
-      selected.every((s) => correctSet.has(s));
-    onAnswer(isCorrect, selected);
+    try {
+      const verdict = await checkAnswer(question.id, selected.map(String));
+      setCorrectIndices(verdict.correctIndices ?? []);
+      onAnswer(verdict.correct, selected);
+    } catch {
+      onAnswer(false, selected);
+    }
   };
 
   return (
     <div className="space-y-3">
       {question.options?.map((option, i) => {
-        const isCorrectOption = answered && question.correctIndices!.includes(i);
-        const isWrongOption = answered && selected.includes(i) && !question.correctIndices!.includes(i);
+        const isCorrectOption = answered && (correctIndices ?? []).includes(i);
+        const isWrongOption = answered && selected.includes(i) && !(correctIndices ?? []).includes(i);
         const isSelected = selected.includes(i);
         return (
           <button

@@ -346,22 +346,86 @@ fabricated rank, and nobody mistakes sample data for real standing.
 
 ---
 
+## Session 9 — Statistics, Quiz, Certificates, Notifications + §28 classification
+
+**Commit:** see git log for the session-9 commit
+
+### New routes
+
+| Route | Purpose |
+|---|---|
+| `GET /api/quiz/check` | Grades ONE answer server-side and returns the verdict for that question only |
+| `GET /api/certificates` | Derives one certificate per fully-completed course from persisted lesson progress |
+| `GET/PATCH /api/notifications` | Feed derived from real activity; read-state stored as `Activity` rows so no extra table is needed |
+| `GET /api/content` (earlier) | Serves courses/episodes/lessons with the answer key stripped |
+
+### The quiz feedback conflict, and how it was resolved
+
+The quiz UI must tell the learner immediately whether they were right and highlight
+the correct option. That needs the answer key — but shipping the whole key let a
+learner read every answer before starting, and in Sprint 57 the browser computed
+the final score itself.
+
+`/api/quiz/check` resolves both: the client submits **one** answer and gets back
+only that question's verdict. Feedback stays instant and authoritative, no
+un-answered question is exposed, and the persisted score comes from
+`/api/quiz-attempts` re-grading the raw answers. A test asserts the response
+contains nothing beyond the asked-about question's five fields.
+
+`SingleChoice` and `MultipleChoice` now hold `correctIndex` in local state fed by
+the server verdict instead of reading `question.correctIndex`.
+
+### Two more fabricated things deleted
+
+- **`ProgressionMasteryWidget.defaultStats`** — 15 lessons, 84% accuracy, 7-day
+  streak, 1540 rating. The component now returns `null` without real stats, so a
+  caller that forgets to pass them gets nothing instead of a fictional skill
+  profile. `bridgeRating` was removed from `ProgressionStats` entirely; it was
+  never rendered.
+- **`generateHeatmapData(12)`** (`Math.random()`) — replaced with a real 30-day
+  heatmap from the XP event log. `averageThinkingTime: 14.5` became `0`, and
+  `bridgeRating: 1540` is gone from the statistics page.
+
+### Duplicate components deleted
+
+`ChallengeCard` and `ChallengeHistory` were fixture-only duplicates of the already
+migrated `DailyChallenge`. `/challenges` now renders `DailyChallenge`; the two
+files were removed.
+
+### §28 classification — `docs/audit/SPRINT_58_MOCK_CLASSIFICATION.md`
+
+Every remaining `mockData` dependency classified as SEED / REMOVE / KEEP / LABELLED
+/ TEST. **Result: 13 real imports, down from 45 at the start of Sprint 58.**
+Zero `REMOVE`-classified dependencies remain in production user state.
+
+Honest gaps recorded there rather than hidden: `SkillRadar` still renders a static
+profile (it needs the Sprint 60 Player Model, which will mine the
+`AuctionAction`/`PracticeAction` rows Sprint 58 now collects), thinking time is not
+captured, and reward balances have no currency ledger.
+
+### State after this commit
+
+- Tests: **199** unit/integration, 7 E2E
+- typecheck 0 · lint 0 errors · build clean
+
+---
+
 ## Current state
 
 | Item | Status |
 |---|---|
 | 58.1 Foundation (DB, schema, migration, seed, client) | ✅ |
 | 58.2.1 API routes (13 files) | ✅ |
-| 58.2.2 Service layer + `mockData` consumers | 🔄 services + 12 dashboard components + `/learning-path`, `/lesson`, `/profile`, `/notes`, `/bookmarks`, `/missions`, `/achievements`, `XPProgress` done. Remaining are mostly static content (flashcards, search, catalog, captions, notifications) plus the 4 multi-user pages, which are deliberately labelled rather than faked |
+| 58.2.2 Service layer + `mockData` consumers | ✅ 13 real imports left, down from 45. Remaining are 7 legitimate static content files + 4 multi-user pages (deliberately labelled) + 1 test fixture. See `docs/audit/SPRINT_58_MOCK_CLASSIFICATION.md` |
 | 58.2.3 Author Studio off localStorage | ✅ database authoritative, localStorage is cache only |
 | 58.2.4 AI conversation persistence | ✅ |
 | 58.3.1–58.3.8 Domain wiring | ✅ |
-| 58.3.9 Loading/empty/error UI states | 🔄 `useApiResource` hook built; each page must adopt it |
+| 58.3.9 Loading/empty/error UI states | ✅ `useApiResource` hook + loading/empty/error states on every migrated page |
 | 58.4.1 Persistence tests | ✅ |
 | 58.4.2 E2E persistence journey | ✅ |
 | 58.4.3 Data integrity | ✅ |
 | 58.4.4 Full route regression (manual) | ⬜ |
-| 58.4.5 Mock dependency classification | ⬜ |
+| 58.4.5 Mock dependency classification | ✅ `docs/audit/SPRINT_58_MOCK_CLASSIFICATION.md` |
 | 58.4.6 Quality gate | ✅ passing |
 | 58.4.7 Verification report | ⬜ |
 

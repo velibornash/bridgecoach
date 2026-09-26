@@ -99,3 +99,22 @@ function hash(value: string): number {
   }
   return h >>> 0;
 }
+
+/**
+ * Grades ONE answer server-side and returns the verdict for that question only.
+ *
+ * This is what lets the quiz UI keep its instant right/wrong feedback without
+ * shipping the whole answer key to the browser (see /api/quiz/check).
+ */
+export async function checkAnswer(
+  questionId: string,
+  answer: string | string[],
+): Promise<{
+  correct: boolean;
+  explanation: string;
+  xpReward: number;
+  correctIndex?: number | null;
+  correctIndices?: number[];
+}> {
+  return apiFetch("/api/quiz/check", { method: "POST", body: { questionId, answer } });
+}

@@ -7,7 +7,8 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
-import { mockNotifications } from "@/services/mockData";
+import { useEffect } from "react";
+import { fetchNotifications, type AppNotificationRecord } from "@/services/notificationsService";
 import type { NotificationType } from "@/types";
 import { Icon } from "@/components/icons/Icon";
 import { Zap, Target, Bell, BookOpen, Hand, Bell as BellRing } from "lucide-react";
@@ -21,7 +22,18 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState(mockNotifications);
+  // Real feed derived from persisted activity (Sprint 58 §11). It previously
+  // read a fixture, so the unread badge never changed.
+  const [notifications, setNotifications] = useState<AppNotificationRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const result = await fetchNotifications();
+      setNotifications(result.data ?? []);
+      setLoading(false);
+    })();
+  }, []);
   const [filter, setFilter] = useState<NotificationType | "all">("all");
 
   const filtered = filter === "all" ? notifications : notifications.filter((n) => n.type === filter);
@@ -41,7 +53,7 @@ export default function NotificationsPage() {
             <div>
               <h1 className="text-2xl font-bold text-text-primary">Notifications</h1>
               <p className="text-sm text-text-tertiary mt-1">
-                {unread > 0 ? `${unread} unread notifications` : "All caught up!"}
+                {loading ? "Loading…" : unread > 0 ? `${unread} unread notification${unread === 1 ? "" : "s"}` : "All caught up!"}
               </p>
             </div>
             {unread > 0 && (
@@ -121,9 +133,9 @@ export default function NotificationsPage() {
                             <span className="flex h-2 w-2 rounded-full bg-primary shrink-0" />
                           )}
                         </div>
-                        <p className="text-xs text-text-tertiary mt-0.5">{n.description}</p>
+                        <p className="text-xs text-text-tertiary mt-0.5">{n.body}</p>
                         <div className="flex items-center gap-3 mt-2">
-                          <span className="text-[10px] text-text-tertiary">{n.timestamp}</span>
+                          <span className="text-[10px] text-text-tertiary">{new Date(n.createdAt).toLocaleString()}</span>
                           {n.actionLabel && n.actionHref && (
                             <Link
                               href={n.actionHref}

@@ -2,8 +2,7 @@
 
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { ChallengeCard } from "@/components/challenge/ChallengeCard";
-import { ChallengeHistory } from "@/components/challenge/ChallengeHistory";
+import { DailyChallenge } from "@/components/dashboard/DailyChallenge";
 import { XPOverlay } from "@/components/xp/XPAnimation";
 import { LevelUpOverlay } from "@/components/xp/LevelUpModal";
 import { AchievementUnlockOverlay } from "@/components/achievements/AchievementUnlock";
@@ -20,8 +19,7 @@ export default function ChallengesPage() {
           </div>
 
           <div className="space-y-5">
-            <ChallengeCard />
-            <ChallengeHistory />
+            <DailyChallenge />
           </div>
         </Container>
       </main>

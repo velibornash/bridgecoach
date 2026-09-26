@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -12,7 +12,8 @@ import { MultipleChoice } from "@/components/quiz/MultipleChoice";
 import { CardSelect } from "@/components/quiz/CardSelect";
 import { DragDrop } from "@/components/quiz/DragDrop";
 import { QuizResultScreen } from "@/components/quiz/QuizResult";
-import { mockQuizQuestions } from "@/services/mockData";
+import { fetchQuizQuestions, submitQuizAnswers } from "@/services/quizService";
+import type { QuizQuestion } from "@/types";
 import type { QuizResult } from "@/types";
 
 const questionTypeIcons: Record<string, string> = {
@@ -50,25 +51,46 @@ function deterministicShuffle<T>(items: T[], seed: number): T[] {
 }
 
 export default function QuizPage() {
-  const questions = useMemo(
-    () => deterministicShuffle([...mockQuizQuestions], hashString(mockQuizQuestions.map((q) => q.id).join("|"))),
-    []
-  );
+  // Questions come from the seeded database with no answer key. The service
+  // applies a stable shuffle, so a reload does not reshuffle mid-quiz.
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setQuestions(await fetchQuizQuestions());
+        setLoadError(null);
+      } catch (e) {
+        setLoadError(e instanceof Error ? e.message : "Could not load the quiz");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [answeredIds, setAnsweredIds] = useState<Set<string>>(new Set());
   const [showResult, setShowResult] = useState(false);
+  const [serverResult, setServerResult] = useState<QuizResult | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [totalXp, setTotalXp] = useState(0);
+  const [rawAnswers, setRawAnswers] = useState<Record<string, string | string[]>>({});
 
   const q = questions[current];
   const total = questions.length;
   const progress = Math.round((answeredIds.size / total) * 100);
 
+  // Immediate feedback for the tapped option (from the per-answer server
+  // verdict) plus the raw answer, which is what actually gets submitted.
   const handleAnswer = useCallback(
-    (correct: boolean) => {
+    (correct: boolean, payload?: string | number | number[] | string[]) => {
       setAnswers((prev) => ({ ...prev, [q.id]: correct }));
       setAnsweredIds((prev) => new Set(prev).add(q.id));
+      if (payload !== undefined) {
+        setRawAnswers((prev) => ({ ...prev, [q.id]: Array.isArray(payload) ? payload.map(String) : String(payload) }));
+      }
       if (correct) {
         setCorrectCount((c) => c + 1);
         setTotalXp((x) => x + q.xpReward);
@@ -77,31 +99,65 @@ export default function QuizPage() {
     [q]
   );
 
-  const nextQuestion = useCallback(() => {
+  const nextQuestion = useCallback(async () => {
     if (current < total - 1) {
       setCurrent((c) => c + 1);
-    } else {
-      setShowResult(true);
+      return;
     }
-  }, [current, total]);
+    // The persisted score comes from the server re-grading the raw answers,
+    // not from the count the browser tallied (Sprint 58 §6).
+    try {
+      const graded = await submitQuizAnswers(rawAnswers, questions);
+      setServerResult(graded);
+    } catch {
+      setServerResult(null);
+    }
+    setShowResult(true);
+  }, [current, total, rawAnswers, questions]);
 
   const retry = useCallback(() => {
     setCurrent(0);
     setAnswers({});
+    setRawAnswers({});
     setAnsweredIds(new Set());
     setShowResult(false);
     setCorrectCount(0);
     setTotalXp(0);
+    setServerResult(null);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg-primary">
+        <DashboardHeader />
+        <main className="py-8"><Container><p className="text-sm text-text-tertiary">Loading quiz…</p></Container></main>
+      </div>
+    );
+  }
+
+  if (loadError || questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-bg-primary">
+        <DashboardHeader />
+        <main className="py-8">
+          <Container>
+            <p className="text-sm text-text-tertiary">{loadError ?? "No quiz questions are available."}</p>
+          </Container>
+        </main>
+      </div>
+    );
+  }
 
   if (!q) return null;
 
   if (showResult) {
-    const result: QuizResult = {
+    // Prefer the server's authoritative grade; fall back to the local tally only
+    // if the submission failed, and say so via the explanation field.
+    const result: QuizResult = serverResult ?? {
       totalQuestions: total,
       correctAnswers: correctCount,
       score: Math.round((correctCount / total) * 100),
-      xpEarned: totalXp,
+      xpEarned: 0,
       answers,
     };
     return (
@@ -169,14 +225,14 @@ export default function QuizPage() {
                 {q.type === "card-select" && (
                   <CardSelect
                     question={q}
-                    onAnswer={handleAnswer}
+                    onAnswer={(correct) => handleAnswer(correct)}
                     answered={answeredIds.has(q.id)}
                   />
                 )}
                 {q.type === "drag-drop" && (
                   <DragDrop
                     question={q}
-                    onAnswer={handleAnswer}
+                    onAnswer={(correct) => handleAnswer(correct)}
                     answered={answeredIds.has(q.id)}
                   />
                 )}

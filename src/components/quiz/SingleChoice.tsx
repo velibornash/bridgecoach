@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { QuizQuestion } from "@/types";
+import { checkAnswer } from "@/services/quizService";
 
 interface SingleChoiceProps {
   question: QuizQuestion;
@@ -13,18 +14,27 @@ interface SingleChoiceProps {
 
 export function SingleChoice({ question, onAnswer, answered }: SingleChoiceProps) {
   const [selected, setSelected] = useState<number | null>(null);
+  // The correct index comes from the server, not from the shipped question.
+  const [correctIndex, setCorrectIndex] = useState<number | null>(null);
 
-  const handleSelect = (index: number) => {
+  const handleSelect = async (index: number) => {
     if (answered) return;
     setSelected(index);
-    onAnswer(index === question.correctIndex, index);
+    try {
+      const verdict = await checkAnswer(question.id, String(index));
+      setCorrectIndex(verdict.correctIndex ?? null);
+      onAnswer(verdict.correct, index);
+    } catch {
+      // Network failure: report incorrect rather than silently claiming success.
+      onAnswer(false, index);
+    }
   };
 
   return (
     <div className="space-y-3">
       {question.options?.map((option, i) => {
-        const isCorrectOption = answered && i === question.correctIndex;
-        const isWrongOption = answered && i === selected && i !== question.correctIndex;
+        const isCorrectOption = answered && i === correctIndex;
+        const isWrongOption = answered && i === selected && i !== correctIndex;
         return (
           <button
             key={i}

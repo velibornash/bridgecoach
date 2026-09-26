@@ -1,13 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { mockNotifications } from "@/services/mockData";
+import { fetchNotifications, type AppNotificationRecord } from "@/services/notificationsService";
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const unread = mockNotifications.filter((n) => !n.read).length;
+  // A real unread count, derived from persisted activity. This badge previously
+  // showed a hardcoded fixture number that never changed.
+  const [unread, setUnread] = useState(0);
+  const [recent, setRecent] = useState<AppNotificationRecord[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const result = await fetchNotifications();
+      setUnread(result.unreadCount);
+      setRecent((result.data ?? []).slice(0, 5));
+    })();
+  }, []);
 
   return (
     <div className="relative">
@@ -49,7 +60,7 @@ export function NotificationBell() {
               </Link>
             </div>
             <div className="max-h-80 overflow-y-auto">
-              {mockNotifications.slice(0, 5).map((n) => (
+              {recent.map((n) => (
                 <div
                   key={n.id}
                   className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-bg-secondary ${
@@ -61,8 +72,8 @@ export function NotificationBell() {
                     <p className={`text-xs ${!n.read ? "font-semibold text-text-primary" : "text-text-secondary"}`}>
                       {n.title}
                     </p>
-                    <p className="text-[10px] text-text-tertiary mt-0.5 line-clamp-1">{n.description}</p>
-                    <p className="text-[9px] text-text-tertiary mt-0.5">{n.timestamp}</p>
+                    <p className="text-[10px] text-text-tertiary mt-0.5 line-clamp-1">{n.body}</p>
+                    <p className="text-[9px] text-text-tertiary mt-0.5">{new Date(n.createdAt).toLocaleDateString()}</p>
                   </div>
                   {!n.read && (
                     <span className="flex h-2 w-2 shrink-0 rounded-full bg-primary mt-1.5" />

@@ -10,7 +10,6 @@ export interface ProgressionStats {
   strongAreas: string[];
   streak: number;
   confidenceScore: number; // 0 to 100
-  bridgeRating: number; // e.g. 1540 (Elo rating)
 }
 
 export interface SkillMastery {

@@ -1,15 +1,34 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { mockExtendedCertificates } from "@/services/mockData";
+import { fetchCertificates, type CertificateRecord, type CourseProgressSummary } from "@/services/certificatesService";
 import { showToast } from "@/components/ui/Toast";
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
 
 export default function CertificatesPage() {
+  // Certificates are EARNED, so they are derived from persisted lesson progress
+  // (Sprint 58 §11). The page previously rendered four static certificates as if
+  // the user had already earned them.
+  const [certificates, setCertificates] = useState<CertificateRecord[]>([]);
+  const [inProgress, setInProgress] = useState<CourseProgressSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const result = await fetchCertificates();
+      setCertificates(result.data ?? []);
+      setInProgress(result.inProgress);
+      setLoadError(result.error);
+      setLoading(false);
+    })();
+  }, []);
+
   return (
     <div className="min-h-screen bg-bg-primary">
       <DashboardHeader />
@@ -18,11 +37,13 @@ export default function CertificatesPage() {
           <motion.div variants={container} initial="hidden" animate="show">
             <motion.h1 variants={item} className="text-2xl font-bold text-text-primary mb-2">Certificates</motion.h1>
             <motion.p variants={item} className="text-sm text-text-tertiary mb-8">
-              Complete courses to earn certificates. {mockExtendedCertificates.length} earned so far.
+              {loading
+                ? "Loading your certificates…"
+                : loadError ?? `${certificates.length} certificate${certificates.length === 1 ? "" : "s"} earned so far.`}
             </motion.p>
 
             <div className="grid gap-6 sm:grid-cols-2">
-              {mockExtendedCertificates.map((cert) => (
+              {certificates.map((cert) => (
                 <motion.div key={cert.id} variants={item} className="group">
                   {/* Certificate preview card */}
                   <div className="relative rounded-xl border border-border bg-bg-card overflow-hidden">
@@ -69,7 +90,7 @@ export default function CertificatesPage() {
             </div>
 
             {/* Empty state if no certificates */}
-            {mockExtendedCertificates.length === 0 && (
+            {certificates.length === 0 && !loading && (
               <motion.div variants={item} className="text-center py-20">
                 <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-bg-secondary">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-text-tertiary">
