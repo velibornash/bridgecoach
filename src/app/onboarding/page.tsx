@@ -87,7 +87,6 @@ export default function OnboardingPage() {
   const step = steps[stepIndex];
   const totalSteps = steps.length;
   const isFirst = stepIndex === 0;
-  const isLast = stepIndex === totalSteps - 1;
   const progress = ((stepIndex) / (totalSteps - 1)) * 100;
 
   const goNext = () => {

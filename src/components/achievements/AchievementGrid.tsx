@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useApiResource } from "@/hooks/useApiResource";
 import { fetchAchievements } from "@/services/achievementService";

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import {
   fetchFriends,
   respondToFriendRequest,
-  removeFriend,
+  
   type Friend,
   type FriendsData,
 } from "@/services/friendsService";

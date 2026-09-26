@@ -6,7 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Icon } from "@/components/icons/Icon";
-import { LayoutGrid, BookOpen, HelpCircle, MessagesSquare, Search, ChevronDown, ChevronRight, Compass, Layers, Target, BarChart3, Users, Bookmark, Pencil, Gift, Flame, Award, FileText, Crown, Settings, Mail, Bell, Menu, X, Zap, Star, Clock, Shield, Calendar, Tag, FolderOpen, Gift as GiftIcon, Trophy as TrophyIcon, ChevronDown as ChevronDownIcon, ChevronRight as ChevronRightIcon, PenLine } from "lucide-react";
+import { LayoutGrid, BookOpen, HelpCircle, MessagesSquare, Search, ChevronDown, Compass, Layers, Target, BarChart3, Users, Bookmark, Pencil, Flame, Award, FileText, Crown, Settings, Mail, Bell, Menu, X, Zap, Clock, Gift as GiftIcon, Trophy as TrophyIcon, PenLine } from "lucide-react";
 import Link from "next/link";
 
 const primaryLinks = [

@@ -5,11 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/icons/Icon";
 import { 
-  BookOpen, 
+  
   HelpCircle, 
   Lightbulb, 
   AlertCircle, 
-  Play, 
+  
   Eye, 
   EyeOff, 
   CheckCircle2, 

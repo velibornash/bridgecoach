@@ -75,13 +75,14 @@ export default function SearchPage() {
   }, [trimmed]);
 
   // Results only belong to the query they were fetched for. A stale result set
-  // must never be shown against a newer query.
+  // must never be shown against a newer query. `useMemo` is not worth it here —
+  // filtering at most twenty rows is free, and the hook was only re-deriving this
+  // on every keystroke for no benefit.
   const current = !tooShort && searchedFor === trimmed ? results : [];
   const searching = pending && !tooShort;
-  const visible = useMemo(
-    () => (activeCategory ? current.filter((r) => r.kind === activeCategory) : current),
-    [current, activeCategory],
-  );
+  const visible = activeCategory
+    ? current.filter((r) => r.kind === activeCategory)
+    : current;
 
   /**
    * The idle state shows what is actually in the library, with real counts from
@@ -95,16 +96,14 @@ export default function SearchPage() {
     { key: "courses", label: categoryLabels.courses, icon: categoryMeta.courses.icon, count: library?.courses ?? 0 },
   ];
 
-  const categories = useMemo(() => {
+  const categories: { key: string; label: string; count: number }[] = [];
+  {
     const counts: Record<string, number> = {};
     for (const r of current) counts[r.kind] = (counts[r.kind] ?? 0) + 1;
-    return Object.entries(counts).map(([key, count]) => ({
-      key,
-      label: categoryLabels[key] ?? key,
-      count,
-      ...categoryMeta[key],
-    }));
-  }, [current]);
+    for (const [key, count] of Object.entries(counts)) {
+      categories.push({ key, label: categoryLabels[key] ?? key, count });
+    }
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {

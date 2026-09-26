@@ -10,7 +10,7 @@ import { StatisticCard } from "@/components/cards/StatisticCard";
 import {
   SkillRadar,
   LearningHeatmap,
-  generateHeatmapData,
+  
   StreakCalendar,
   ProgressChart,
   AccuracyGraph,

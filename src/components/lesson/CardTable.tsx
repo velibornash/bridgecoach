@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import type { CardHand } from "@/types";
 import { BridgeTable, type BridgeTableHand } from "@/components/bridge/BridgeTable";
 

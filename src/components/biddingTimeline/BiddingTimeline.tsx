@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/Badge";
-import { CardEngine } from "@/components/cardEngine/CardEngine";
 import type { Bid } from "@/components/biddingBox/BiddingBox";
 
 interface BiddingTimelineProps {

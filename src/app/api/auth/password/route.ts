@@ -6,7 +6,6 @@
  * Changing a password revokes every other session, so a stolen password does
  * not leave a live session behind.
  */
-import { NextResponse } from "next/server";
 import { changePassword } from "@/app/api/auth/route";
 
 export const runtime = "nodejs";

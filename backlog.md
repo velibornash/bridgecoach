@@ -288,8 +288,9 @@ new bridge conventions.
       never imported). R-4 in the 1–56 audit.
 - [ ] **Resolve XP semantics ambiguity.** R-5: `mockUserStats.totalXpEarned 2450`
       vs `mockUser.xp 3500`. Define current vs lifetime, then derive both.
-- [ ] **Clear the remaining lint warnings** (P3, R-7) — 127, down from 139 by
-      deleting orphaned `SurfaceCard` and removing dead imports. All are unused
+- [x] **Clear the remaining lint warnings** (P3, R-7). 131 → 30, 0 errors. The
+      list was not pure cosmetics: it hid an `async` Client Component that
+      `next build` accepts and React does not.
       imports/vars in pre-existing files.
 - [x] **Add CI** on `lint && typecheck && test && build`. Shipped: also runs the
       browser suite and a from-scratch migration job. Unverified — no remote yet

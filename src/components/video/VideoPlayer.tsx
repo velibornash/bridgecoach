@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { mockCaptions } from "@/services/mockData";
-import type { VideoState, Caption } from "@/types";
+import type { VideoState } from "@/types";
 
 interface VideoPlayerProps {
   onProgress?: (pct: number) => void;

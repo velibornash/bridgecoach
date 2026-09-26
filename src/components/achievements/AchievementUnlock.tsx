@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useCallback } from "react";
-import { cn } from "@/lib/utils";
 import type { Achievement } from "@/types";
 
 let showUnlockFn: ((achievement: Achievement) => void) | null = null;

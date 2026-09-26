@@ -9,7 +9,7 @@
  * prevents duplicate unlocks.
  */
 import { NextResponse } from "next/server";
-import { handleRoute, withUser, prisma, readJson } from "@/lib/apiRoute";
+import { handleRoute, withUser, prisma } from "@/lib/apiRoute";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

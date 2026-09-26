@@ -14,9 +14,6 @@
 import { motion } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { showToast } from "@/components/ui/Toast";
 import { SUPPORT_EMAIL } from "@/lib/siteConfig";
 import { readPreferences } from "@/lib/preferences";
 import { getSessionUser } from "@/lib/session";

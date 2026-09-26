@@ -6,9 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Container } from "@/components/ui/Container";
-import { showToast } from "@/components/ui/Toast";
 import { validateEmail } from "@/services/authClient";
-import { apiFetchSafe } from "@/services/api";
 import { SUPPORT_EMAIL } from "@/lib/siteConfig";
 
 export default function ForgotPasswordPage() {

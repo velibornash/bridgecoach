@@ -32,7 +32,7 @@ const missionIcons: Record<string, React.ReactNode> = {
 
 export function TodaysMission() {
   // Real mission progress from persisted activity (Sprint 58 §13).
-  const { data: missions, isEmpty } = useApiResource(fetchMissions);
+  const { data: missions } = useApiResource(fetchMissions);
   const mission = missions?.find((m) => !m.completed) ?? missions?.[0];
   if (!mission) return null;
   const pct =

@@ -80,7 +80,6 @@ describe("sessions", () => {
   });
 
   it("stores a hash, never the token itself", async () => {
-    const { createSession } = await import("@/lib/session");
     const token = "super-secret-session-token-value";
     await prisma.session.create({
       data: {

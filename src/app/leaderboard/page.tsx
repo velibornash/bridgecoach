@@ -14,7 +14,7 @@ import {
 } from "@/services/leaderboardService";
 import { useApiResource } from "@/hooks/useApiResource";
 import { Icon } from "@/components/icons/Icon";
-import { Award, Medal, ChevronLeft, ChevronRight } from "lucide-react";
+import { Award, Medal } from "lucide-react";
 import Link from "next/link";
 
 const tabs = [

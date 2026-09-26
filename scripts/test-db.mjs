@@ -10,7 +10,6 @@
  * Plain CommonJS with no build step, so `node` can run it directly from a script.
  */
 import { existsSync, readFileSync } from "node:fs";
-import { parse as parseEnv } from "dotenv";
 
 /** Minimal `.env` reader. Handles `KEY=value`, quotes, and `#` comments. */
 function parse(text) {

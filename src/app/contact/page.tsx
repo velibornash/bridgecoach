@@ -8,8 +8,6 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
 import { submitContactMessage } from "@/services/contactService";
-import { Icon } from "@/components/icons/Icon";
-import { Info, MessageSquare, Bug, Lightbulb } from "lucide-react";
 import { SUPPORT_EMAIL } from "@/lib/siteConfig";
 
 type ContactType = "support" | "feedback" | "bug" | "feature";

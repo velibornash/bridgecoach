@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { CardEngine } from "@/components/cardEngine/CardEngine";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";

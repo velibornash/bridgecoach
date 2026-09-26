@@ -35,7 +35,6 @@ function CardInner({ card, size, interactive, hoverable, onClick, onHover }: {
   const displaySuit = config.label;
   const rank = card.rank || 'A';
   const color = suitHexForSymbol(card.suit || '♠');
-  const isRed = config.color === 'red';
   const cardFace = '#FDFDF7';
 
   return (

@@ -11,7 +11,7 @@ import { useEffect } from "react";
 import { fetchNotifications, type AppNotificationRecord } from "@/services/notificationsService";
 import type { NotificationType } from "@/types";
 import { Icon } from "@/components/icons/Icon";
-import { Zap, Target, Bell, BookOpen, Hand, Bell as BellRing } from "lucide-react";
+import { Zap, Target, Bell, BookOpen, Hand } from "lucide-react";
 
 const typeIcons: Record<string, typeof Zap> = {
   xp: Zap, achievement: Target, reminder: Bell, lesson: BookOpen, friend: Hand,

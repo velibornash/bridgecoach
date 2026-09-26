@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { BiddingBox, type Bid } from "@/components/biddingBox/BiddingBox";
 import { HandViewer } from "@/components/handViewer/HandViewer";
 import { BridgeTable, type BridgeTableHand } from "@/components/bridge/BridgeTable";
-import { CardEngine, createDeck, shuffleDeck, type BridgeCard, type Suit } from "@/components/cardEngine/CardEngine";
+import { createDeck, shuffleDeck, type BridgeCard, type Suit } from "@/components/cardEngine/CardEngine";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";

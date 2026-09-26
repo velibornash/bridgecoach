@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { SuitSymbol } from "@/components/bridge/SuitSymbol";
 import { NT_TEXT_CLASS } from "@/bridge/suits";
-import type { Suit, SuitColor } from "@/components/cardEngine/types";
+import type { Suit } from "@/components/cardEngine/types";
 
 export interface Bid {
   level: number;
@@ -55,7 +54,7 @@ interface BiddingBoxProps {
   opponentBid?: Bid | null;
 }
 
-export function BiddingBox({ yourHand, currentBid, onBid, disabled = false, partnerBid, opponentBid }: BiddingBoxProps) {
+export function BiddingBox({ currentBid, onBid, disabled = false, partnerBid, opponentBid }: BiddingBoxProps) {
   const [activeCategory, setActiveCategory] = useState<'bids' | 'controls'>('bids');
 
   const controlsBid: Bid = { level: 0, suit: 'PASS', label: 'Pass', description: 'Pass' };

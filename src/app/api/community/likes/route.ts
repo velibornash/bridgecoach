@@ -11,17 +11,11 @@
  * about which direction the UI meant.
  */
 import { NextResponse } from "next/server";
-import { handleRoute, withUser, prisma, readJson, badRequest, notFound, requireString } from "@/lib/apiRoute";
+import { handleRoute, withUser, prisma, readJson, notFound, requireString } from "@/lib/apiRoute";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_COMMENT = 300;
-
-interface PostBody {
-  postId?: unknown;
-  body?: unknown;
-}
 
 export const POST = handleRoute(async (request: Request) =>
   withUser(async (userId) => {

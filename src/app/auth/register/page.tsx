@@ -18,7 +18,6 @@ import {
   countries,
   experienceLevels,
 } from "@/services/authClient";
-import type { ExperienceLevel } from "@/types";
 
 interface FieldErrors {
   firstName?: string | null;

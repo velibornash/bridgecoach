@@ -11,7 +11,6 @@ import { prisma } from "@/lib/db";
 import * as sessionModule from "@/lib/session";
 import { NextRequest } from "next/server";
 
-const PASSWORD = "bridge123";
 
 let aliceId: string;
 let bobId: string;

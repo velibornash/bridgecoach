@@ -5,7 +5,7 @@
  */
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import { prisma } from "@/lib/db";
-import { AuctionStateMachine, parseBid, formatBid } from "@/bridge";
+import { AuctionStateMachine, parseBid } from "@/bridge";
 
 const SEED_AUCTION_ID = "seed-auction-1";
 

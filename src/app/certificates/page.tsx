@@ -26,22 +26,6 @@ function downloadCertificate(cert: CertificateRecord, holder: string): void {
   const escape = (value: string) =>
     value.replace(/([\\()])/g, "\\$1").replace(/[^\x20-\x7e]/g, "");
 
-  const text = [
-    "Bridge Coach",
-    "",
-    "This certifies that",
-    "",
-    escape(holder || "a learner"),
-    "",
-    "has completed",
-    "",
-    escape(cert.title),
-    "",
-    escape(cert.description),
-    "",
-    `Issued ${cert.earnedAt}`,
-  ].join("\n");
-
   // Uncompressed PDF: text is drawn with Tj, so escaping parens and stripping
   // non-ASCII is sufficient and the byte offsets stay computable.
   const stream = `BT /F1 22 Tf 72 720 Td (${escape("Bridge Coach")}) Tj ET\n` +

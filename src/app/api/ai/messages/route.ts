@@ -17,7 +17,7 @@ import {
   prisma,
   readJson,
   requireString,
-  badRequest,
+  
   notFound,
 } from "@/lib/apiRoute";
 

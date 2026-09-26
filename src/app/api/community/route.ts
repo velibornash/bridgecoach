@@ -23,7 +23,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_BODY = 500;
-const MAX_COMMENT = 300;
 const PAGE_SIZE = 30;
 
 const authorSelect = {

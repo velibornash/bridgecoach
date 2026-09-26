@@ -263,7 +263,9 @@ export function SettingsClient({
                       apply when the translations land.
                     </p>
                     <div className="mt-4 flex justify-end">
-                      <Button size="sm" onClick={() => saveSection("Language")}>Save</Button>
+                      <Button size="sm" disabled={saving} onClick={() => saveSection("Language")}>
+                        {saving ? "Saving…" : "Save"}
+                      </Button>
                     </div>
                   </Card>
                 </motion.div>
@@ -304,7 +306,9 @@ export function SettingsClient({
                       ))}
                     </div>
                     <div className="mt-4 flex justify-end">
-                      <Button size="sm" onClick={() => saveSection("Notifications")}>Save</Button>
+                      <Button size="sm" disabled={saving} onClick={() => saveSection("Notifications")}>
+                        {saving ? "Saving…" : "Save"}
+                      </Button>
                     </div>
                   </Card>
                 </motion.div>
@@ -343,7 +347,9 @@ export function SettingsClient({
                       ))}
                     </div>
                     <div className="mt-4 flex justify-end">
-                      <Button size="sm" onClick={() => saveSection("Privacy")}>Save</Button>
+                      <Button size="sm" disabled={saving} onClick={() => saveSection("Privacy")}>
+                        {saving ? "Saving…" : "Save"}
+                      </Button>
                     </div>
                   </Card>
                 </motion.div>

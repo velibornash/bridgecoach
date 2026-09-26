@@ -6,7 +6,7 @@
  * `saveLessonProgress` accepted a payload and discarded it, so nothing persisted.
  */
 import { apiFetch, apiFetchSafe, type ApiResponse } from "./api";
-import type { ChapterProgress, Episode, Lesson, LessonNote } from "@/types";
+import type { ChapterProgress, Episode, Lesson } from "@/types";
 
 interface ContentLesson {
   id: string;

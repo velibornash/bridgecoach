@@ -1,10 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CardEngine, CardBack, createDeck, shuffleDeck } from "@/components/cardEngine/CardEngine";
+import { CardEngine } from "@/components/cardEngine/CardEngine";
 import type { BridgeCard, CardSize } from "@/components/cardEngine/types";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
 
 interface TableEngineProps {
   hands: { north: BridgeCard[]; east: BridgeCard[]; south: BridgeCard[]; west: BridgeCard[] };
@@ -23,7 +22,7 @@ const positions = {
   west: { x: '18%', y: '40%', rotate: '90deg', align: 'end' as const, label: 'West' },
 };
 
-export function TableEngine({ hands, centerCards = [], currentPlayer, selectedCard, onCardClick, size = 'md', animate = true }: TableEngineProps) {
+export function TableEngine({ hands, centerCards = [], currentPlayer, onCardClick, size = 'md', animate = true }: TableEngineProps) {
   return (
     <div className="relative w-full aspect-video max-w-4xl mx-auto bg-gradient-to-br from-emerald-900 via-emerald-800 to-green-900 rounded-2xl border border-emerald-700/30 shadow-2xl overflow-hidden">
       {/* Table felt */}

@@ -47,8 +47,6 @@ export default function LearningPathPage() {
     };
   }, []);
 
-  const totalLessons = course.totalLessons;
-  const completedLessons = course.completedLessons;
   const totalXp = episodes.reduce((s, e) => s + e.totalXp, 0);
   const overallPct = course.completionPercent;
   const unlockedCount = episodes.filter((e) => !e.locked).length;

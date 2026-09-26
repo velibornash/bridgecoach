@@ -13,12 +13,11 @@ import {
   Info, 
   CheckCircle2, 
   Brain,
-  ChevronRight,
+  
   Sparkles,
   Share2
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { CardEngine } from "@/components/cardEngine/CardEngine";
 
 interface ReplayAction {
   player: "North" | "East" | "South" | "West";

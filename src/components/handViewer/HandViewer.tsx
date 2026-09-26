@@ -2,9 +2,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CardEngine, getCardSize, SUITS, createDeck, shuffleDeck, type BridgeCard, type Suit, type CardSize } from "@/components/cardEngine/CardEngine";
-import { Badge } from "@/components/ui/Badge";
-import { SuitSymbol, suitColor, suitGlow, type SuitLike } from "@/components/bridge/SuitSymbol";
+import { CardEngine, getCardSize, SUITS, type BridgeCard, type Suit, type CardSize } from "@/components/cardEngine/CardEngine";
+import { SuitSymbol, suitColor, type SuitLike } from "@/components/bridge/SuitSymbol";
 import { cn } from "@/lib/utils";
 
 type SortBy = 'suit' | 'rank';

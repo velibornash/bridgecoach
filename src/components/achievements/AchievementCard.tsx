@@ -42,7 +42,6 @@ const categoryLabels: Record<AchievementCategory, string> = {
 
 export function AchievementCard({ achievement, index = 0 }: AchievementCardProps) {
   const progressPct = Math.min((achievement.progress / achievement.maxProgress) * 100, 100);
-  const isComplete = achievement.progress >= achievement.maxProgress;
 
   return (
     <motion.div

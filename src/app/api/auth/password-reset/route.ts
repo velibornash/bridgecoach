@@ -13,7 +13,7 @@
  * database leak must not hand out working reset links.
  */
 import { NextResponse } from "next/server";
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { handleRoute, prisma, readJson, requireString, badRequest } from "@/lib/apiRoute";
 import { hashPassword, validatePasswordStrength } from "@/lib/password";
 import { getSessionUser } from "@/lib/session";

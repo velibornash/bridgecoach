@@ -13,7 +13,6 @@ import { NextResponse } from "next/server";
 import { handleRoute, prisma, readJson, badRequest, requireString } from "@/lib/apiRoute";
 import { requireAdmin } from "@/lib/admin";
 import { hashPassword } from "@/lib/password";
-import { sendPasswordResetEmail } from "@/lib/mailer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

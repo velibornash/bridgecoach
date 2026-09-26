@@ -286,7 +286,7 @@ you to where you were headed after signing in.
 | `/dashboard` | Real progression, level, XP, streak, next lesson, daily challenge |
 | `/learning-path` | Ordered course and lesson structure from the database |
 | `/lesson/[id]` | Lesson content, sections, completion |
-| `/practice` | Full bidding practice with a real engine |
+| `/practice` | Full bidding practice with a real engine. Bids and cards are recorded, so practice history accumulates |
 | `/play` | Play mode |
 | `/replay` | Review previous hands, reconstructed through the state machine |
 | `/flashcards` | Static drilling material |
@@ -299,11 +299,11 @@ you to where you were headed after signing in.
 | Page | What it does |
 |---|---|
 | `/progress` | Per-lesson and per-course completion |
-| `/statistics` | Derived statistics and a real 30-day XP heatmap |
+| `/statistics` | Derived statistics, a real 30-day XP heatmap, and a **skill profile computed from your own auctions** |
 | `/xp` | XP event log |
 | `/achievements` | Catalogue merged with your real unlock state |
 | `/missions` | Missions and the daily mission |
-| `/certificates` | Derived from lesson completion |
+| `/certificates` | Derived from lesson completion. Download produces a real PDF file |
 | `/notes` | Real CRUD, searchable, per-lesson |
 | `/bookmarks` | Real CRUD |
 | `/rewards` | Rewards catalogue and cosmetic prices (static) |
@@ -452,7 +452,7 @@ psql "$DATABASE_URL"         # or query directly
 | Gate | Result |
 |---|---|
 | `npm run typecheck` | 0 errors |
-| `npm run lint` | **0 errors**, 127 warnings |
+| `npm run lint` | **0 errors**, 30 warnings |
 | `npm test` | **333 passing**, 27 files |
 | `npm run test:e2e` | 7 passing |
 | `npm run build` | clean |
@@ -640,7 +640,9 @@ Stated plainly, because a manual that only lists strengths is marketing.
     means `prisma migrate reset`, which is deliberately not automated: Prisma
     blocks AI agents from running it without your explicit consent, and it is
     irreversible.
-16. **127 lint warnings remain** (unused variables, mostly). No errors.
+16. **30 lint warnings remain.** Down from 131. Mostly unused locals in
+    components that were partly built and never finished, plus four
+    `exhaustive-deps` notices. No errors, and none of them indicates a defect.
 17. **CI is configured but unverified.** `.github/workflows/ci.yml` runs the full
     gate plus a from-scratch migration job. It has never executed, because the
     repository has no remote — see §12.

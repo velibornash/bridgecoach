@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { BlockRenderer } from "./BlockRenderer";
 import { LearningBlock } from "./types";
-import { Container } from "@/components/ui/Container";
 
 interface UniversalLearningRendererProps {
   blocks: LearningBlock[];

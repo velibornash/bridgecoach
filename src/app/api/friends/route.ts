@@ -14,7 +14,6 @@
  */
 import { NextResponse } from "next/server";
 import { handleRoute, withUser, prisma, readJson, badRequest, notFound, requireString } from "@/lib/apiRoute";
-import { getSessionUser } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

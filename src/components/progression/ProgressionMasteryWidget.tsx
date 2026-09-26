@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { Icon } from "@/components/icons/Icon";
 import { Award, Compass, TrendingUp, Zap, HelpCircle } from "lucide-react";
 import { ProgressEngine, ProgressionStats } from "./ProgressEngine";

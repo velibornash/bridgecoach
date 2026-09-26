@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { SUPPORT_EMAIL } from "@/lib/siteConfig";
 
 const faqs = [
   {
@@ -58,7 +57,6 @@ export default function FAQPage() {
     }))
     .filter((cat) => cat.items.length > 0);
 
-  const totalItems = faqs.reduce((s, c) => s + c.items.length, 0);
   const visibleItems = filtered.reduce((s, c) => s + c.items.length, 0);
 
   return (

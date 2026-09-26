@@ -64,21 +64,6 @@ const notYetBuilt = [
   "Team seats, class management and custom branding",
 ];
 
-const allFeatures = [
-  { name: "Lessons", free: "10", premium: "200+", pro: "200+", elite: "200+" },
-  { name: "Quizzes", free: "Basic", premium: "Advanced", pro: "Advanced+", elite: "Advanced+" },
-  { name: "Daily Challenges", free: "1/day", premium: "Unlimited", pro: "Unlimited", elite: "Unlimited" },
-  { name: "XP & Achievements", free: true, premium: true, pro: true, elite: true },
-  { name: "AI Coach", free: false, premium: "Limited", pro: "Full", elite: "Full" },
-  { name: "Partner Matching", free: false, premium: true, pro: true, elite: true },
-  { name: "Live Tournaments", free: false, premium: false, pro: true, elite: true },
-  { name: "Expert Analysis", free: false, premium: false, pro: true, elite: true },
-  { name: "Custom Learning Plans", free: false, premium: false, pro: true, elite: true },
-  { name: "Student Management", free: false, premium: false, pro: false, elite: true },
-  { name: "Custom Branding", free: false, premium: false, pro: false, elite: true },
-  { name: "Priority Support", free: false, premium: true, pro: true, elite: true },
-];
-
 const faqs = [
   { q: "Will there be paid plans?", a: "Possibly, and this page will say so before they exist. Nothing here takes a payment today, so there is nothing to cancel or refund." },
   { q: "Is there a free trial?", a: "There is no trial because there is no paid plan. The whole application is free." },
@@ -91,12 +76,6 @@ const faqs = [
 const CheckIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-success shrink-0">
     <path d="M5 13l4 4L19 7" />
-  </svg>
-);
-
-const MinusIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-text-tertiary shrink-0">
-    <path d="M5 12h14" />
   </svg>
 );
 

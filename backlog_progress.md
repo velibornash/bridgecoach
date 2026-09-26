@@ -1097,3 +1097,62 @@ timing happened to work out.
 
 typecheck 0 · lint 0 errors, 131 warnings · **347 unit/integration** (was 340) ·
 7 E2E · build clean
+
+---
+
+## Session 19 — 131 lint warnings, and a real bug hiding in the list
+
+**Commit:** see git log for the session-19 commit
+
+### The list was not entirely noise
+
+131 unused-variable warnings sounds like pure cosmetics, and clearing it by
+script was the wrong first instinct. My opening attempt deleted local
+declarations and renamed parameters as well as imports, and broke 79 types.
+Reverted.
+
+A second pass mishandled `ChevronDown as ChevronDownIcon` and produced
+`ChevronDown as ChevronRight as PenLine`. Reverted that file.
+
+Done properly, in four verified passes — plain specifiers, then aliased ones,
+then unused interface/const declarations, then the single-specifier case — the
+count went 131 → 30 with `tsc` clean and 347 tests green after every pass. The
+final diff is 33 insertions against 83 deletions across 60 files, and the only
+non-import lines removed are two duplicate `const MAX_COMMENT = 300` and one dead
+`interface PostBody` — all mine, from writing the community routes.
+
+### But one of the warnings was a real bug
+
+`react-hooks/no-async-client-component` flagged `src/app/auth/login/page.tsx`:
+a `"use client"` file whose default export was `async`. React Client Components
+cannot be async. **Next's build accepted it**, which is why it survived from
+Sprint 59 — I had made that page a server component with a `searchParams` prop
+without noticing the file directive said otherwise.
+
+Split properly, the same way as `/settings`: a Server Component reads
+`searchParams`, a `LoginForm` client component takes `next` as a prop. The build
+still tolerates the broken version, so nothing but the lint rule would have found
+it.
+
+Also removed my own leftovers from the last three sessions: a `text` array in the
+certificate generator that the stream never used, `saving` in the settings form
+(now actually driving a disabled state, which is what it was for), and
+`allFeatures` and `MinusIcon` in pricing, which existed only for the comparison
+table the honest rewrite deleted.
+
+And `src/app/search/page.tsx` had a `useMemo` filtering twenty rows on every
+keystroke, with a dependency warning attached. Removed the memo; the filter is
+free and the warning is gone.
+
+### What the remaining 30 are
+
+Unused locals in components that were partly built and never finished
+(`tricksWon`, `inProgress`, `activeCategory`), four `exhaustive-deps` notices,
+one `<img>` in `Avatar`, and one stale eslint-disable in generated coverage
+output. None indicates a defect. The churn was worth it mainly because of the
+async-component bug, which was not cosmetic at all.
+
+### Gate
+
+typecheck 0 · lint **0 errors, 30 warnings** (was 131) · 347 unit/integration ·
+7 E2E · build clean

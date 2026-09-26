@@ -168,7 +168,6 @@ describe("preferences are actually written", () => {
 describe("the privacy toggle gates the public profile", () => {
   it("serves the profile by default", async () => {
     asUser(otherId);
-    const { GET } = await import("@/app/api/profiles/[id]/route");
     const response = await profileGet(userId);
     expect(response.status).toBe(200);
   });
@@ -203,7 +202,6 @@ describe("the privacy toggle gates the public profile", () => {
     );
 
     asUser(userId);
-    const { GET } = await import("@/app/api/profiles/[id]/route");
     const response = await profileGet(userId);
     expect(response.status).toBe(200);
     expect((await response.json()).user.isOwn).toBe(true);
