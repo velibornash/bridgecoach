@@ -1,17 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Badge } from "@/components/ui/Badge";
 import { MissionSection } from "@/components/missions/MissionSection";
-import { mockMissions } from "@/services/mockData";
+import { fetchMissions, type MissionState } from "@/services/challengeService";
 import type { MissionCategory } from "@/types";
 
 export default function MissionsPage() {
   const [activeTab, setActiveTab] = useState<MissionCategory>("daily");
-  const [missions, setMissions] = useState(mockMissions);
+  // Real mission progress from persisted activity (Sprint 58 §13).
+  const [missions, setMissions] = useState<MissionState[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const result = await fetchMissions();
+      setMissions(result.data ?? []);
+      setLoading(false);
+    })();
+  }, []);
 
   const daily = missions.filter((m) => m.category === "daily");
   const weekly = missions.filter((m) => m.category === "weekly");

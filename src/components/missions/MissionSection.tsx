@@ -2,10 +2,11 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { MissionCard } from "./MissionCard";
-import type { Mission, MissionCategory } from "@/types";
+import type { MissionCategory } from "@/types";
+import type { MissionState } from "@/services/challengeService";
 
 interface MissionSectionProps {
-  missions: Mission[];
+  missions: MissionState[];
   category: MissionCategory;
 }
 
@@ -17,7 +18,7 @@ export function MissionSection({ missions, category }: MissionSectionProps) {
   const sideMissions = missions.filter((m) => m.type === "side");
   const bonusMissions = missions.filter((m) => m.type === "bonus");
 
-  const renderGroup = (label: string, items: Mission[]) => {
+  const renderGroup = (label: string, items: MissionState[]) => {
     if (items.length === 0) return null;
     return (
       <div>

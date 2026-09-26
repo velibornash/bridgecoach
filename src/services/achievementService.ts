@@ -6,6 +6,23 @@
  * can no longer "unlock" anything by itself — POST recomputes from real data.
  */
 import { apiFetch, apiFetchSafe } from "./api";
+import type { AchievementCategory } from "@/types";
+
+/**
+ * The database stores a normalised category; the UI was written against the
+ * fixture's category names. This mapping is the adapter that keeps the two in
+ * step (Sprint 58 §22) — without it every achievement would render as
+ * "no achievements match your filter".
+ */
+const CATEGORY_TO_UI: Record<string, AchievementCategory> = {
+  learning: "lessons",
+  quiz: "quizzes",
+  streak: "streak",
+  bidding: "mastery",
+  practice: "mastery",
+  social: "special",
+  milestone: "mastery",
+};
 
 interface AchievementsResponse {
   metrics: {
@@ -37,7 +54,7 @@ export interface AchievementState {
   title: string;
   description: string;
   icon: string;
-  category: string;
+  category: AchievementCategory;
   xpReward: number;
   rarity: string;
   metric: string;
@@ -57,7 +74,7 @@ export async function fetchAchievements(): Promise<ApiResponseLike<AchievementSt
         title: a.title,
         description: a.description,
         icon: a.icon,
-        category: a.category,
+        category: CATEGORY_TO_UI[a.category] ?? "mastery",
         xpReward: a.xpReward,
         rarity: a.rarity,
         metric: a.metric,

@@ -5,11 +5,17 @@ import { Card } from "@/components/ui/Card";
 import { Progress } from "@/components/ui/Progress";
 import { getLevelInfo, getXpSourceInfo, getDailyXpTotal, getWeeklyXpTotal, getDailyXpGoal, getWeeklyXpGoal } from "@/services/xpService";
 import type { XpSource } from "@/types";
-import { mockUser, mockXpEntries } from "@/services/mockData";
+import { useApiResource } from "@/hooks/useApiResource";
+import { fetchXpHistory, fetchDashboard } from "@/services/userService";
 
 export function XPProgress() {
-  const entries = mockXpEntries;
-  const levelInfo = getLevelInfo(mockUser.xp);
+  // Real XP history from the event log (Sprint 58 §10). The old fixture held 14
+  // hardcoded entries generated relative to Date.now(), so the daily and weekly
+  // totals never matched the user's actual XP.
+  const { data: dashboard } = useApiResource(fetchDashboard);
+  const { data: fetchedEntries } = useApiResource(() => fetchXpHistory(50));
+  const entries = fetchedEntries ?? [];
+  const levelInfo = getLevelInfo(dashboard?.progression.xp ?? 0);
   const dailyTotal = getDailyXpTotal(entries);
   const weeklyTotal = getWeeklyXpTotal(entries);
   const dailyGoal = getDailyXpGoal();
@@ -35,17 +41,17 @@ export function XPProgress() {
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-text-primary">{levelInfo.title}</h2>
               <span className="text-xs rounded-full bg-bg-secondary px-2 py-0.5 text-text-tertiary font-mono">
-                {mockUser.xp.toLocaleString()} XP
+                {(dashboard?.progression.xp ?? 0).toLocaleString()} XP
               </span>
             </div>
             <div className="mt-2">
               <Progress
-                value={((mockUser.xp - levelInfo.minXp) / (levelInfo.maxXp - levelInfo.minXp)) * 100}
+                value={(((dashboard?.progression.xp ?? 0) - levelInfo.minXp) / Math.max(levelInfo.maxXp - levelInfo.minXp, 1)) * 100}
                 showLabel
               />
             </div>
             <p className="mt-1 text-[11px] text-text-tertiary">
-              {(levelInfo.maxXp - mockUser.xp).toLocaleString()} XP to Level {levelInfo.level + 1}
+              {Math.max(levelInfo.maxXp - (dashboard?.progression.xp ?? 0), 0).toLocaleString()} XP to Level {levelInfo.level + 1}
             </p>
           </div>
         </div>
@@ -63,7 +69,7 @@ export function XPProgress() {
             gradient: "from-indigo-500 to-indigo-600",
           },
           {
-            label: "Lifetime XP", total: mockUser.xp, goal: mockUser.xpToNextLevel, icon: "⚡",
+            label: "Lifetime XP", total: dashboard?.progression.lifetimeXp ?? 0, goal: dashboard?.progression.xpToNextLevel ?? 1, icon: "⚡",
             gradient: "from-violet-500 to-purple-600",
           },
         ].map((stat, i) => (
@@ -96,7 +102,7 @@ export function XPProgress() {
         <div className="space-y-3">
           {Object.entries(sourceTotals).map(([source, total]) => {
             const info = getXpSourceInfo(source as XpSource);
-            const pct = (total / mockUser.xp) * 100;
+            const pct = (total / Math.max(dashboard?.progression.lifetimeXp ?? 1, 1)) * 100;
             return (
               <div key={source}>
                 <div className="flex items-center justify-between text-xs mb-1">

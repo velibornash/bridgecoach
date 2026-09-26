@@ -10,6 +10,7 @@ import { mockFriends } from "@/services/mockData";
 import { Icon } from "@/components/icons/Icon";
 import { Award, Medal, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { MultiUserNotice } from "@/components/common/MultiUserNotice";
 
 const tabs = ["Global", "Friends", "Country", "Weekly", "Monthly"] as const;
 type Tab = (typeof tabs)[number];
@@ -35,6 +36,7 @@ export default function LeaderboardPage() {
     <div className="min-h-screen bg-bg-primary">
       <DashboardHeader />
       <main className="py-8 sm:py-12">
+        <MultiUserNotice feature="The leaderboard" className="mb-5" />
         <Container className="max-w-2xl">
           <h1 className="text-2xl font-bold text-text-primary mb-6">Leaderboard</h1>
 

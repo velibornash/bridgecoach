@@ -2,10 +2,11 @@
 
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import type { Achievement, AchievementCategory } from "@/types";
+import type { AchievementCategory } from "@/types";
+import type { AchievementState } from "@/services/achievementService";
 
 interface AchievementCardProps {
-  achievement: Achievement;
+  achievement: AchievementState;
   index?: number;
 }
 

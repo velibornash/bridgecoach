@@ -46,16 +46,27 @@ export interface MissionState {
   id: string;
   title: string;
   description: string;
-  type: string;
-  category: string;
+  type: "daily" | "weekly" | "season" | "main" | "side" | "bonus";
+  category: "daily" | "weekly";
   icon: string;
   xpReward: number;
   metric: string;
   target: number;
+  /** Adapter fields the existing UI expects. */
   progress: number;
+  maxProgress: number;
+  gradient: string;
   completed: boolean;
   completedAt: string | null;
 }
+
+const MISSION_GRADIENTS = [
+  "from-emerald-500 to-teal-600",
+  "from-indigo-500 to-indigo-600",
+  "from-rose-500 to-pink-600",
+  "from-amber-500 to-orange-600",
+  "from-violet-500 to-purple-600",
+];
 
 /** All missions with the user's real progress merged in. */
 export async function fetchMissions(): Promise<{
@@ -67,7 +78,28 @@ export async function fetchMissions(): Promise<{
   if (!result.data) {
     return { data: null, error: result.error, status: result.status };
   }
-  return { data: result.data.missions, error: null, status: 200 };
+  return {
+    data: result.data.missions.map((m, index) => ({
+      id: m.id,
+      title: m.title,
+      description: m.description,
+      type: m.type as MissionState["type"],
+      category: m.category as MissionState["category"],
+      icon: m.icon,
+      xpReward: m.xpReward,
+      metric: m.metric,
+      target: m.target,
+      progress: m.progress,
+      maxProgress: m.target,
+      // A stable gradient per mission; the seeded schema has no colour column
+      // and inventing one per row would be arbitrary.
+      gradient: MISSION_GRADIENTS[index % MISSION_GRADIENTS.length],
+      completed: m.completed,
+      completedAt: m.completedAt,
+    })),
+    error: null,
+    status: 200,
+  };
 }
 
 export async function fetchTodaysChallenge() {

@@ -10,6 +10,7 @@ import { Icon } from "@/components/icons/Icon";
 import { mockCommunityPosts } from "@/services/mockData";
 import type { PostType } from "@/types";
 import { Award, BookOpen, Sparkles, Flame } from "lucide-react";
+import { MultiUserNotice } from "@/components/common/MultiUserNotice";
 
 const typeIcons: Record<PostType, typeof Award> = {
   achievement: Award,
@@ -48,6 +49,7 @@ export default function CommunityPage() {
     <div className="min-h-screen bg-bg-primary">
       <DashboardHeader />
       <main className="py-8 sm:py-12">
+        <MultiUserNotice feature="The community feed" className="mb-5" />
         <Container className="max-w-2xl">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="text-2xl font-bold text-text-primary mb-2">Community Feed</h1>

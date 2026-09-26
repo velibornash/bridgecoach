@@ -7,6 +7,7 @@
  * the result down as props — no N+1 fetching (§26).
  */
 import { apiFetch } from "./api";
+import type { XpSource } from "@/types";
 
 export interface DashboardUser {
   id: string;
@@ -72,4 +73,30 @@ export function initialsOf(user: Pick<DashboardUser, "firstName" | "lastName">):
   const first = user.firstName?.trim()?.[0] ?? "";
   const last = user.lastName?.trim()?.[0] ?? "";
   return `${first}${last}`.toUpperCase() || "?";
+}
+
+// ---------------------------------------------------------------------------
+// XP history
+// ---------------------------------------------------------------------------
+
+export interface XpEventRecord {
+  id: string;
+  amount: number;
+  source: XpSource;
+  description: string;
+  timestamp: string;
+}
+
+/**
+ * The user's real XP history, derived from the `XPEvent` log.
+ *
+ * The XP page previously rendered `mockXpEntries` — fourteen hardcoded entries
+ * generated relative to `Date.now()`, which is why the totals never matched the
+ * user's actual XP.
+ */
+export async function fetchXpHistory(limit = 50): Promise<XpEventRecord[]> {
+  const { entries } = await apiFetch<{ entries: XpEventRecord[] }>(
+    `/api/xp/history?limit=${limit}`,
+  );
+  return entries;
 }

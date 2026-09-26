@@ -216,10 +216,9 @@ correctly from real data.
 `AchievementGrid`, video captions, and the landing `Features` / `Testimonials`
 components — the last two are legitimately static marketing content and will stay.
 
-**Needs a product decision, not just wiring:** `/leaderboard`, `/friends`,
-`/community` and `/profile/[id]` all describe *other users*. There is only one
-user in the database, so these cannot show real data until Sprint 59 auth exists.
-They should not be faked in the meantime — see `backlog.md`.
+**Multi-user pages — decided and done:** `/leaderboard`, `/friends`,
+`/community` and `/profile/[id]` keep fixture content but now show a
+`MultiUserNotice` explaining the data is sample data until Sprint 59 auth lands.
 
 ---
 
@@ -307,13 +306,53 @@ and `tests/integration/authorStudio.test.ts` now has a dedicated regression test
 
 ---
 
+## Session 8 — Missions, Achievements, XP history + multi-user labels (58.2.2)
+
+**Commit:** see git log for the session-8 commit
+
+### Migrated to real data
+
+| Area | Change |
+|---|---|
+| `/missions` + `MissionSection` + `MissionCard` | `/api/missions`; progress derived from persisted activity |
+| `AchievementGrid` + `AchievementCard` | `/api/achievements`; real unlock state |
+| `XPProgress` | new `GET /api/xp/history` serving the real `XPEvent` log |
+
+The XP page previously rendered `mockXpEntries` — 14 hardcoded entries generated
+relative to `Date.now()`, so daily and weekly totals never matched the user's
+actual XP. It now reads the event log: verified live showing
+`30xp quiz`, `18xp challenge` with real descriptions and timestamps.
+
+### Two adapter mappings that were genuinely needed
+
+1. **Achievement category.** The database stores a normalised enum
+   (`learning`, `quiz`, `milestone`, `streak`); the UI was written against the
+   fixture names (`lessons`, `quizzes`, `mastery`, `special`). Without a mapping,
+   **every achievement would have rendered as "no achievements match your
+   filter"**. Caught by typecheck on the `Record<AchievementCategory, string>`
+   lookup, not at runtime.
+2. **Mission `maxProgress` / `gradient`.** The UI expects both; the schema has
+   `target` and no colour column. `maxProgress` maps from `target`; `gradient` is
+   a stable index-based assignment, documented as such rather than invented per row.
+
+### Multi-user features labelled, not faked
+
+`/leaderboard`, `/friends`, `/community` and `/profile/[id]` all describe *other*
+users. The database has exactly one user until Sprint 59 auth exists, so they
+cannot show real data. Per the agreed decision they keep their fixture content but
+now render a visible `MultiUserNotice` (new shared component) stating the data is
+sample data and that real accounts arrive with authentication. Nobody is shown a
+fabricated rank, and nobody mistakes sample data for real standing.
+
+---
+
 ## Current state
 
 | Item | Status |
 |---|---|
 | 58.1 Foundation (DB, schema, migration, seed, client) | ✅ |
 | 58.2.1 API routes (13 files) | ✅ |
-| 58.2.2 Service layer + `mockData` consumers | 🔄 services + 12 dashboard components + `/learning-path` + `/lesson` + `/profile` + `/notes` + `/bookmarks` done; ~19 left (leaderboard, friends, community, rewards, certificates, notifications, search, flashcards, catalog, missions, quiz, statistics widgets, XPProgress, AchievementGrid, video captions) |
+| 58.2.2 Service layer + `mockData` consumers | 🔄 services + 12 dashboard components + `/learning-path`, `/lesson`, `/profile`, `/notes`, `/bookmarks`, `/missions`, `/achievements`, `XPProgress` done. Remaining are mostly static content (flashcards, search, catalog, captions, notifications) plus the 4 multi-user pages, which are deliberately labelled rather than faked |
 | 58.2.3 Author Studio off localStorage | ✅ database authoritative, localStorage is cache only |
 | 58.2.4 AI conversation persistence | ✅ |
 | 58.3.1–58.3.8 Domain wiring | ✅ |

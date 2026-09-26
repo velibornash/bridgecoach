@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { mockAchievements } from "@/services/mockData";
+import { useApiResource } from "@/hooks/useApiResource";
+import { fetchAchievements } from "@/services/achievementService";
 import { AchievementCard } from "./AchievementCard";
 import type { AchievementCategory } from "@/types";
 
@@ -17,15 +18,21 @@ const categories: { key: AchievementCategory | "all"; label: string }[] = [
 ];
 
 export function AchievementGrid() {
-  const [filter, setFilter] = useState<AchievementCategory | "all">("all");
+  const [filter, setFilter] = useState<string>("all");
   const [showLocked, setShowLocked] = useState(true);
 
-  const filtered = mockAchievements
+  // Real unlock state from persisted activity (Sprint 58 §13).
+  const { data: achievementList, loading } = useApiResource(fetchAchievements);
+  const achievements = achievementList ?? [];
+
+  const filtered = achievements
     .filter((a) => filter === "all" || a.category === filter)
     .filter((a) => showLocked || a.unlocked);
 
-  const unlocked = mockAchievements.filter((a) => a.unlocked).length;
-  const total = mockAchievements.length;
+  const unlocked = achievements.filter((a) => a.unlocked).length;
+  const total = achievements.length;
+
+  if (loading) return null;
 
   return (
     <div className="space-y-5">
@@ -38,7 +45,7 @@ export function AchievementGrid() {
           <p className="text-lg font-bold text-text-primary">{unlocked}/{total} Unlocked</p>
           <p className="text-xs text-text-tertiary">
             {total - unlocked} remaining &middot;{" "}
-            {mockAchievements.filter((a) => !a.unlocked).reduce((s, a) => s + a.xpReward, 0)} XP available
+            {achievements.filter((a) => !a.unlocked).reduce((sum, a) => sum + a.xpReward, 0)} XP available
           </p>
         </div>
       </div>

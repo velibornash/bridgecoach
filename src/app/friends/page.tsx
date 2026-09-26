@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { mockFriends } from "@/services/mockData";
 import { showToast } from "@/components/ui/Toast";
 import type { Friend } from "@/types";
+import { MultiUserNotice } from "@/components/common/MultiUserNotice";
 
 export default function FriendsPage() {
   const [selected, setSelected] = useState<Friend | null>(null);
@@ -19,6 +20,7 @@ export default function FriendsPage() {
     <div className="min-h-screen bg-bg-primary">
       <DashboardHeader />
       <main className="py-8 sm:py-12">
+        <MultiUserNotice feature="Friends" className="mb-5" />
         <Container className="max-w-3xl">
           <div className="flex items-center justify-between mb-6">
             <div>

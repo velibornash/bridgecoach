@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Progress } from "@/components/ui/Progress";
 import { mockPublicProfiles, mockUser, mockAchievements } from "@/services/mockData";
 import { Icon } from "@/components/icons/Icon";
+import { MultiUserNotice } from "@/components/common/MultiUserNotice";
 
 const countryFlags: Record<string, string> = {
   US: "🇺🇸", GB: "🇬🇧", CA: "🇨🇦", AU: "🇦🇺", NZ: "🇳🇿", IE: "🇮🇪",
@@ -60,6 +61,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
     <div className="min-h-screen bg-bg-primary">
       <DashboardHeader />
       <main className="py-8 sm:py-12">
+        <MultiUserNotice feature="Public profiles" className="mb-5" />
         <Container className="max-w-3xl">
           <motion.div variants={container} initial="hidden" animate="show">
             {/* Header card */}

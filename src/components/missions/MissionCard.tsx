@@ -5,10 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
-import type { Mission } from "@/types";
+import type { MissionState } from "@/services/challengeService";
 
 interface MissionCardProps {
-  mission: Mission;
+  mission: MissionState;
   index: number;
   onComplete?: (id: string) => void;
 }
