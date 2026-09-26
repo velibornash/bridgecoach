@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { use } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
@@ -8,9 +8,9 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Progress } from "@/components/ui/Progress";
-import { mockPublicProfiles, mockUser, mockAchievements } from "@/services/mockData";
+import { fetchPublicProfile, type PublicProfile } from "@/services/profileService";
+import { useApiResource } from "@/hooks/useApiResource";
 import { Icon } from "@/components/icons/Icon";
-import { MultiUserNotice } from "@/components/common/MultiUserNotice";
 
 const countryFlags: Record<string, string> = {
   US: "🇺🇸", GB: "🇬🇧", CA: "🇨🇦", AU: "🇦🇺", NZ: "🇳🇿", IE: "🇮🇪",
@@ -31,8 +31,22 @@ const typeIcons: Record<string, string> = {
 export default function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
-  const profile = useMemo(() => mockPublicProfiles[id] ?? null, [id]);
-  const isOwn = id === mockUser.id;
+  // Real profile (Sprint 59). The fixture version was a hardcoded object keyed
+  // by invented ids, so this page 404'd for every real user and showed fiction
+  // for the three ids that did exist in it.
+  const { data: profile, loading, error } = useApiResource<PublicProfile>(
+    () => fetchPublicProfile(id),
+    [id],
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg-primary">
+        <DashboardHeader />
+        <main className="py-20 text-center text-sm text-text-tertiary">Loading profile…</main>
+      </div>
+    );
+  }
 
   if (!profile) {
     return (
@@ -44,15 +58,21 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
               <path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
             </svg>
           </div>
-          <p className="text-sm text-text-tertiary">Profile not found.</p>
+          <p className="text-sm text-text-tertiary">
+            {error ?? "Profile not found."}
+          </p>
         </main>
       </div>
     );
   }
 
-  const { user, stats, activity } = profile;
-  const unlockedAch = mockAchievements.filter((a) => a.unlocked);
-  const xpPercent = (user.xp / user.xpToNextLevel) * 100;
+  const { user, stats, activity, achievements: unlockedAch } = profile;
+  const isOwn = user.isOwn;
+  const xpPercent = user.xpToNextLevel > 0
+    ? Math.min(100, (user.xp / user.xpToNextLevel) * 100)
+    : 0;
+  const formatDate = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
 
   const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
   const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
@@ -61,8 +81,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
     <div className="min-h-screen bg-bg-primary">
       <DashboardHeader />
       <main className="py-8 sm:py-12">
-        <MultiUserNotice feature="Public profiles" className="mb-5" />
-        <Container className="max-w-3xl">
+                <Container className="max-w-3xl">
           <motion.div variants={container} initial="hidden" animate="show">
             {/* Header card */}
             <motion.div variants={item} className="rounded-xl border border-border bg-bg-card p-6 mb-6 relative overflow-hidden">
@@ -81,7 +100,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                     <span className="text-text-tertiary">·</span>
                     <span className="text-xs font-semibold text-primary">Level {user.level}</span>
                   </div>
-                  <p className="text-xs text-text-tertiary mt-2">Joined {user.joinedAt} · {user.streak}-day streak 🔥</p>
+                  <p className="text-xs text-text-tertiary mt-2">Joined {formatDate(user.joinedAt)} · {user.streak}-day streak 🔥</p>
                 </div>
                 <div className="text-center shrink-0">
                   <div className="text-2xl font-bold text-text-primary">{user.xp.toLocaleString()}</div>
@@ -102,13 +121,20 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
               <motion.div variants={item} className="rounded-xl border border-border bg-bg-card p-5">
                 <h2 className="text-sm font-bold text-text-primary mb-4">Statistics</h2>
                 <div className="grid grid-cols-2 gap-3">
+                  {/*
+                    Only metrics with a persisted source. "Avg Score", "Hours
+                    Learned", and "Cards Played" were removed rather than
+                    re-derived: nothing in the database holds study time or a
+                    card count, and Sprint 58's audit already flagged the
+                    hardcoded versions (78%, 28 h, 3840 cards) as invented.
+                  */}
                   {[
-                    { label: "Lessons Done", value: stats.completedLessons, icon: "📖", color: "text-emerald-400" },
-                    { label: "Avg Score", value: `${stats.averageScore}%`, icon: "🎯", color: "text-amber-400" },
-                    { label: "Total XP", value: stats.totalXpEarned.toLocaleString(), icon: "⚡", color: "text-primary" },
-                    { label: "Hours Learned", value: stats.totalHours, icon: "⏱", color: "text-indigo-400" },
-                    { label: "Streak", value: `${stats.longestStreak} days`, icon: "🔥", color: "text-orange-400" },
-                    { label: "Cards Played", value: stats.cardsPlayed.toLocaleString(), icon: "🃏", color: "text-violet-400" },
+                    { label: "Lessons Done", value: stats.lessonsCompleted, icon: "📖", color: "text-emerald-400" },
+                    { label: "Courses Done", value: stats.coursesCompleted, icon: "🎓", color: "text-amber-400" },
+                    { label: "Total XP", value: stats.xp.toLocaleString(), icon: "⚡", color: "text-primary" },
+                    { label: "Current Streak", value: `${user.streak} days`, icon: "🔥", color: "text-orange-400" },
+                    { label: "Longest Streak", value: `${user.longestStreak} days`, icon: "⏱", color: "text-indigo-400" },
+                    { label: "Achievements", value: stats.achievementsUnlocked, icon: "🏆", color: "text-violet-400" },
                   ].map((s) => (
                     <div key={s.label} className="rounded-lg bg-bg-secondary p-3 text-center">
                       <div className={`mb-1 ${s.color}`}><Icon icon={s.icon} size={20} /></div>
@@ -128,7 +154,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                       <span className="text-lg">{a.icon}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-text-primary truncate">{a.title}</p>
-                        <p className="text-[10px] text-text-tertiary">{a.unlockedAt}</p>
+                        <p className="text-[10px] text-text-tertiary">{formatDate(a.unlockedAt)}</p>
                       </div>
                       <Badge variant={a.rarity === "legendary" ? "warning" : a.rarity === "epic" ? "primary" : "default"}>
                         {a.rarity}
@@ -154,8 +180,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                     <div key={a.id} className="flex items-center gap-3 py-1.5">
                       <Icon icon={typeIcons[a.type] || "📌"} size={16} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-text-primary truncate">{a.description}</p>
-                        <p className="text-[10px] text-text-tertiary">{a.timestamp}</p>
+                        <p className="text-xs text-text-primary truncate">{a.title}</p>
+                        <p className="text-[10px] text-text-tertiary">{formatDate(a.createdAt)}</p>
                       </div>
                       {a.xp && <span className="shrink-0 text-[10px] font-medium text-primary">+{a.xp} XP</span>}
                     </div>

@@ -9,16 +9,20 @@ Scan date: end of Sprint 58. Method: `grep -rl mockData src/`.
 
 ## Summary
 
+Re-audited at the end of Sprint 59, after authentication made multi-user data
+possible for the first time.
+
 | Class | Count | Meaning |
 |---|---|---|
 | **SEED** | 0 remaining | Converted to database seed data |
 | **REMOVE** | 0 remaining | Was production mock user state — deleted |
 | **KEEP** | 7 files | Legitimate static content, not user state |
-| **LABELLED** | 4 files | Multi-user features, cannot be real until Sprint 59 |
+| **LABELLED → now real** | 2 files | Unblocked by sessions, migrated to PostgreSQL |
+| **LABELLED → still labelled** | 2 files | Blocked on a missing data model, not on auth |
 | **TEST** | 1 file | Test fixture (correct location) |
 
-**11 real imports remain, down from 45 at the start of Sprint 58** (7 KEEP +
-4 LABELLED).
+**9 real imports remain, down from 45 at the start of Sprint 58** (7 KEEP +
+2 LABELLED).
 
 ---
 
@@ -72,22 +76,43 @@ classified the same way, but they should be softened or sourced.
 
 ---
 
-## LABELLED — multi-user features awaiting Sprint 59
+## LABELLED → now real (Sprint 59)
 
-These describe **other users**. The database contains exactly one user (the
-development identity) because authentication is Sprint 59, so they *cannot* show
-real data. Per the agreed decision they keep fixture content and now render a
-visible `MultiUserNotice` stating the data is sample data.
+Authentication removed the stated blocker — "the database contains exactly one
+user" — so these two now read from PostgreSQL and their `MultiUserNotice` is
+gone.
 
-| File | Exports | Notice text |
+| File | Was | Now |
 |---|---|---|
-| `src/app/leaderboard/page.tsx` | `mockLeaderboard`, `mockFriends` | "The leaderboard" |
-| `src/app/friends/page.tsx` | `mockFriends` | "Friends" |
-| `src/app/community/page.tsx` | `mockCommunityPosts` | "The community feed" |
-| `src/app/profile/[id]/page.tsx` | `mockPublicProfiles`, `mockUser`, `mockAchievements` | "Public profiles" |
+| `src/app/leaderboard/page.tsx` | `mockLeaderboard`, `mockFriends` | `GET /api/leaderboard` — ranked from persisted XP, country scope from the viewer's own row, weekly/monthly summed from the `XPEvent` log |
+| `src/app/profile/[id]/page.tsx` | `mockPublicProfiles`, `mockUser`, `mockAchievements` | `GET /api/profiles/[id]` — progression, unlocked achievements, real activity |
 
-Nobody is shown a fabricated rank, and the fixture's `isCurrentUser: true` flag
-is no longer used to place the development user on a fake leaderboard.
+Two details worth recording, because both are things the fixture did that the
+real thing must not:
+
+- **`isCurrentUser` comes from the session, never from a request parameter.** The
+  fixture carried a literal `isCurrentUser: true` field. A test asserts that
+  passing `?as=<someone-else's id>` does not move the flag.
+- **The public profile exposes no email address.** A test asserts Bob's real
+  address does not appear in the response. The mutation was run to confirm the
+  test fails when the field is added to the `select`.
+
+Fabricated statistics were removed rather than re-derived. "Avg Score 78%",
+"28 h learned", and "3840 cards played" had no persisted origin — this audit
+already flagged them as REMOVE in Sprint 58 — so the profile now shows six
+metrics that can be computed from real rows.
+
+## LABELLED → still labelled (blocked on a data model, not on auth)
+
+| File | Exports | Why it is not done |
+|---|---|---|
+| `src/app/friends/page.tsx` | `mockFriends` | Needs a `Friendship` model with a request/accept state machine, plus a decision on who may send a request. `online` and `lastActive` are derivable from `User.lastActiveAt`; `mutualFriends` needs the graph. |
+| `src/app/community/page.tsx` | `mockCommunityPosts` | Needs `Post`, `Like`, and `Comment` models, and answers to questions authentication does not: are posts public, is there blocking or reporting, and is `likes` a counter or a table. |
+
+Both keep their visible `MultiUserNotice`. This is a deliberate deferral, not an
+oversight: a social graph is a feature area with its own moderation and privacy
+design, and building it inside the authentication sprint would have meant
+inventing those answers under time pressure. Scheduled as Sprint 60.
 
 ---
 
@@ -99,7 +124,7 @@ is no longer used to place the development user on a fake leaderboard.
 
 ---
 
-## Remaining known gaps (honest list)
+## Remaining known gaps (honest list, re-audited Sprint 59)
 
 1. **`SkillRadar` still renders a static skill profile** (`defaultSkillProfile`:
    Opening Bids 84, Takeout Doubles 52, Defense 73, Slams 29, Signals 61). A real
@@ -113,6 +138,13 @@ is no longer used to place the development user on a fake leaderboard.
 4. **Certificates in progress** are shown, but there is no persisted
    `CourseProgress` write yet — completion is derived on read. Acceptable because
    the derived value is correct and cannot drift.
+5. **The leaderboard is only as large as the real user count.** A fresh install
+   has one player, so the page shows one row and an explicit empty state rather
+   than padding the list to look populated. Ranking users who do not exist would
+   be the same fabrication as the Sprint 58 fixture, just harder to notice.
+6. **`mockSearchResults`** still backs `/search`. It is a catalogue of lessons
+   that exist as real `Lesson` rows, so this is closer to KEEP than to a
+   persistence gap, but the page is not reading the database.
 
 ---
 

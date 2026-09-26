@@ -167,14 +167,26 @@ new bridge conventions.
 
 ### P1 — Security & correctness debt
 
-- [~] **59 — Real authentication.** Plan: `docs/SPRINT_59_PLAN.md`. Decisions
-      taken: signed-cookie sessions with a DB row (revocable), `bcryptjs` cost 12.
-      **Done:** schema (`Session`, `AuthEvent`, migration
-      `20260926152654`), `src/lib/session.ts`, `src/lib/password.ts`, the
-      `/api/auth/*` endpoints, and `resolveUserId()` now resolving a real session
-      with the dev identity refused in production. Cross-user isolation verified
-      live and covered by 6 tests. **Remaining:** client migration, middleware,
-      multi-user pages, per-user AI rate limiting. Three decisions are needed first (session storage,
+- [x] **59 — Real authentication.** Closed. Verification:
+      `docs/verification/SPRINT_59_VERIFICATION.md`. Signed-cookie sessions with a
+      revocable DB row, `bcryptjs` cost 12, the `/api/auth/*` endpoints, real
+      sign-in/sign-up in the client, `src/proxy.ts` for route protection,
+      `resolveUserId()` resolving a real session with the dev identity refused in
+      production, and per-user AI quotas. `/leaderboard` and `/profile/[id]` moved
+      off fixtures onto real data. Sprint 58's central claim held: replacing
+      `resolveUserId()` was the whole of it — no route or service changed. Lint
+      reached 0 errors for the first time. 264 unit/integration, 7 E2E.
+      Still open, deliberately: password reset (needs an email provider),
+      in-process rate limiting, email verification, and Playwright still using the
+      dev database.
+- [ ] **60 — Social graph.** `/friends` and `/community` are still labelled
+      sample data. Unblocked by Sprint 59; they are blocked on a missing data
+      model, not on auth. Needs `Friendship` (request/accept state machine, and a
+      decision on who may send a request) and `Post`/`Like`/`Comment` (with
+      answers about public visibility, blocking, and whether `likes` is a counter
+      or a table). Deferred from Sprint 59 on purpose: those are moderation and
+      privacy design questions, and inventing them under time pressure inside an
+      auth sprint would have been worse than deferring. Three decisions are needed first (session storage,
       dev-user handling, hashing algorithm).
       Summary: server-side sessions in a signed `httpOnly` cookie, `bcryptjs`
       hashing, a `Session` + `AuthEvent` table, `/api/auth/*` endpoints on the

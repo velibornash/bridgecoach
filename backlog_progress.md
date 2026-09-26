@@ -710,3 +710,59 @@ not a test that passes for its own reasons.
 ### Gate
 
 typecheck 0 · **lint 0 errors (first time)** · 255 unit/integration · 7 E2E · build clean
+
+---
+
+## Session 14 — multi-user features, and Sprint 59 closed
+
+**Commit:** see git log for the session-14 commit
+
+### Two of the four labelled pages became real
+
+Authentication removed the blocker the audit had recorded — "the database
+contains exactly one user" — so `/leaderboard` and `/profile/[id]` now read from
+PostgreSQL and their `MultiUserNotice` is gone.
+
+Two things the fixture did that the real thing must not:
+
+- **`isCurrentUser` now comes from the session, never from a request parameter.**
+  The fixture carried a literal `isCurrentUser: true`. A test passes
+  `?as=<another user's id>` and asserts the flag does not move.
+- **The public profile exposes no email address.** Mutation-checked: adding
+  `email` to the `select` makes the test fail.
+
+Weekly and monthly boards sum the `XPEvent` log rather than reading the cached
+total, so a period board is actually about that period. And they filter
+`status: "applied"` — pending and rejected rows exist in that log, and my first
+version counted them, which would have awarded XP for work the progression engine
+refused.
+
+### Fabricated statistics were removed, not re-derived
+
+The profile showed "Avg Score 78%", "28 h learned", and "3840 cards played".
+Sprint 58's audit had already flagged exactly those numbers as invented. With
+real data available there was no honest way to keep them, so they are gone and
+the page shows six metrics computed from actual rows.
+
+### The other two pages are deferred on purpose
+
+`/friends` and `/community` need `Friendship`, `Post`, `Like`, and `Comment`
+models, plus answers authentication does not supply: who may send a friend
+request, are posts public, is there blocking, is `likes` a counter or a table.
+
+This is a feature area with its own moderation design. Inventing those answers
+under time pressure inside an auth sprint would have been worse than deferring,
+so it is scheduled as Sprint 60 and the pages keep their honest "sample data"
+notice in the meantime.
+
+### Sprint 59 closed
+
+`docs/verification/SPRINT_59_VERIFICATION.md`, including an honest limitations
+section: no password reset, in-process rate limiting, no email verification, no
+session rotation beyond the password path, Playwright still on the dev database,
+and 121 lint warnings left standing.
+
+### Gate
+
+typecheck 0 · lint 0 errors · **264 unit/integration** (was 255) · 7 E2E · build
+clean · 31 tables · migrations up to date
