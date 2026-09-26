@@ -58,21 +58,23 @@ new bridge conventions.
 
 ### 58.2 — Persistence layer + API
 
-- [x] **58.2.1 API routes** (§20). Thirteen route files under `src/app/api/`:
+- [x] **58.2.1 API routes** (§20). Seventeen route files under `src/app/api/`:
       `progress` (GET/POST) · `practice` (GET/POST) · `auctions` (GET/POST) ·
       `quiz-attempts` (GET/POST) · `achievements` (GET/POST) · `missions` (GET) ·
       `bookmarks` (GET/POST + `[id]` DELETE) · `notes` (GET/POST + `[id]`
       PATCH/DELETE) · `author-studio/drafts` (GET/POST + `[id]` DELETE) ·
       `ai/conversations` (GET/POST) · `ai/messages` (POST) · `dashboard` (GET) ·
-      `stats` (GET). The two pre-existing routes are untouched and unreused. Every
-      private route resolves its owner through `withUser`, so ownership cannot be
-      forgotten at a call site. Uniform error mapping in `src/lib/apiRoute.ts`.
-- [ ] **58.2.2 Refactor the service layer** (§19). API routes are DONE, but the
-      client services still read `mockData` and `simulateDelay`. Remaining:
-      `src/services/api.ts` (replace `simulateDelay`/`mockApiCall` with real
-      `fetch`), `lessonService`, `quizService`, `achievementService`,
-      `statsService`, `challengeService`; then migrate the 44 `mockData`
-      consumers page by page. This is the largest remaining chunk of Sprint 58.
+      `stats` (GET) · `content` (GET) · `certificates` (GET) ·
+      `notifications` (GET/PATCH) · `quiz/check` (POST) · `xp/history` (GET).
+      The two pre-existing routes are untouched and unreused. Every private route
+      resolves its owner through `withUser`, so ownership cannot be forgotten at a
+      call site. Uniform error mapping in `src/lib/apiRoute.ts`.
+- [x] **58.2.2 Refactor the service layer** (§19). DONE. `api.ts` performs real
+      requests; `lessonService`, `quizService`, `achievementService`,
+      `statsService`, `challengeService`, `authorStudioService`, `notesService`,
+      `bookmarksService`, `certificatesService`, `notificationsService` and
+      `userService` all read the database. Real `mockData` imports went 45 → 11;
+      see `docs/audit/SPRINT_58_MOCK_CLASSIFICATION.md`.
 - [x] **58.2.3 Author Studio persistence** (§15). `authorStudioService` gains an
       API-backed path; the `authorStudio.drafts` / `authorStudio.current`
       localStorage keys are no longer authoritative — the database is. The
@@ -146,15 +148,18 @@ new bridge conventions.
       `AuthorRevision(contentId, version)`, plus cascading deletes. An orphan
       check test walks every private table. Dashboards/stats use aggregate
       queries, not table scans (§26).
-- [ ] **58.4.4 Full regression** (§29). Automated: 184 unit/integration + 4 E2E.
-      **Remaining:** manual pass over the 20 product routes once 58.2.2 lands,
-      because the pages still read fixtures until then.
+- [x] **58.4.4 Full regression** (§29). All 20 product routes return 200 with no
+      server errors; 201 unit/integration + 7 E2E cover the critical paths.
+      Sprint 58 also fixed two browser-only bugs this pass surfaced (a `NaN`
+      progress-bar width from a `0/0` division, and a hydration mismatch from
+      render-phase `new Date()` calls).
 - [ ] **58.4.5 Mock dependency classification** (§28).
 - [x] **58.4.6 Quality gate** (§30): typecheck 0 errors · lint 0 errors ·
       `npm test` 184/184 · coverage 67.44% stmts (bridge engine 86.12%) ·
       `npm run test:e2e` 4/4 · `npm run build` clean.
-- [ ] **58.4.7 Verification report** (§31):
-      `docs/verification/SPRINT_58_VERIFICATION.md`.
+- [x] **58.4.7 Verification report** (§31):
+      `docs/verification/SPRINT_58_VERIFICATION.md` — 20 sections, every
+      requirement classified PASS / PARTIAL / FAIL / NOT IMPLEMENTED.
 
 ---
 
@@ -169,7 +174,8 @@ new bridge conventions.
       Replace the dead `src/services/authService.ts` (0 importers, hardcoded
       password check at line 81) and the disposable-token `src/services/auth.ts`.
       Swap the dev identity resolver in `src/lib/db.ts` for the real session.
-- [ ] **Secure the AI endpoints.** `src/app/api/coach/route.ts` and
+- [ ] **Secure the AI endpoints.** *(raised to top P1 by Sprint 58 — this is the
+      only P1 blocking public deployment)* `src/app/api/coach/route.ts` and
       `src/app/api/tactical/validate/route.ts` are unauthenticated and
       unrated-limited, and the client can override `provider`/`model` in the
       request body. Add auth + rate limiting + server-side provider pinning
@@ -182,12 +188,20 @@ new bridge conventions.
       `src/components/layout/DashboardSidebar.tsx:117-118`. These must be real
       user data (Sprint 58 / 59) or a single config constant.
 
+- [ ] **Isolate the test database.** Integration tests share one development user,
+      so parallel files interleave writes. One E2E assertion had to become
+      `expect.poll` because the persistence journey changed XP mid-assertion. A
+      dedicated `bridgecoach_test` database removes the whole class of problem.
+
 ### P2 — Product integrity
 
 - [ ] **60 — Player Model.** Use the persisted `PracticeAction` /
       `AuctionAction` / `QuizAttempt` evidence to build a real skill profile:
-      weakness detection, per-skill stats, and AI Coach context. Replaces the
-      fabricated `ProgressionMasteryWidget` defaults.
+      weakness detection, per-skill stats, and AI Coach context. This is what
+      `SkillRadar` and `ProgressEngine.calculateMastery` need — today they
+      synthesise five percentages from accuracy and lesson count, which is the
+      last fabricated chart in the app. The raw evidence is now persisted and
+      waiting.
 - [ ] **AI Coach 2.0.** Reconnect `/api/coach` to persisted conversations
       (needs 58.2.4), send real history, and inject Player Model context.
 - [ ] **Fix the fake countdown** `src/app/dashboard/page.tsx:57` — `timeLeft = 365`

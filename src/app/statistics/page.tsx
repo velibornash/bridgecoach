@@ -84,12 +84,19 @@ export default function StatisticsPage() {
     value: Math.min(100, 60 + Math.round(m.xp / 20)),
   }));
 
-  const sortedCategories = [...stats.categoryBreakdown].sort(
-    (a, b) => b.completed / b.total - a.completed / a.total
+  // Categories with no data are excluded, and the ratio is guarded. Previously
+  // a new user produced `total: 0`, so the comparator returned NaN and framer-motion
+  // logged: 'animate width from "NaN%" to "37.5%"'.
+  const ratedCategories = stats.categoryBreakdown.filter(
+    (c) => c.total > 0,
+  );
+  const sortedCategories = [...ratedCategories].sort(
+    (a, b) => b.completed / b.total - a.completed / a.total,
   );
   const masteryStats = {
     lessonsCompleted: stats.lessonsFinished,
-    coursesCompleted: stats.categoryBreakdown.filter((c) => c.completed >= c.total).length,
+    // A category with no data is not a completed course (0 >= 0 used to be true).
+    coursesCompleted: ratedCategories.filter((c) => c.completed >= c.total).length,
     handsSolved: persisted?.practice.legalBids ?? 0,
     accuracy: stats.quizAccuracy,
     // Thinking time is not tracked yet. Reporting a made-up 14.5s would be

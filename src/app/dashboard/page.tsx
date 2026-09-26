@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -67,14 +68,21 @@ function PremiumDashboardHero() {
     userName: `${data?.user.firstName ?? ""} ${data?.user.lastName ?? ""}`.trim() || "Player",
   };
 
-  // No fabricated countdown. A new user genuinely has minutes left today.
-  const secondsLeftToday = (() => {
-    const now = new Date();
-    const endOfDay = new Date(now);
-    endOfDay.setHours(23, 59, 59, 999);
-    return Math.max(0, Math.floor((endOfDay.getTime() - now.getTime()) / 1000));
-  })();
-  const timeLeft = secondsLeftToday;
+  // Real seconds until end of day, read after mount. Computing it during render
+  // made the server and client disagree (hydration mismatch). The previous
+  // version hardcoded 365 and rendered a fabricated 6:05 countdown.
+  const [timeLeft, setTimeLeft] = useState(0);
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      const endOfDay = new Date(now);
+      endOfDay.setHours(23, 59, 59, 999);
+      setTimeLeft(Math.max(0, Math.floor((endOfDay.getTime() - now.getTime()) / 1000)));
+    };
+    update();
+    const id = setInterval(update, 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <section className="relative min-h-[90vh] overflow-hidden pt-24 pb-16">
@@ -220,8 +228,7 @@ function PremiumDashboardHero() {
               {[
                 { icon: BookOpen, label: "Lessons", value: userStats.weeklyProgress, max: userStats.weeklyGoal, color: "text-indigo-400" },
                 { icon: Target, label: "Accuracy", value: userStats.accuracy, max: 100, color: "text-emerald-400" },
-                { icon: Calendar, label: "Streak", value: userStats.streak, max: 30, color: "text-purple-400", suffix: " days" },
-                { icon: Brain, label: "Accuracy", value: 0, max: 0, color: "text-amber-400", suffix: "%", hidden: true },
+                { icon: Calendar, label: "Streak", value: userStats.streak, max: Math.max(data?.progression.longestStreak ?? 0, 1), color: "text-purple-400", suffix: " days" },
               ].map((m) => (
                 <GlassCard key={m.label} hover className="p-4">
                   <PremiumMetric {...m} />

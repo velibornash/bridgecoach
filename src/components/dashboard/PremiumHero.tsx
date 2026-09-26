@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Flame, Target, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -14,14 +15,20 @@ import { fetchLessons } from "@/services/lessonService";
 import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 import { fadeUp, staggerContainer } from "@/design-system/motion";
 
-function getGreeting(): string {
-  const hour = new Date().getHours();
+function greetingFor(hour: number): string {
   if (hour < 12) return "Good morning";
   if (hour < 18) return "Good afternoon";
   return "Good evening";
 }
 
 export function PremiumHero() {
+  // The clock is read after mount. Computing it during render made the server
+  // and client disagree, which React reported as a hydration mismatch.
+  const [greeting, setGreeting] = useState("");
+  useEffect(() => {
+    setGreeting(greetingFor(new Date().getHours()));
+  }, []);
+
   // Real progression and a real next lesson (Sprint 58 §11).
   const { data } = useDashboardData();
   const { data: lessons } = useApiResource(fetchLessons);
@@ -63,7 +70,7 @@ export function PremiumHero() {
                 </p>
 
                 <Typography variant="hero">
-                  {getGreeting()}, {data?.user.firstName ?? "there"}.
+                  {greeting}, {data?.user.firstName ?? "there"}.
                 </Typography>
 
                 <p className="text-lg text-text-secondary font-light">

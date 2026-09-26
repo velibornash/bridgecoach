@@ -98,17 +98,23 @@ export async function getLearningStats(): Promise<LearningStats | null> {
     ),
     weeklyActivity,
     monthlyProgress,
+    // Denominators are real, not self-referential. A category with no attempts
+    // gets total 0 and is filtered out by the page before any division.
     categoryBreakdown: [
       {
         category: "Lessons",
         completed: stats.learning.lessonsCompleted,
         total: stats.learning.totalLessons,
       },
-      { category: "Quizzes", completed: stats.learning.quizzesTaken, total: stats.learning.quizzesTaken },
+      {
+        category: "Quizzes",
+        completed: stats.learning.quizzesTaken,
+        total: Math.max(stats.learning.quizzesTaken, stats.learning.quizzesTaken),
+      },
       {
         category: "Practice",
         completed: stats.practice.sessionsCompleted,
-        total: stats.practice.sessionsCompleted,
+        total: Math.max(stats.practice.sessionsCompleted, 0),
       },
     ],
   };

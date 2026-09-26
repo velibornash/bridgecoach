@@ -22,7 +22,10 @@ export function PremiumMetric({
   color = "text-primary",
   suffix = '',
 }: PremiumMetricProps) {
-  const percentage = Math.min(100, (value / max) * 100);
+  // Guard the division: `max: 0` previously produced NaN and framer-motion logged
+  // 'animate width from "NaN%"'. An undefined max means there is nothing to
+  // measure against, so render no bar rather than a broken one.
+  const percentage = max > 0 ? Math.min(100, (value / max) * 100) : 0;
 
   return (
     <motion.div

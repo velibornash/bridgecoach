@@ -410,13 +410,50 @@ captured, and reward balances have no currency ledger.
 
 ---
 
+## Session 10 — Verification report + two browser-only bugs fixed
+
+**Commit:** see git log for the session-10 commit
+
+### Two bugs found by running the full E2E suite
+
+Neither appeared in unit or integration tests; both only showed up when a real
+browser rendered the pages.
+
+| Bug | Cause | Fix |
+|---|---|---|
+| `animate width from "NaN%" to "37.5%"` | `/statistics` sorted categories with `b.completed / b.total`; for a new user the adapter produced `total: 0`, so `0/0` returned `NaN` and framer-motion tried to animate it. `PremiumMetric` divided by `max` with the same exposure. | Filter zero-total categories before dividing; guard `max > 0` in `PremiumMetric`; removed a leftover `Accuracy value: 0 / max: 0` metric; fixed the `0 >= 0` "completed course" check. |
+| **Hydration mismatch** on the dashboard | `getGreeting()` and the end-of-day countdown called `new Date()` **during render**, so the server and client disagreed. | Both moved into `useEffect` with state. The countdown now also refreshes every 30s instead of being computed once. |
+
+Regression tests added in `tests/integration/statistics-robustness.test.ts`:
+every ratio the page computes must be finite, the heatmap is always 30 days with
+intensities 0..4, and no category can claim more completions than its total.
+
+Both messages are gone from the E2E log after the fix.
+
+### Verification report
+
+`docs/verification/SPRINT_58_VERIFICATION.md` — all 20 sections, every
+requirement classified PASS / PARTIAL / FAIL / NOT IMPLEMENTED, with a
+Definition-of-Done table and an honest limitations section.
+
+**Final gate:** typecheck 0 · lint 0 errors · **201 unit/integration** (from 162) ·
+**7 E2E** (from 3) · coverage 49.07% overall / **86.12% Bridge Engine** · build
+clean · 29 tables · 4 migrations · 40 unique indexes.
+
+Coverage fell from 67% to 49% because the `services/` directory dropped to ~9%.
+Those services are thin typed `fetch` wrappers with no logic; they are covered
+through route-handler integration tests and the E2E journey instead. Reported as
+measured, not adjusted.
+
+---
+
 ## Current state
 
 | Item | Status |
 |---|---|
 | 58.1 Foundation (DB, schema, migration, seed, client) | ✅ |
 | 58.2.1 API routes (13 files) | ✅ |
-| 58.2.2 Service layer + `mockData` consumers | ✅ 13 real imports left, down from 45. Remaining are 7 legitimate static content files + 4 multi-user pages (deliberately labelled) + 1 test fixture. See `docs/audit/SPRINT_58_MOCK_CLASSIFICATION.md` |
+| 58.2.2 Service layer + `mockData` consumers | ✅ **DONE.** 11 real imports left, down from 45: 7 legitimate static content + 4 multi-user pages (deliberately labelled). See `docs/audit/SPRINT_58_MOCK_CLASSIFICATION.md` |
 | 58.2.3 Author Studio off localStorage | ✅ database authoritative, localStorage is cache only |
 | 58.2.4 AI conversation persistence | ✅ |
 | 58.3.1–58.3.8 Domain wiring | ✅ |
@@ -424,10 +461,10 @@ captured, and reward balances have no currency ledger.
 | 58.4.1 Persistence tests | ✅ |
 | 58.4.2 E2E persistence journey | ✅ |
 | 58.4.3 Data integrity | ✅ |
-| 58.4.4 Full route regression (manual) | ⬜ |
+| 58.4.4 Full route regression | ✅ all 20 product routes 200, no server errors; 2 browser-only bugs found and fixed |
 | 58.4.5 Mock dependency classification | ✅ `docs/audit/SPRINT_58_MOCK_CLASSIFICATION.md` |
-| 58.4.6 Quality gate | ✅ passing |
-| 58.4.7 Verification report | ⬜ |
+| 58.4.6 Quality gate | ✅ typecheck 0 · lint 0 errors · 201 tests · 7 E2E · coverage 49.07% (bridge 86.12%) · build clean |
+| 58.4.7 Verification report | ✅ `docs/verification/SPRINT_58_VERIFICATION.md` |
 
 ### The remaining gap, stated plainly
 
@@ -440,3 +477,36 @@ persisted data exists behind `/api/*`. That is the whole of 58.2.2.
 
 Never assert "fresh user" state against the shared development identity — create
 a throwaway user instead. The dev database accumulates data from manual testing.
+
+---
+
+## Sprint 58 — what is left
+
+**Definition of Done: 25 of 26 items PASS.** The one PARTIAL is the
+unauthenticated AI endpoints (a pre-existing P1, now the top item in
+`backlog.md`).
+
+Not done, and not claimed as done:
+
+1. **Sprint 59 — real authentication.** Everything is designed for it; ownership
+   already flows through one function.
+2. **Unauthenticated AI endpoints** — the only P1. Must be fixed before any
+   public deploy.
+3. **Hardcoded personal data** — `velja.jagodina@gmail.com` as a billing email
+   and support contact, `"Velja Jagodina"` in the sidebar.
+4. **`SkillRadar` still static** — needs the Sprint 60 Player Model, which will
+   mine the `AuctionAction` / `PracticeAction` rows Sprint 58 now collects.
+5. **4 multi-user pages** — labelled, waiting on Sprint 59.
+6. **No CI** — nothing runs the gate automatically.
+7. **Shared test database** — parallel test files interleave writes; one E2E
+   assertion had to become `expect.poll`. An isolated `bridgecoach_test`
+   database would remove the whole class of problem.
+
+## Next
+
+Recommended next step is **Sprint 59 (authentication)**, because it is the only
+item that unblocks four user-facing pages, removes the single P1, and makes the
+data layer's ownership model real rather than provisional.
+
+The top P1 (secure the AI endpoints) is small enough to fold into Sprint 59 or
+do as a standalone half-day task before it.
