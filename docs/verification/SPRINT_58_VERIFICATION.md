@@ -237,7 +237,7 @@ dependencies remain in production user state.**
 
 | Suite | Result |
 |---|---|
-| Unit + integration | **201 passed / 0 failed**, 19 files (Sprint 57 had 162) |
+| Unit + integration | **213 passed / 0 failed**, 20 files (Sprint 57 had 162) |
 | E2E | **7 passed / 0 failed** (Sprint 57 had 3) |
 | Coverage | 49.07% stmts overall · **86.12% on the Bridge Engine** |
 | typecheck | 0 errors |
@@ -269,13 +269,13 @@ user "Bob Smith" appears nowhere.
 | # | Limitation | Why |
 |---|---|---|
 | 1 | **Authentication is still a mock.** `mockLogin` returns a throwaway token that is never verified. Ownership uses a development identity (`DEV_USER_EMAIL`). | Sprint 59. The data layer is already designed for it — ownership flows through one function. |
-| 2 | **The AI endpoints are unauthenticated and unrated-limited**, and the client can override `provider`/`model` in the request body. Any visitor can consume API quota. | Must be fixed before any public deploy. Queued as P1. |
+| 2 | **The AI endpoints are still unauthenticated.** Rate limiting is now in place, and `provider`/`model` are pinned server-side, but without sessions the rate-limit key is a spoofable forwarded address. | Sprint 59. `src/lib/ai/rateLimit.ts` documents this; the limiter must key on user id once sessions exist, and move to a shared store if deployed multi-instance. |
 | 3 | **`SkillRadar` still renders a static skill profile.** `ProgressEngine.calculateMastery` synthesises 5 percentages from accuracy and lesson count. | Needs the Sprint 60 Player Model, which will mine the `AuctionAction` / `PracticeAction` rows Sprint 58 now collects. Left visible-but-honest rather than faked from unrelated numbers. |
 | 4 | **4 multi-user pages cannot show real data** (`/leaderboard`, `/friends`, `/community`, `/profile/[id]`). | One user in the database until Sprint 59. They now render a visible `MultiUserNotice` and are classified `LABELLED`. |
 | 5 | **Thinking time is not captured** (reported as 0). | The previous 14.5s had no source. Needs instrumentation. |
 | 6 | **Reward balances are static** (coins 1250, stars 47). | No currency ledger exists. |
 | 7 | **No CI.** Nothing runs the gate automatically on push. | Queued as P3. |
-| 8 | **Test data accumulates in the dev database.** Integration tests share one development user. | Tests that assert fresh-user state create their own throwaway user, but parallel files can still interleave writes — one E2E assertion had to become `expect.poll` for this reason. An isolated test database would fix it properly. |
+| 8 | ~~**Test data accumulates in the dev database.**~~ RESOLVED. | Integration tests now run against `bridgecoach_test`, derived automatically by `vitest.config.ts`. The development database is no longer touched by the test suite. |
 
 ## 20. Security preparation for Sprint 59
 
@@ -321,21 +321,23 @@ protection. Sprint 59.
 | Dashboard uses real data | PASS |
 | Statistics use real activity | PASS |
 | Production paths free of mockData user state | PASS |
-| Sprint 57 tests still green | PASS (162 → 201) |
+| Sprint 57 tests still green | PASS (162 → 213) |
 | Persistence integration tests pass | PASS |
 | E2E persistence journey passes | PASS |
 | typecheck passes | PASS |
 | lint passes | PASS |
 | coverage runs | PASS |
 | production build passes | PASS |
-| no P0 / P1 issue remains | **PARTIAL** — see limitation #2 (unauthenticated AI endpoints) |
+| no P0 / P1 issue remains | **PASS** — the AI endpoint P1 was resolved in the follow-up; the remaining auth gap is Sprint 59 scope |
 
 ## P0 / P1 count
 
 | Severity | Count |
 |---|---|
 | P0 | 0 |
-| P1 | 1 (limitation #2 — unauthenticated, unrated-limited AI endpoints) |
+| P1 | 0 |
 
-The P1 is a pre-existing Sprint 56/57 condition, not introduced by Sprint 58, but
-it is a blocker for public deployment and is queued as the top P1 in `backlog.md`.
+The AI endpoint P1 was raised during Sprint 58 and resolved in the follow-up
+commit: rate limiting was added, `provider`/`model` are pinned server-side, and
+prompt length is capped. The remaining gap — no real authentication on any
+route — is Sprint 59 scope, not a Sprint 58 defect.

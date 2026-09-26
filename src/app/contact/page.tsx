@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
 import { Icon } from "@/components/icons/Icon";
 import { Info, MessageSquare, Bug, Lightbulb } from "lucide-react";
+import { SUPPORT_EMAIL } from "@/lib/siteConfig";
 
 type ContactType = "support" | "feedback" | "bug" | "feature";
 
@@ -73,7 +74,7 @@ export default function ContactPage() {
                 <div>
                   <label className="text-xs font-medium text-text-secondary">Email</label>
                   <input
-                    value="velja.jagodina@gmail.com"
+                    value={SUPPORT_EMAIL}
                     readOnly
                     className="mt-1 w-full rounded-lg border border-border bg-bg-secondary/50 px-3 py-2.5 text-sm text-text-tertiary outline-none cursor-not-allowed"
                   />
@@ -119,7 +120,7 @@ export default function ContactPage() {
             <div className="mt-6 text-center">
               <p className="text-xs text-text-tertiary">
                 Prefer email? Reach us directly at{' '}
-                <a href="mailto:velja.jagodina@gmail.com" className="text-primary hover:underline">velja.jagodina@gmail.com</a>
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>
               </p>
             </div>
           </motion.div>

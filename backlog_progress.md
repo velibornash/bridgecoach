@@ -502,11 +502,65 @@ Not done, and not claimed as done:
    assertion had to become `expect.poll`. An isolated `bridgecoach_test`
    database would remove the whole class of problem.
 
-## Next
+## Next: Sprint 59 — Authentication
 
-Recommended next step is **Sprint 59 (authentication)**, because it is the only
-item that unblocks four user-facing pages, removes the single P1, and makes the
-data layer's ownership model real rather than provisional.
+Both P1s are now closed, so Sprint 59 is the only remaining blocker. Plan is in
+`backlog.md` under "59 — Real authentication".
 
-The top P1 (secure the AI endpoints) is small enough to fold into Sprint 59 or
-do as a standalone half-day task before it.
+---
+
+## Session 11 — Post-Sprint-58 P1 cleanup
+
+**Commit:** see git log for the session-11 commit
+
+### P1 #1 — AI endpoint security: DONE
+
+New `src/lib/ai/rateLimit.ts` plus protection on both AI routes.
+
+| Before | After |
+|---|---|
+| No rate limiting at all | Fixed-window limiter, per-endpoint limits (chat 20/min, bidding 40/min) |
+| Client could choose `provider` and `model` from the request body | Both **pinned server-side**; the body's values are ignored |
+| Unbounded bucket map | Capped at 10 000 entries, oldest half dropped on overflow |
+| No prompt length limit | 8 000 char user prompt, 4 000 char system prompt |
+| 429 carried no guidance | `Retry-After` plus `X-RateLimit-*` headers |
+
+**Still true and documented:** the limit key is a forwarded address, which is
+spoofable. That is a fairness control, not a security boundary, until Sprint 59
+gives us sessions. An in-memory limiter also does not hold across multiple
+instances. Both are recorded in the verification report.
+
+12 new tests. One caught my own mistake: I asserted a 400 for an illegal bid, but
+the validate route returns **200 with `legal: false`** — a negative verdict is a
+normal answer, not a bad request. The test now asserts the engine-derived reason
+and that no AI content is present, which is the property that actually matters.
+
+### P1 #2 — hardcoded personal data: DONE
+
+`grep -r "velja\|Velja Jagodina" src/` now returns nothing.
+
+| Location | Now |
+|---|---|
+| `DashboardSidebar` "Velja Jagodina" / "VJ" | real user from the dashboard context, `initialsOf()` for the avatar |
+| `/settings` "Bob" / "Smith" / "bob@bridgecoach.com" | real profile from `/api/dashboard` |
+| `/subscription` billing email | the signed-in user's email |
+| Support address at 6 call sites (contact, faq ×2, email-preferences) | one constant, `src/lib/siteConfig.ts`, overridable via `NEXT_PUBLIC_SUPPORT_EMAIL` |
+
+### Shared test database: DONE
+
+`vitest.config.ts` now resolves the test database in this order: `TEST_DATABASE_URL`
+→ `.env.test` → development URL with `_test` appended → development URL with a
+loud warning. Setup documented in `.env.test.example` and a `db:test:setup` script.
+
+Verified: after a full run the development `LessonProgress` count is unchanged and
+the test database holds the test rows. This removes the whole class of
+shared-user flakiness rather than working around it with `expect.poll`.
+
+### Final gate
+
+typecheck 0 · lint 0 errors · **213 unit/integration** (was 201) · **7 E2E** ·
+build clean · **P0: 0 · P1: 0**
+
+## Next: Sprint 59
+
+The only remaining blocker set. See the plan below.

@@ -7,6 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
+import { SUPPORT_EMAIL } from "@/lib/siteConfig";
 
 const preferences = [
   { id: "newsletter", label: "Newsletter", description: "Receive weekly bridge tips and curated learning content." },
@@ -77,7 +78,7 @@ export default function EmailPreferencesPage() {
               <p className="text-xs text-text-tertiary">
                 You can unsubscribe at any time. Your email is used only for Bridge Coach communications
                 and is never shared with third parties. Contact us at{' '}
-                <a href="mailto:velja.jagodina@gmail.com" className="text-primary hover:underline">velja.jagodina@gmail.com</a>.
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>.
               </p>
             </div>
           </motion.div>

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 
 const languages = [
   { code: "en", label: "English" },
@@ -40,6 +41,9 @@ const sections = [
 ];
 
 export default function SettingsPage() {
+  // Real profile from the database; the form previously hardcoded "Bob Smith".
+  const { data: dashboard } = useDashboardData();
+  const profile = dashboard?.user ?? { firstName: "", lastName: "", email: "" };
   const { theme, setTheme } = useTheme();
   const [activeSection, setActiveSection] = useState("theme");
   const [language, setLanguage] = useState("en");
@@ -240,16 +244,16 @@ export default function SettingsPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-medium text-text-secondary mb-1">First Name</label>
-                          <input defaultValue="Bob" className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                          <input defaultValue={profile.firstName} className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-text-secondary mb-1">Last Name</label>
-                          <input defaultValue="Smith" className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                          <input defaultValue={profile.lastName} className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                         </div>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-text-secondary mb-1">Email</label>
-                        <input defaultValue="bob@bridgecoach.com" className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                        <input defaultValue={profile.email} className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-text-secondary mb-1">Country</label>

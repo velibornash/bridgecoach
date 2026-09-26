@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { complete, isAiConfigured } from "@/lib/ai/gateway";
 import { AiGatewayError } from "@/lib/ai/types";
+import { AI_RATE_LIMITS, checkRateLimit, clientKey, pinnedProvider } from "@/lib/ai/rateLimit";
 import {
   AuctionStateMachine,
   LegalBidValidator,
@@ -11,6 +12,17 @@ import {
 } from "@/bridge";
 
 export const runtime = "nodejs";
+
+/**
+ * SECURITY (Sprint 58 follow-up, P1)
+ *  - Rate limited per client. This route spends real money on every call that
+ *    reaches the AI stage. Note that the deterministic engine check runs BEFORE
+ *    the limit matters: an illegal bid is rejected without any provider call, so
+ *    only genuinely legal bids consume quota.
+ *  - `provider` is pinned server-side. The request body cannot select one.
+ *  - AUTHENTICATION IS STILL MISSING (Sprint 59); the limit is a fairness
+ *    control, not a security boundary.
+ */
 
 interface ValidateRequestBody {
   hands: Record<string, string[]>;
@@ -60,10 +72,31 @@ function extractJson(raw: string): { correct: boolean; suggestedBid: string; exp
   };
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
+  const limit = checkRateLimit(`validate:${clientKey(request)}`, AI_RATE_LIMITS.bidding);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      {
+        legal: false,
+        correct: false,
+        suggestedBid: "",
+        explanation: `Too many requests. Try again in ${limit.retryAfterSeconds}s.`,
+        code: "RATE_LIMITED",
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(limit.retryAfterSeconds),
+          "X-RateLimit-Limit": String(limit.limit),
+          "X-RateLimit-Remaining": String(limit.remaining),
+        },
+      },
+    );
+  }
+
   let body: ValidateRequestBody;
   try {
-    body = await req.json();
+    body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
@@ -180,6 +213,8 @@ Evaluate its STRATEGIC quality for this exact hand and auction. Answer with the 
       systemPrompt: STRATEGY_SYSTEM_PROMPT,
       userPrompt,
       maxOutputTokens: 300,
+      // Pinned server-side; the request body cannot choose a provider.
+      provider: pinnedProvider() as never,
     });
     const verdict = extractJson(response.content);
     return NextResponse.json({ legal: true, ...verdict, facts: legalFacts });

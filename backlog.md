@@ -174,24 +174,23 @@ new bridge conventions.
       Replace the dead `src/services/authService.ts` (0 importers, hardcoded
       password check at line 81) and the disposable-token `src/services/auth.ts`.
       Swap the dev identity resolver in `src/lib/db.ts` for the real session.
-- [ ] **Secure the AI endpoints.** *(raised to top P1 by Sprint 58 — this is the
-      only P1 blocking public deployment)* `src/app/api/coach/route.ts` and
-      `src/app/api/tactical/validate/route.ts` are unauthenticated and
-      unrated-limited, and the client can override `provider`/`model` in the
-      request body. Add auth + rate limiting + server-side provider pinning
-      before any public deploy.
-- [ ] **Remove hardcoded personal data from shipped code.**
-      `velja.jagodina@gmail.com` appears as a billing email in
-      `src/app/subscription/page.tsx:28` and as support contact in
-      `src/app/contact/page.tsx:76,122`, `src/app/faq/page.tsx:22,40`,
-      `src/app/email-preferences/page.tsx:80`. `"Velja Jagodina"` is hardcoded in
-      `src/components/layout/DashboardSidebar.tsx:117-118`. These must be real
-      user data (Sprint 58 / 59) or a single config constant.
+- [x] **Secure the AI endpoints.** DONE in the Sprint 58 follow-up. Rate limiting
+      added (`src/lib/ai/rateLimit.ts`, per-endpoint limits, capped bucket map),
+      `provider`/`model` are now pinned server-side so a caller cannot steer to an
+      expensive model, and prompt length is capped. 12 tests. **Remaining:** the
+      rate-limit key is a spoofable forwarded address until Sprint 59 adds
+      sessions, and an in-memory limiter does not hold across multiple instances.
+- [x] **Remove hardcoded personal data from shipped code.** DONE. The sidebar and
+      settings now read the real user from `/api/dashboard`; the subscription
+      billing address is the signed-in user; support addresses come from one
+      constant, `src/lib/siteConfig.ts` (`NEXT_PUBLIC_SUPPORT_EMAIL`, default
+      `support@bridgecoach.app`). `grep -r "velja\|Velja Jagodina" src/` returns
+      nothing.
 
-- [ ] **Isolate the test database.** Integration tests share one development user,
-      so parallel files interleave writes. One E2E assertion had to become
-      `expect.poll` because the persistence journey changed XP mid-assertion. A
-      dedicated `bridgecoach_test` database removes the whole class of problem.
+- [x] **Isolate the test database.** DONE. `vitest.config.ts` derives
+      `bridgecoach_test` from the development URL (or honours `TEST_DATABASE_URL`
+      / `.env.test`), so the test suite never touches development data. Verified:
+      the dev database's `LessonProgress` count is unchanged after a full test run.
 
 ### P2 — Product integrity
 

@@ -24,11 +24,11 @@ test("dashboard reflects real persisted progression, not fixtures", async ({ pag
   // The fixture user must not appear anywhere.
   await expect(page.getByText("Bob Smith")).toHaveCount(0);
 
-  // XP is polled rather than compared once: the persistence-journey spec runs
+  // XP is polled rather than compared once. The persistence-journey spec runs
   // against the same database and can legitimately change XP between the page
-  // render and the read. Polling proves the page tracks the database rather than
-  // pinning one value, and fails if the page is stuck on the Sprint 57 fixture
-  // of 3500 XP.
+  // render and the read, so a single comparison would be flaky. Polling proves
+  // the page tracks the database, and still fails if it is stuck on the Sprint 57
+  // fixture of 3500 XP.
   await expect
     .poll(async () => {
       const current = await (await api.get("/api/dashboard")).json();

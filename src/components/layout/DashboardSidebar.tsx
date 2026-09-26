@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
+import { initialsOf } from "@/services/userService";
 
 interface NavItem {
   label: string;
@@ -33,6 +35,10 @@ const navItems: NavItem[] = [
 ];
 
 export function DashboardSidebar() {
+  const { data: dashboard } = useDashboardData();
+  const user = dashboard?.user ?? { firstName: "", lastName: "", email: "" };
+  const userName = `${user.firstName} ${user.lastName}`.trim() || "Player";
+
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
@@ -109,13 +115,15 @@ export function DashboardSidebar() {
 
           {/* User section */}
           <div className="border-t border-border p-4">
+            {/* Real persisted user (Sprint 58). The developer's own name and
+                email address were hardcoded here. */}
             <div className="flex items-center gap-3 rounded-lg bg-bg-secondary p-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white font-semibold">
-                VJ
+                {initialsOf(user)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-primary truncate">Velja Jagodina</p>
-                <p className="text-xs text-text-tertiary truncate">velja.jagodina@gmail.com</p>
+                <p className="text-sm font-medium text-text-primary truncate">{userName}</p>
+                <p className="text-xs text-text-tertiary truncate">{user.email}</p>
               </div>
             </div>
           </div>

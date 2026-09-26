@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 
 const plans = [
   { id: "free", label: "Free", price: "$0", period: "forever", popular: false },
@@ -25,7 +26,10 @@ const invoices = [
 
 export default function SubscriptionPage() {
   const [plan, setPlan] = useState("premium");
-  const [billingEmail, setBillingEmail] = useState("velja.jagodina@gmail.com");
+  // The billing address is the signed-in user, not a hardcoded address.
+  const { data: dashboard } = useDashboardData();
+  const [billingEmail, setBillingEmail] = useState("");
+  const resolvedBillingEmail = billingEmail || dashboard?.user.email || "";
 
   const usage = { lessons: 8, maxLessons: 20, quizzes: 5, maxQuizzes: 10, aiCoach: true };
 
@@ -90,7 +94,7 @@ export default function SubscriptionPage() {
                 <div>
                   <label className="text-xs font-medium text-text-secondary">Email</label>
                   <input
-                    value={billingEmail}
+                    value={resolvedBillingEmail}
                     onChange={(e) => setBillingEmail(e.target.value)}
                     className="mt-1 w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary outline-none focus:border-primary transition-colors"
                   />

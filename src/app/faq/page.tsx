@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { SUPPORT_EMAIL } from "@/lib/siteConfig";
 
 const faqs = [
   {
@@ -19,7 +20,7 @@ const faqs = [
     items: [
       { q: "How much does Bridge Coach cost?", a: "We offer a free tier with 6 lessons and basic quizzes. Premium ($9.99/mo) unlocks the full curriculum, AI Coach, and detailed analytics. Pro ($19.99/mo) adds advanced courses and priority support." },
       { q: "Can I cancel anytime?", a: "Yes, you can cancel your subscription at any time. Your access continues until the end of the current billing period." },
-      { q: "Do you offer refunds?", a: "We offer a 14-day money-back guarantee on all paid plans. Contact us at velja.jagodina@gmail.com for assistance." },
+      { q: "Do you offer refunds?", a: "We offer a 14-day money-back guarantee on all paid plans. Contact us at ${SUPPORT_EMAIL} for assistance." },
       { q: "How do I upgrade my plan?", a: "Go to the Subscription page in your settings. You can upgrade, downgrade, or cancel your plan at any time." },
     ],
   },
@@ -37,7 +38,7 @@ const faqs = [
     items: [
       { q: "Is Bridge Coach available on mobile?", a: "Yes! The platform is fully responsive and works on devices as small as 320px wide. You can learn on your phone, tablet, or desktop." },
       { q: "Is my data safe?", a: "We take security seriously. Your data is encrypted and never shared with third parties. See our Privacy Policy for details." },
-      { q: "How do I contact support?", a: "You can reach us at velja.jagodina@gmail.com or use the Contact page to send a message. We typically respond within 24 hours." },
+      { q: "How do I contact support?", a: "You can reach us at ${SUPPORT_EMAIL} or use the Contact page to send a message. We typically respond within 24 hours." },
     ],
   },
 ];
