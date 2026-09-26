@@ -179,6 +179,8 @@ model User {
   // production-created data (Sprint 58 §18).
   isSeed        Boolean @default(false)
 
+  sessions         Session[]
+  authEvents       AuthEvent[]
   profile          Profile?
   lessonProgress   LessonProgress[]
   courseProgress   CourseProgress[]
@@ -198,6 +200,46 @@ model User {
 
   @@index([lastActiveAt])
   @@index([isSeed])
+}
+
+/// A server-side login session.
+///
+/// SECURITY
+///  - The cookie carries an opaque id whose SHA-256 hash is stored here, so a
+///    database leak does not hand out live sessions.
+///  - Sessions are revocable server-side. A JWT in a cookie cannot be, which is
+///    the reason this is a table and not a self-contained token.
+///  - `expiresAt` is enforced on read; expired rows are swept by a helper.
+model Session {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  userAgent  String?
+  ip         String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Security audit trail. Never stores a password or a session token.
+model AuthEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  /// SIGN_IN, SIGN_UP, SIGN_OUT, SIGN_IN_FAILED, PASSWORD_CHANGED
+  type      String
+  ip        String?
+  ok        Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
 }
 
 model Profile {

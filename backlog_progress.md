@@ -564,3 +564,78 @@ build clean · **P0: 0 · P1: 0**
 ## Next: Sprint 59
 
 The only remaining blocker set. See the plan below.
+
+---
+
+## Session 12 — Sprint 59 core: sessions, passwords, real ownership
+
+**Commit:** see git log for the session-12 commit
+
+### The prediction held
+
+Sprint 58 claimed that replacing `resolveUserId()` would be the whole of
+authentication. **That is what happened — not one route or service needed
+changing.** The seam worked exactly as designed.
+
+### What was built
+
+| Piece | File | Notes |
+|---|---|---|
+| Sessions | `src/lib/session.ts` | Opaque token in a signed cookie; only its SHA-256 hash is stored, so a database leak does not hand out live sessions. Revocable server-side, which a self-contained JWT would not be. |
+| Passwords | `src/lib/password.ts` | `bcryptjs` cost 12. Pure JS on purpose: native `bcrypt`/`argon2` prebuilt bindings fail on a different Node/CPU/CI image, and this app must build identically on a laptop, the Oracle server, and CI. |
+| Schema | `Session` + `AuthEvent` | `User.passwordHash` already existed and was unused. |
+| Endpoints | `src/app/api/auth` | `POST` register · `PUT` login · `DELETE` logout · `/session` GET · `/password` PATCH |
+
+### `resolveUserId()` now resolves a real session
+
+```
+1. A signed-in session always wins — including in development.
+2. Outside production only, the dev identity is a fallback (ALLOW_DEV_IDENTITY).
+3. In production the dev identity is refused outright; no session → 401.
+```
+
+Step 3 returns `false` before it even reads the flag, so no environment
+combination can re-enable it in production.
+
+### Verified live, and the result that matters
+
+```
+alice creates "ALICE PRIVATE"   → alice sees it, bob sees nothing
+alice completes lesson l1       → alice 1 completed, bob 0
+```
+
+This is the first time ownership could be asserted at all. Before Sprint 59 there
+was exactly one user in the database, so no test could prove isolation. Six
+isolation tests now do.
+
+### Three mistakes I made and caught
+
+1. **Asserted 400 for a rejected bid** on the validate route — it returns 200 with
+   `legal: false`. A negative verdict is a normal answer, not a bad request.
+2. **Wrote `readSessionCookie` as sync.** `cookies()` returns a Promise in Next 16
+   and warns loudly in the E2E log. Caught by Playwright, not by typecheck.
+3. **Wrote session tests that depended on accumulated state** from earlier tests
+   in the same block. They passed in isolation and failed in the suite.
+
+### Security properties asserted by tests
+
+- Password never stored in plaintext; malformed hash reads as "wrong password",
+  not a crash
+- Same password hashes differently each time (salted)
+- Cookie is `httpOnly` + `sameSite=lax`; token never in a response body
+- Unknown email still runs a dummy hash comparison, so response timing does not
+  reveal which addresses are registered
+- Sign-in rate limited **per account and per client** — either limit alone is
+  insufficient
+- Password change revokes every other session
+- `SESSION_SECRET` required in production
+
+### Gate
+
+typecheck 0 · lint 0 errors · **232 unit/integration** (was 213) · 7 E2E · build clean
+
+### Still open in Sprint 59
+
+Client migration (login/register pages, deleting `mockLogin` and the dead
+`authService.ts`), route-protection middleware, the four multi-user pages, and
+re-keying the AI rate limiter per user.

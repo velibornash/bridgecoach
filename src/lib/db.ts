@@ -18,6 +18,7 @@
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
+import { unauthorized } from "@/lib/errors";
 
 function connectionString(): string {
   const url = process.env.DATABASE_URL;
@@ -59,31 +60,55 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 /**
- * TEMPORARY (Sprint 58 §27 — replaced in Sprint 59).
+ * The development identity.
  *
- * Resolves the owner for private records. Today this is a configured
- * development identity, NOT authentication: anyone who can reach the app is
- * this user. That is intentional for Sprint 58 and must never be shipped as-is.
- *
- * Replacement contract for Sprint 59: read the authenticated session, return
- * `session.userId`, and throw/redirect when there is no session. The rest of the
- * data layer is unaffected.
+ * `DEV_USER_EMAIL` names the account used for local work. It is a SEED value,
+ * not an architecture: production refuses to resolve it (see `resolveUserId`).
+ * Set it in `.env` to whichever account you want to develop against.
  */
 export const DEV_USER_EMAIL =
   process.env.DEV_USER_EMAIL ?? "dev@bridgecoach.local";
 
-export async function resolveUserId(): Promise<string> {
-  const user = await prisma.user.findUnique({
-    where: { email: DEV_USER_EMAIL },
-    select: { id: true },
-  });
+/** True when the development identity escape hatch is permitted. */
+function devIdentityAllowed(): boolean {
+  if (process.env.NODE_ENV === "production") return false;
+  return process.env.ALLOW_DEV_IDENTITY === "true";
+}
 
-  if (!user) {
-    throw new Error(
-      `Development user "${DEV_USER_EMAIL}" does not exist. ` +
-        `Run \`npm run db:seed\` to create it, or set DEV_USER_EMAIL to a seeded user.`,
-    );
+/**
+ * Resolves the owner for private records. THE SINGLE OWNERSHIP SEAM.
+ *
+ * Sprint 58 predicted that replacing this one function would be the whole of
+ * authentication, and that is what happened: no route or service needed changing.
+ *
+ * Order:
+ *  1. A real signed-in session wins, always — including in development.
+ *  2. Outside production, the development identity is a fallback so local work
+ *     does not require signing in on every request.
+ *  3. In production the development identity is refused outright, and an
+ *     unauthenticated request is an error rather than a silent fallback.
+ */
+export async function resolveUserId(): Promise<string> {
+  // 1. Real session.
+  const { getSessionUser } = await import("@/lib/session");
+  const sessionUser = await getSessionUser();
+  if (sessionUser) return sessionUser.id;
+
+  // 2. Development fallback.
+  if (devIdentityAllowed()) {
+    const user = await prisma.user.findUnique({
+      where: { email: DEV_USER_EMAIL },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new Error(
+        `Development user "${DEV_USER_EMAIL}" does not exist. ` +
+          `Run \`npm run db:seed\` to create it, or set DEV_USER_EMAIL to a seeded user.`,
+      );
+    }
+    return user.id;
   }
 
-  return user.id;
+  // 3. No session, no development fallback: the caller is not authenticated.
+  throw unauthorized();
 }

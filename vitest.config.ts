@@ -19,7 +19,7 @@ import { parse as parseEnv } from "dotenv";
  *  3. The dev DATABASE_URL with the database name swapped to `*_test`.
  *  4. Fall back to the dev database, with a loud warning.
  */
-const DB_ENV_KEYS = ["DATABASE_URL", "DEV_USER_EMAIL"] as const;
+const DB_ENV_KEYS = ["DATABASE_URL", "DEV_USER_EMAIL", "ALLOW_DEV_IDENTITY"] as const;
 
 function resolveTestDatabaseUrl(): string | undefined {
   if (process.env.TEST_DATABASE_URL) return process.env.TEST_DATABASE_URL;
@@ -51,6 +51,16 @@ if (!testDatabaseUrl && existsSync(".env")) {
 if (testDatabaseUrl) {
   process.env.DATABASE_URL = testDatabaseUrl;
 }
+
+/**
+ * The test suite acts as the development identity when invoking route handlers
+ * directly (there is no request scope, hence no session cookie). The isolation
+ * tests in auth-sessions.test.ts create their own users and assert ownership
+ * explicitly, so this fallback cannot mask a real ownership bug.
+ *
+ * Only ever set here, in the test runner — never in the application.
+ */
+process.env.ALLOW_DEV_IDENTITY = "true";
 
 /**
  * Only the database keys are loaded from `.env`. AI provider variables are

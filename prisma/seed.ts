@@ -18,6 +18,7 @@
  */
 
 import { PrismaPg } from "@prisma/adapter-pg";
+import { hashPassword } from "../src/lib/password";
 import { PrismaClient } from "../src/generated/prisma/client";
 import {
   mockLessons,
@@ -35,6 +36,16 @@ if (!connectionString) {
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
 const DEV_USER_EMAIL = process.env.DEV_USER_EMAIL ?? "dev@bridgecoach.local";
+
+/**
+ * Password for the seeded development identity.
+ *
+ * Read from the environment so it is never in the repository. When it is absent
+ * the dev user is seeded WITHOUT a password, which means it cannot be signed
+ * into — safe by default, and it still works for anyone using the local
+ * development identity fallback.
+ */
+const DEV_USER_PASSWORD = process.env.DEV_USER_PASSWORD;
 
 /**
  * mockData's lesson content is a typed `LessonContent[]`, which TypeScript will
@@ -118,6 +129,10 @@ async function seedUser() {
       joinedAt: SEED_JOINED_AT,
       lastActiveAt: SEED_JOINED_AT,
       isSeed: true,
+      // Hashed here rather than in a migration so the plaintext never persists.
+      ...(DEV_USER_PASSWORD
+        ? { passwordHash: await hashPassword(DEV_USER_PASSWORD) }
+        : {}),
       // A fresh development user starts with a valid EMPTY state (Sprint 58 §11):
       // xp 0, level 1, no progress rows. Progression below is not seeded.
     },
@@ -390,8 +405,13 @@ async function main() {
   await seedSampleHandAndAuction(user.id);
   console.log("  sample hand     seed-hand-1 + seed-auction-1 (10 structured actions)");
 
-  console.log("\nSeed complete. Sign in as the development identity:");
-  console.log(`  DEV_USER_EMAIL=${DEV_USER_EMAIL}`);
+  console.log("\nSeed complete.");
+  console.log(`  Development identity: ${DEV_USER_EMAIL}`);
+  console.log(
+    DEV_USER_PASSWORD
+      ? "  Password: set (from DEV_USER_PASSWORD), so this account can sign in."
+      : "  No password set. The account cannot sign in; local work uses the\n  development identity fallback. Set DEV_USER_PASSWORD to enable sign-in.",
+  );
 }
 
 main()

@@ -167,8 +167,14 @@ new bridge conventions.
 
 ### P1 — Security & correctness debt
 
-- [ ] **59 — Real authentication.** Plan written and awaiting approval:
-      `docs/SPRINT_59_PLAN.md`. Three decisions are needed first (session storage,
+- [~] **59 — Real authentication.** Plan: `docs/SPRINT_59_PLAN.md`. Decisions
+      taken: signed-cookie sessions with a DB row (revocable), `bcryptjs` cost 12.
+      **Done:** schema (`Session`, `AuthEvent`, migration
+      `20260926152654`), `src/lib/session.ts`, `src/lib/password.ts`, the
+      `/api/auth/*` endpoints, and `resolveUserId()` now resolving a real session
+      with the dev identity refused in production. Cross-user isolation verified
+      live and covered by 6 tests. **Remaining:** client migration, middleware,
+      multi-user pages, per-user AI rate limiting. Three decisions are needed first (session storage,
       dev-user handling, hashing algorithm).
       Summary: server-side sessions in a signed `httpOnly` cookie, `bcryptjs`
       hashing, a `Session` + `AuthEvent` table, `/api/auth/*` endpoints on the
