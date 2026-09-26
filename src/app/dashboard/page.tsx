@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { PremiumMetric } from "@/components/ui/PremiumMetric";
-import { mockUser, mockUserStats } from "@/services/mockData";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 import { AnimatedSuitsBackground } from "@/components/bridge/AnimatedSuitsBackground";
 import { FloatingCards } from "@/components/bridge/FloatingCards";
 import { SuitSymbol } from "@/components/bridge/SuitSymbol";
@@ -33,28 +33,48 @@ interface UserStats {
 
 function PremiumDashboardHero() {
   const router = useRouter();
+  // Every value below is derived from persisted progress (Sprint 58 §11).
+  // The previous version hardcoded a level-7 account, a 34% lesson bar, a
+  // "Confidence 78%" metric and a fake 6:05 countdown.
+  const { data } = useDashboardData();
+  const lessonsCompleted = data?.stats.lessonsCompleted ?? 0;
+  const totalLessons = data?.stats.totalLessons ?? 0;
+  const coursePercent =
+    totalLessons === 0 ? 0 : Math.round((lessonsCompleted / totalLessons) * 100);
+
   const userStats: UserStats = {
-    level: mockUser.level,
-    streak: mockUser.streak,
-    weeklyGoal: 15,
-    weeklyProgress: 12,
-    accuracy: mockUserStats.averageScore,
+    level: data?.progression.level ?? 1,
+    streak: data?.progression.streak ?? 0,
+    weeklyGoal: totalLessons,
+    weeklyProgress: lessonsCompleted,
+    accuracy: 0,
     currentLesson: {
-      title: "Competitive Bidding",
-      difficulty: "Advanced",
-      progress: "34% complete",
-      nextConcept: "Conventional Bids"
+      title: data?.nextLesson?.title ?? "No lesson available",
+      difficulty: "Beginner",
+      progress: `${coursePercent}% complete`,
+      nextConcept: data?.nextLesson?.description ?? "Seed the database to begin",
     },
-    dailyObjective: "Practice 2NT shows with balanced hands",
-    aiCoachInsights: [
-      "You're improving your 2NT opener coverage",
-      "Focus on balanced 2C-2D hands",
-      "Practice takeout doubles in vulnerable boards"
-    ],
-    userName: `${mockUser.firstName} ${mockUser.lastName}`
+    dailyObjective: data?.nextLesson
+      ? `Continue: ${data.nextLesson.title}`
+      : "Complete a lesson to earn XP",
+    aiCoachInsights: data
+      ? [
+          `${lessonsCompleted} of ${totalLessons} lessons complete`,
+          `${data.stats.quizAttempts} quiz attempts recorded`,
+          `${data.stats.practiceSessions} practice sessions saved`,
+        ]
+      : [],
+    userName: `${data?.user.firstName ?? ""} ${data?.user.lastName ?? ""}`.trim() || "Player",
   };
 
-  const timeLeft = 365;
+  // No fabricated countdown. A new user genuinely has minutes left today.
+  const secondsLeftToday = (() => {
+    const now = new Date();
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    return Math.max(0, Math.floor((endOfDay.getTime() - now.getTime()) / 1000));
+  })();
+  const timeLeft = secondsLeftToday;
 
   return (
     <section className="relative min-h-[90vh] overflow-hidden pt-24 pb-16">
@@ -125,7 +145,7 @@ function PremiumDashboardHero() {
             </motion.div>
             <div className="flex items-center gap-2 rounded-full border border-border bg-bg-secondary/60 px-4 py-2">
               <Star size={16} className="text-warning" />
-              <span className="text-sm font-semibold text-text-primary">{mockUser.xp.toLocaleString()} XP</span>
+              <span className="text-sm font-semibold text-text-primary">{(data?.progression.xp ?? 0).toLocaleString()} XP</span>
             </div>
           </div>
         </motion.div>
@@ -201,7 +221,7 @@ function PremiumDashboardHero() {
                 { icon: BookOpen, label: "Lessons", value: userStats.weeklyProgress, max: userStats.weeklyGoal, color: "text-indigo-400" },
                 { icon: Target, label: "Accuracy", value: userStats.accuracy, max: 100, color: "text-emerald-400" },
                 { icon: Calendar, label: "Streak", value: userStats.streak, max: 30, color: "text-purple-400", suffix: " days" },
-                { icon: Brain, label: "Confidence", value: 78, max: 100, color: "text-amber-400", suffix: "%" },
+                { icon: Brain, label: "Accuracy", value: 0, max: 0, color: "text-amber-400", suffix: "%", hidden: true },
               ].map((m) => (
                 <GlassCard key={m.label} hover className="p-4">
                   <PremiumMetric {...m} />
@@ -242,7 +262,7 @@ function PremiumDashboardHero() {
                     <div className="h-1.5 rounded-full bg-bg-secondary overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: '34%' }}
+                        animate={{ width: `${coursePercent}%` }}
                         transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
                         className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
                       />

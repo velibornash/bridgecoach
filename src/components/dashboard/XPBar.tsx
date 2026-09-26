@@ -4,9 +4,10 @@ import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { Card } from "@/components/ui/Card";
 import { Progress } from "@/components/ui/Progress";
 import { motion } from "framer-motion";
-import { mockUser } from "@/services/mockData";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 
 export function XPBar() {
+  const { data } = useDashboardData();
   return (
     <AnimatedSection delay={0.1}>
       <Card>
@@ -18,8 +19,8 @@ export function XPBar() {
               </svg>
             </div>
             <div>
-              <div className="text-sm font-medium text-text-secondary">Level {mockUser.level}</div>
-              <div className="text-lg font-bold text-text-primary">{mockUser.xp.toLocaleString()} XP</div>
+              <div className="text-sm font-medium text-text-secondary">Level {data?.progression.level ?? 1}</div>
+              <div className="text-lg font-bold text-text-primary">{(data?.progression.xp ?? 0).toLocaleString()} XP</div>
             </div>
           </div>
           <div className="text-right">
@@ -27,7 +28,7 @@ export function XPBar() {
               Next level
             </div>
             <div className="text-sm font-semibold text-text-secondary">
-              {mockUser.xpToNextLevel.toLocaleString()} XP
+              {(data?.progression.xpToNextLevel ?? 0).toLocaleString()} XP
             </div>
           </div>
         </div>
@@ -39,8 +40,8 @@ export function XPBar() {
           style={{ transformOrigin: "left" }}
         >
           <Progress
-            value={mockUser.xp}
-            max={mockUser.xpToNextLevel}
+            value={data?.progression.xp ?? 0}
+            max={data?.progression.xpToNextLevel ?? 1}
             showLabel
           />
         </motion.div>

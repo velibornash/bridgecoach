@@ -176,13 +176,57 @@ catalog, XP progress, achievements grid, and onboarding. Static *content*
 
 ---
 
+## Session 5 — Dashboard on real data (58.2.2 continued)
+
+**Commit:** see git log for the session-5 commit
+
+### What changed
+
+- **`src/services/userService.ts`** (new) — typed wrapper over `/api/dashboard`.
+- **`src/components/dashboard/DashboardDataProvider.tsx`** (new) — React context
+  that fetches `/api/dashboard` **once** for the whole dashboard tree. Components
+  read from context, so no call-site changes and no per-component requests (§26).
+- **Migrated off `mockData`:** `DashboardHeader`, `WelcomeHeader`, `XPBar`,
+  `src/app/dashboard/page.tsx`, `src/app/learning-path/page.tsx`,
+  `src/app/lesson/page.tsx`.
+
+### Fabricated values removed from the dashboard
+
+| Was | Now |
+|---|---|
+| `level: 7`, `xp: 3500`, `streak: 12` from a fixture | Real values from the progression engine |
+| `"Competitive Bidding"` / `"34% complete"` / `"Advanced"` | Real `nextLesson` from `/api/dashboard` |
+| `"Confidence", value: 78, max: 100` | Removed — there is no confidence metric yet, and inventing one is exactly the problem Sprint 58 is fixing |
+| `animate={{ width: '34%' }}` | `coursePercent` computed from real lesson counts |
+| `const timeLeft = 365` rendering a fake `6:05` countdown | Real seconds until end of day |
+| Three hardcoded `aiCoachInsights` strings | Generated from real counts (lessons, quizzes, practice) |
+| `weeklyGoal: 15 / weeklyProgress: 12` | Real totals from the database |
+
+### Verified live
+
+`/api/dashboard` returns `Dev User | xp: 348 | level: 2 | lessons: 2/8 | next: NT Opening Bids` — all
+derived from persisted rows. Smoke E2E still passes, so the dashboard renders
+correctly from real data.
+
+### Still on `mockData` (30 files)
+
+Dashboard sub-components (`Achievements`, `ContinueLearning`, `LearningPath`,
+`RecentActivity`, `Statistics`, `TodaysMission`, `DailyChallenge`,
+`PremiumHero`), profile, statistics widgets, leaderboard, friends, community,
+rewards, certificates, notifications, search, flashcards, catalog, notes,
+bookmarks, XP progress, achievements grid, video captions, and the two landing
+components (`Features`, `Testimonials` — the latter two are legitimately static
+marketing content).
+
+---
+
 ## Current state
 
 | Item | Status |
 |---|---|
 | 58.1 Foundation (DB, schema, migration, seed, client) | ✅ |
 | 58.2.1 API routes (13 files) | ✅ |
-| 58.2.2 Service layer + `mockData` consumers | 🔄 api.ts, lesson, quiz, achievements, stats, challenge, authorStudio + `/learning-path` and `/lesson` done; ~30 component/page consumers left |
+| 58.2.2 Service layer + `mockData` consumers | 🔄 api.ts, lesson, quiz, achievements, stats, challenge, authorStudio services + `/learning-path`, `/lesson`, dashboard page, `DashboardHeader`, `WelcomeHeader`, `XPBar` done; ~30 component/page consumers left |
 | 58.2.3 Author Studio off localStorage | ✅ database authoritative, localStorage is cache only |
 | 58.2.4 AI conversation persistence | ✅ |
 | 58.3.1–58.3.8 Domain wiring | ✅ |

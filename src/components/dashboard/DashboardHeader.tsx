@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { Avatar } from "@/components/ui/Avatar";
-import { mockUser } from "@/services/mockData";
+import { useDashboardData } from "@/components/dashboard/DashboardDataProvider";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Icon } from "@/components/icons/Icon";
 import { LayoutGrid, BookOpen, HelpCircle, MessagesSquare, Search, ChevronDown, ChevronRight, Compass, Layers, Target, BarChart3, Users, Bookmark, Pencil, Gift, Flame, Award, FileText, Crown, Settings, Mail, Bell, Menu, X, Zap, Star, Clock, Shield, Calendar, Tag, FolderOpen, Gift as GiftIcon, Trophy as TrophyIcon, ChevronDown as ChevronDownIcon, ChevronRight as ChevronRightIcon, PenLine } from "lucide-react";
@@ -41,6 +41,8 @@ const secondaryLinks = [
 ];
 
 export function DashboardHeader() {
+  // Real persisted progress (Sprint 58 §11). Null until the dashboard loads.
+  const { data } = useDashboardData();
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -117,18 +119,21 @@ export function DashboardHeader() {
               <Link href="/xp" className="flex items-center gap-1.5 rounded-full bg-bg-secondary px-3 py-1.5 hover:bg-bg-secondary/80 transition-colors">
                 <Icon icon={Flame} size={14} className="text-primary" />
                 <span className="text-sm font-semibold text-text-primary">
-                  {mockUser.xp.toLocaleString()}
+                  {(data?.progression.xp ?? 0).toLocaleString()}
                 </span>
               </Link>
               <Link href="/challenges" className="flex items-center gap-1.5 rounded-full bg-bg-secondary px-3 py-1.5 hover:bg-bg-secondary/80 transition-colors">
                 <Icon icon={Zap} size={14} className="text-warning" />
                 <span className="text-sm font-semibold text-text-primary">
-                  {mockUser.streak}
+                  {data?.progression.streak ?? 0}
                 </span>
               </Link>
             </div>
             <Link href="/profile">
-              <Avatar name={`${mockUser.firstName} ${mockUser.lastName}`} size="sm" />
+              <Avatar
+                name={`${data?.user.firstName ?? ""} ${data?.user.lastName ?? ""}`.trim() || "Player"}
+                size="sm"
+              />
             </Link>
 
             <button
