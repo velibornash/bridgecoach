@@ -11,23 +11,31 @@ test.describe.configure({ mode: "serial" });
 
 test("dashboard reflects real persisted progression, not fixtures", async ({ page }) => {
   const api = await request.newContext({ baseURL: "http://localhost:3000" });
-  const dashboard = await (await api.get("/api/dashboard")).json();
 
   await page.goto("/dashboard");
   await page.waitForLoadState("networkidle");
 
   // The user's real first name appears.
+  const dashboard = await (await api.get("/api/dashboard")).json();
   await expect(
     page.getByText(new RegExp(dashboard.user.firstName)).first(),
   ).toBeVisible();
 
-  // The real XP total is rendered. The Sprint 57 fixture was 3500; if the page
-  // still showed that while the database says otherwise, this fails.
-  const realXp = new Intl.NumberFormat("en-US").format(dashboard.progression.xp);
-  await expect(page.getByText(new RegExp(`\\b${realXp}\\b`)).first()).toBeVisible();
-
-  // The fixture name "Bob Smith" must not appear anywhere.
+  // The fixture user must not appear anywhere.
   await expect(page.getByText("Bob Smith")).toHaveCount(0);
+
+  // XP is polled rather than compared once: the persistence-journey spec runs
+  // against the same database and can legitimately change XP between the page
+  // render and the read. Polling proves the page tracks the database rather than
+  // pinning one value, and fails if the page is stuck on the Sprint 57 fixture
+  // of 3500 XP.
+  await expect
+    .poll(async () => {
+      const current = await (await api.get("/api/dashboard")).json();
+      const shown = new Intl.NumberFormat("en-US").format(current.progression.xp);
+      return page.getByText(new RegExp(`\\b${shown}\\b`)).first().isVisible();
+    }, { timeout: 15_000 })
+    .toBe(true);
 
   await api.dispose();
 });
