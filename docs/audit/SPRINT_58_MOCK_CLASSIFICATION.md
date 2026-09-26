@@ -13,11 +13,12 @@ Scan date: end of Sprint 58. Method: `grep -rl mockData src/`.
 |---|---|---|
 | **SEED** | 0 remaining | Converted to database seed data |
 | **REMOVE** | 0 remaining | Was production mock user state — deleted |
-| **KEEP** | 9 files | Legitimate static content, not user state |
+| **KEEP** | 7 files | Legitimate static content, not user state |
 | **LABELLED** | 4 files | Multi-user features, cannot be real until Sprint 59 |
 | **TEST** | 1 file | Test fixture (correct location) |
 
-**13 real imports remain, down from 45 at the start of Sprint 58.**
+**11 real imports remain, down from 45 at the start of Sprint 58** (7 KEEP +
+4 LABELLED).
 
 ---
 
@@ -117,6 +118,7 @@ is no longer used to place the development user on a fake leaderboard.
 
 ## Verification
 
-- `grep -rl mockData src/` → 13 real imports (from 45 at Sprint 58 start)
+- `grep -rl 'from "@/services/mockData"' src/` → 11 real imports (from 45 at Sprint 58
+  start): 7 KEEP static-content files, 4 LABELLED multi-user pages
 - No production user state depends on any `REMOVE`-classified export
 - typecheck 0 errors · lint 0 errors · 199 unit/integration tests · 7 E2E · build clean
