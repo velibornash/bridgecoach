@@ -6,7 +6,13 @@ import { Typography } from "@/components/ui/Typography";
 
 export interface SkillProfile {
   label: string;
-  value: number;
+  /**
+   * `null` means "not enough evidence to report a percentage", which is not the
+   * same as zero. Zero would claim the player scored nothing on every attempt.
+   */
+  value: number | null;
+  /** Sample size behind the figure, so a percentage can be judged. */
+  attempts?: number;
 }
 
 interface SkillRadarProps {
@@ -15,6 +21,14 @@ interface SkillRadarProps {
 }
 
 export function SkillRadar({ skills, className }: SkillRadarProps) {
+  /**
+   * A radar polygon needs every axis to have a value. Plotting a missing one at
+   * zero would assert the player scored nothing there, which is a claim rather
+   * than an absence of one. So when any skill is unreported the shape is not
+   * drawn at all and the counts are listed instead.
+   */
+  const complete = skills.every((s) => s.value !== null);
+
   const size = 240;
   const center = size / 2;
   const radius = 90;
@@ -23,7 +37,7 @@ export function SkillRadar({ skills, className }: SkillRadarProps) {
 
   const points = skills.map((skill, i) => {
     const angle = angleStep * i - Math.PI / 2;
-    const r = (skill.value / 100) * radius;
+    const r = ((skill.value ?? 0) / 100) * radius;
     return {
       x: center + r * Math.cos(angle),
       y: center + r * Math.sin(angle),
@@ -41,6 +55,14 @@ export function SkillRadar({ skills, className }: SkillRadarProps) {
       <Typography variant="sectionTitle" className="mb-4">
         Skill Profile
       </Typography>
+      {!complete && (
+        <p className="mb-3 rounded-lg border border-border bg-bg-secondary px-3 py-2 text-[11px] text-text-tertiary">
+          The chart needs a percentage on every axis, and a percentage needs
+          enough calls behind it. Play more auctions to fill it in.
+        </p>
+      )}
+
+      {complete && (
       <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-xs mx-auto" role="img" aria-label="Skill radar chart">
         {/* Grid rings */}
         {Array.from({ length: levels }, (_, l) => {
@@ -105,12 +127,24 @@ export function SkillRadar({ skills, className }: SkillRadarProps) {
           </text>
         ))}
       </svg>
+      )}
 
       <div className="grid grid-cols-2 gap-2 mt-4">
         {skills.map((skill) => (
-          <div key={skill.label} className="flex items-center justify-between text-xs">
-            <span className="text-text-tertiary">{skill.label}</span>
-            <span className="font-semibold text-text-primary">{skill.value}%</span>
+          <div key={skill.label} className="flex flex-col">
+            <div className="flex items-baseline justify-between text-xs">
+              <span className="text-text-tertiary">{skill.label}</span>
+              {skill.value !== null ? (
+                <span className="font-semibold text-text-primary">{skill.value}%</span>
+              ) : (
+                <span className="text-text-tertiary">&mdash;</span>
+              )}
+            </div>
+            {typeof skill.attempts === "number" && (
+              <span className="text-[9px] text-text-tertiary">
+                {skill.attempts} {skill.attempts === 1 ? "call" : "calls"}
+              </span>
+            )}
           </div>
         ))}
       </div>
@@ -118,10 +152,13 @@ export function SkillRadar({ skills, className }: SkillRadarProps) {
   );
 }
 
-export const defaultSkillProfile: SkillProfile[] = [
-  { label: "Opening Bids", value: 84 },
-  { label: "Takeout Doubles", value: 52 },
-  { label: "Defense", value: 73 },
-  { label: "Slams", value: 29 },
-  { label: "Signals", value: 61 },
-];
+/**
+ * Removed. These were five invented percentages — Opening Bids 84, Takeout
+ * Doubles 52, Defense 73, Slams 29, Signals 61 — shown to a user who had
+ * recorded nothing. They are now computed from `AuctionAction.engineLegal` by
+ * `/api/statistics/skills`.
+ *
+ * "Signals" is gone as a category: card-play communication is not recorded in
+ * anything this can measure, and a proxy for it would be the same fabrication
+ * with extra steps.
+ */

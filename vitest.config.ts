@@ -72,6 +72,24 @@ export default defineConfig({
     exclude: ["tests/e2e/**"],
     globals: false,
     css: false,
+
+    /**
+     * Test FILES run one at a time, not in parallel.
+     *
+     * Every integration file talks to the same PostgreSQL database. Separate
+     * databases per file would fix this properly, but that means N databases and
+     * N migration runs in CI, and the suite has one service container.
+     *
+     * Serial execution is the cheaper correct answer. It also removes a class of
+     * failure that is genuinely hard to debug: a file's `afterAll` deleting a
+     * user cascades rows another file is mid-assertion on, and the symptom shows
+     * up in a file that did nothing wrong. That produced intermittent failures
+     * here — a bookmark test failing because an unrelated file cleaned up.
+     *
+     * `tests/unit/**` is unaffected in practice; it is already fast, and the
+     * ordering cost is negligible at this suite size.
+     */
+    fileParallelism: false,
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

@@ -237,7 +237,17 @@ new bridge conventions.
 
 ### P2 — Product integrity
 
-- [ ] **60 — Player Model.** Use the persisted `PracticeAction` /
+- [x] **60 — Player Model.** Shipped: `/api/statistics/skills` derives accuracy
+      from `AuctionAction.engineLegal`, the engine's own verdict, never
+      re-judging an auction. A percentage is withheld below five attempts and the
+      overall figure averages only the skills that had enough data. "Signals" was
+      dropped as a category — card-play communication is not recorded in
+      anything this can measure.
+- [x] **Test files run sequentially.** Parallel files shared one database, so a
+      file's `afterAll` could cascade rows out from under another file mid-assert.
+      Cost: 84s instead of ~40s. Bought: no more intermittent failures in files
+      that did nothing wrong.
+- [ ] **60d — Player Model, part two.** Use the persisted `PracticeAction` /
       `AuctionAction` / `QuizAttempt` evidence to build a real skill profile:
       weakness detection, per-skill stats, and AI Coach context. This is what
       `SkillRadar` and `ProgressEngine.calculateMastery` need — today they

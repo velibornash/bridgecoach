@@ -1,4 +1,4 @@
-export { SkillRadar, defaultSkillProfile } from "./SkillRadar";
+export { SkillRadar } from "./SkillRadar";
 export type { SkillProfile } from "./SkillRadar";
 export { LearningHeatmap, generateHeatmapData } from "./LearningHeatmap";
 export { StreakCalendar } from "./StreakCalendar";

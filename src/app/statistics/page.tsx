@@ -9,7 +9,6 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { StatisticCard } from "@/components/cards/StatisticCard";
 import {
   SkillRadar,
-  defaultSkillProfile,
   LearningHeatmap,
   generateHeatmapData,
   StreakCalendar,
@@ -20,6 +19,10 @@ import {
 } from "@/components/statistics";
 import { getLearningStats, getActivityHeatmap, getPersistedStats } from "@/services/statsService";
 import { useApiResource } from "@/hooks/useApiResource";
+import { fetchSkills } from "@/services/skillsService";
+import type { SkillProfile } from "@/components/statistics/SkillRadar";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { Typography } from "@/components/ui/Typography";
 import { fetchDashboard } from "@/services/userService";
 import type { LearningStats } from "@/types";
 import { staggerContainer, fadeUp } from "@/design-system/motion";
@@ -34,6 +37,10 @@ export default function StatisticsPage() {
   // Math.random(), so the chart was different on every render.
   const { data: persisted } = useApiResource(getPersistedStats);
   const { data: dashboard } = useApiResource(fetchDashboard);
+  // Skill accuracy, computed from the player's own auction and practice rows.
+  const { data: skills, error: skillsError } = useApiResource(fetchSkills);
+  const skillMetrics: SkillProfile[] =
+    skills?.skills.map((s) => ({ label: s.label, value: s.value, attempts: s.attempts })) ?? [];
   const [heatmap, setHeatmap] = useState<Awaited<ReturnType<typeof getActivityHeatmap>>>([]);
 
   useEffect(() => {
@@ -138,7 +145,20 @@ export default function StatisticsPage() {
                 </motion.div>
 
                 <div className="grid gap-6 lg:grid-cols-2 mb-6">
-                  <SkillRadar skills={defaultSkillProfile} />
+                  {skillMetrics.length > 0 ? (
+                    <SkillRadar skills={skillMetrics} />
+                  ) : (
+                    <GlassCard variant="elevated">
+                      <Typography variant="sectionTitle" className="mb-2">
+                        Skill Profile
+                      </Typography>
+                      <p className="text-xs text-text-tertiary">
+                        {skillsError
+                          ? skillsError
+                          : "Reading your auction history…"}
+                      </p>
+                    </GlassCard>
+                  )}
                   <ConfidenceScore score={stats.averageScore} />
                 </div>
 

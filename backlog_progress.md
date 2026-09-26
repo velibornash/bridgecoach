@@ -1025,3 +1025,75 @@ removing exactly this kind of lie.
 
 typecheck 0 · lint 0 errors, 131 warnings · **340 unit/integration** (was 333) ·
 7 E2E · build clean
+
+---
+
+## Session 18 — the Player Model, and a flaky suite I had reintroduced
+
+**Commit:** see git log for the session-18 commit
+
+### Five invented percentages, now derived
+
+`SkillRadar` rendered Opening Bids 84, Takeout Doubles 52, Defense 73, Slams 29,
+Signals 61 — to a user who had recorded nothing. Sprint 58 classified those as a
+known gap and deliberately left them static rather than faking them from unrelated
+numbers, which was the right call then: the rows to compute them from did not
+exist. `/practice` now writes them, so they do.
+
+Accuracy is `AuctionAction.engineLegal` — the engine's own verdict, snapshotted at
+the time of the call. Nothing re-judges an auction, because that would be a second
+rules engine, which is the whole thing Sprint 57 exists to prevent.
+
+### The part that mattered: refusing to show a number
+
+A percentage of two attempts is noise wearing a suit. "Defense 50%" from one call
+and one pass looks authoritative and means nothing — it is the fixture's failure
+mode reproduced with real data.
+
+So every metric carries its sample size and the API returns `value: null` below
+five attempts, with a sentence saying why. The radar polygon is not drawn at all
+unless every axis has a value, because plotting a missing axis at zero would
+assert the player scored nothing there — a claim rather than an absence of one.
+
+The overall figure averages only the skills that had enough data. Averaging the
+others in as zeros would report 25% for a player who has never doubled, bid a slam,
+or defended.
+
+"Signals" is gone as a category entirely. Card-play communication is not recorded
+in anything this can measure, and a proxy for it would be the same fabrication
+with more steps.
+
+Mutation-checked: reporting a percentage regardless of sample size, counting
+unreported skills as zero, and dropping the threshold all fail a test.
+
+### The suite had become flaky again, and I had reintroduced it
+
+`npm test` failed once with 13 errors across 6 files — then passed on re-run. The
+failing test was a bookmark assertion in a file that had nothing to do with
+bookmarks.
+
+Every integration file shares one database, and Vitest runs files in parallel. A
+file's `afterAll` deletes its users, which cascades rows another file is
+mid-assertion on. The symptom appears in a file that did nothing wrong, which is
+what makes it expensive to diagnose.
+
+This is the same lesson Sprint 58 recorded — "parallel test files wrote to the same
+development user, which produced genuinely flaky assertions" — and isolating the
+*database* fixed only half of it. The parallelism was the other half, and I had
+left it in.
+
+Fixed with `fileParallelism: false`. A database per file would be the proper fix
+but means N databases and N migration runs against one CI service container.
+Serial execution costs 84s instead of ~40s. Verified with three consecutive full
+runs at 347 passing.
+
+Worth stating plainly: I reported "no remaining known issues with test isolation"
+in a previous session's verification document, and that was wrong. The isolation
+was real for Vitest-versus-development, and the parallelism inside Vitest was
+still there. It only became visible once the suite grew past the point where
+timing happened to work out.
+
+### Gate
+
+typecheck 0 · lint 0 errors, 131 warnings · **347 unit/integration** (was 340) ·
+7 E2E · build clean
