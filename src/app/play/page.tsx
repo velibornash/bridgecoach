@@ -17,10 +17,10 @@ import {
   type RecordedAction,
 } from "@/services/auctionService";
 import { recordPracticeSession, type PracticeActionInput } from "@/services/practiceService";
-import { AuctionStateMachine, formatBid } from "@/bridge";
+import { AuctionStateMachine, formatBid, isLegalPlay, playRefusalReason } from "@/bridge";
 import { trumpSuitOf } from "@/bridge/contract";
 import { getSuitPresentation, suitCodeFromSymbol } from "@/bridge/suits";
-import type { BidCall, Contract, Strain } from "@/bridge/types";
+import type { BidCall, Contract, Strain, Suit as EngineSuit } from "@/bridge/types";
 
 type Player = 'north' | 'east' | 'south' | 'west';
 
@@ -170,21 +170,57 @@ export default function PlayDemoPage() {
     }, 600);
   }, [trumpSuit]);
 
+  /**
+   * The suit of the card that opened the current trick, or null when it is
+   * South's turn to lead.
+   *
+   * `playedCards` holds exactly the trick in progress, so its first entry is the
+   * lead. Derived rather than stored, because a stored lead suit is another
+   * value that can disagree with the cards actually on the table.
+   */
+  const leadSuit: Suit | null = playedCards[0]?.card.suit ?? null;
+
+  /**
+   * Suits South still holds, as engine codes.
+   *
+   * Computed from the cards rather than kept as state, so it cannot drift after
+   * a card is played. A player who has just used their last heart is void in
+   * hearts, and the rule has to see that.
+   */
+  const southHeldSuits: readonly EngineSuit[] = useMemo(
+    () => [...new Set(hands.south.map((c) => suitCodeFromSymbol(c.suit)))],
+    [hands.south],
+  );
+
+  /** Why the last attempted play was refused, if it was. */
+  const [playError, setPlayError] = useState<string | null>(null);
+
   const handlePlayCard = useCallback((card: BridgeCard) => {
     if (playedCards.some((p) => p.player === 'south')) return;
+
+    // The engine decides, and supplies the wording. This is a second line of
+    // defence: the cards that break the rule are already rendered unplayable, so
+    // reaching here means the UI and the rule disagree and the rule wins.
+    const refusal = playRefusalReason(
+      suitCodeFromSymbol(card.suit),
+      southHeldSuits,
+      leadSuit === null ? null : suitCodeFromSymbol(leadSuit),
+    );
+    if (refusal) {
+      setPlayError(refusal);
+      return;
+    }
+    setPlayError(null);
     playCardFor('south', card);
 
     // Card plays are recorded as practice actions, not auction actions.
     cardCalls.current.push({ phase: "play", player: "S", card: `${card.suit}${card.rank}` });
 
-    // Determine lead suit from the first played card
-    const leadSuit = card.suit;
-
-    // Auto-play west, north, east in turn
-    autoPlayOpponent('west', leadSuit);
-    setTimeout(() => autoPlayOpponent('north', leadSuit), 650);
-    setTimeout(() => autoPlayOpponent('east', leadSuit), 1300);
-  }, [playedCards, autoPlayOpponent]);
+    // The opponents follow the suit South just led.
+    autoPlayOpponent('west', card.suit);
+    setTimeout(() => autoPlayOpponent('north', card.suit), 650);
+    setTimeout(() => autoPlayOpponent('east', card.suit), 1300);
+  }, [playedCards, autoPlayOpponent, southHeldSuits, leadSuit]);
 
   const recorded = useRef(false);
   const [recording, setRecording] = useState<"idle" | "saving" | "saved" | "failed">("idle");
@@ -360,7 +396,19 @@ export default function PlayDemoPage() {
                 ) : (
                   hands.south.length > 0 && (
                     <div className="rounded-xl border border-border bg-bg-card p-4">
-                      <p className="text-xs text-text-tertiary mb-3">Click a card to lead:</p>
+                      <p className="text-xs text-text-tertiary mb-3">
+                        {leadSuit === null
+                          ? "Click a card to lead:"
+                          : `You must follow ${leadSuit}. Cards that break the rule are dimmed.`}
+                      </p>
+                      {playError && (
+                        <p
+                          role="alert"
+                          className="text-xs text-red-500 mb-3 text-center"
+                        >
+                          {playError}
+                        </p>
+                      )}
                       <div className="flex flex-wrap gap-2 justify-center max-h-40 overflow-y-auto">
                         {hands.south.map((card) => (
                           <motion.button
@@ -369,7 +417,19 @@ export default function PlayDemoPage() {
                             onClick={() => handlePlayCard(card)}
                             className="cursor-pointer"
                           >
-                            <CardEngine card={{ ...card, faceUp: true, playable: true }} size="sm" interactive />
+                            <CardEngine
+                              card={{
+                                ...card,
+                                faceUp: true,
+                                playable: isLegalPlay(
+                                  suitCodeFromSymbol(card.suit),
+                                  southHeldSuits,
+                                  leadSuit === null ? null : suitCodeFromSymbol(leadSuit),
+                                ),
+                              }}
+                              size="sm"
+                              interactive
+                            />
                           </motion.button>
                         ))}
                       </div>

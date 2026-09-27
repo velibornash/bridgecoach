@@ -7,6 +7,7 @@
  *     ├── Legal Bid Validator  (validator.ts)
  *     ├── Contract Calculator  (contract.ts)
  *     ├── Duplicate Scoring    (scoring.ts)
+ *     ├── Card Play Rules      (play.ts)
  *     └── Bidding Evaluation   (strategy.ts → evaluation.ts + conventions.ts)
  *           ├── Conventions    (conventions.ts — Stayman, Jacoby transfers)
  *           ├── Rules          (evaluation.ts — deterministic)
@@ -20,6 +21,7 @@ export * from "./auction";
 export * from "./validator";
 export * from "./contract";
 export * from "./scoring";
+export * from "./play";
 export * from "./evaluation";
 export * from "./conventions";
 export * from "./strategy";

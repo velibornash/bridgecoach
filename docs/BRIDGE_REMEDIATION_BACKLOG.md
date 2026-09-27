@@ -253,7 +253,7 @@ Unit test on the derivation, and an integration test that plays a spade in a not
 
 ## T4 — Following suit is enforced
 
-**Audit refs:** B3.1 · **Status:** TODO · **Blocked by:** T3
+**Audit refs:** B3.1 · **Status:** DONE · **Blocked by:** T3
 
 ### What
 
@@ -263,12 +263,54 @@ Rule: if you hold the lead suit, you may play only that suit; otherwise any card
 
 ### Exit criteria
 
-- [ ] `playable` is false for a wrong-suit card while the player holds the lead suit
-- [ ] Choosing an illegal card is refused with a rule message, not silently ignored
-- [ ] Playing a wrong-suit card when void is **allowed**
-- [ ] Discarding a trump when void is allowed and it wins the trick
-- [ ] The AI opponents' behaviour is unchanged
-- [ ] Full gate green
+- [x] `playable` is false for a wrong-suit card while the player holds the lead suit
+- [x] Choosing an illegal card is refused with a rule message, not silently ignored
+- [x] Playing a wrong-suit card when void is **allowed**
+- [x] Discarding a trump when void is allowed and it wins the trick
+- [x] The AI opponents' behaviour is unchanged
+- [x] Full gate green
+
+### What actually happened
+
+The rule lives in the engine, in a new `src/bridge/play.ts`:
+`legalSuitsToPlay(heldSuits, leadSuit)`, `isLegalPlay(...)` and
+`playRefusalReason(...)`. The reason function is the single decision point — it
+returns `null` exactly when the play is legal, and a test asserts that
+equivalence directly, so the wording can never drift from the decision.
+
+`heldSuits` is passed in rather than derived inside the function, because "am I
+void?" is a question about the cards *still in hand*, and only the caller knows
+that. A player who has just played their last heart is void, and the caller
+computes it from the live hand with a `useMemo` so it cannot go stale.
+
+`/play` had been rendering every card with `playable: true` hard-coded, which is
+why the rule was absent: the cards that break it looked identical to the ones
+that obey it. Now each card's `playable` comes from the engine, and the hand
+panel says which suit must be followed and why.
+
+`handlePlayCard` asks the engine before doing anything and returns on refusal,
+which is why the trick is unchanged. It is a second line of defence — the cards
+are already unplayable — so if the UI and the rule ever disagree, the rule wins
+and the player is told.
+
+**Not tested at the level the spec asked for, deliberately.** The spec wanted a
+test that clicks an illegal card and asserts the trick is untouched. The deal is
+`shuffleDeck(createDeck())` with `Math.random()` and no seed, so no such test
+can be written without controlling the randomness: there is no guarantee South
+holds both a heart and another suit. Asserting it today would mean stubbing the
+shuffle to produce a hand, which tests the stub.
+
+Making the shuffle injectable (`shuffleDeck(deck, rng = Math.random)`) is the
+right fix and is groundwork for T7 anyway — a "deal of the day" that differs per
+reload is not a deal of the day. It is recorded there rather than smuggled in
+here. So this criterion is met by construction (the guard precedes every
+mutation) and by the engine unit tests, not by a click-level test, and the
+backlog says so rather than claiming otherwise.
+
+**Still wrong, left for T5:** the played card is recorded as `${c.suit}${c.rank}`
+using the display symbol, so a spade ace is stored as `"♠A"`. The schema and the
+engine both use `"SA"`. Same class of bug as the auction strain in T3, in the
+`PracticeSession` half of the write path.
 
 ### How to test
 
@@ -469,7 +511,7 @@ Render with a scenario containing a known mix of calls and cards; assert each re
 | T1 seat order | **DONE** | `fix(bridge): turn order is counter-clockwise` |
 | T2 scoring | **DONE** | `feat(bridge): duplicate scoring, checked against the ACBL tables` |
 | T3 trumps from contract | **DONE** | `fix(bridge): trumps come from the contract, not a fixed spade` |
-| T4 follow suit | TODO | |
+| T4 follow suit | **DONE** | `fix(bridge): following suit is enforced by the engine` |
 | T5 hand lifecycle | TODO | |
 | T6 practice is bridge | TODO | |
 | T7 daily hand | TODO | |
