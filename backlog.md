@@ -320,3 +320,22 @@ new bridge conventions.
 | 1–56 | `2c8b149` … `ed27a83` | MVP, learning, gameplay, statistics, community, Author Studio. Audit in `docs/audit/`. |
 | 57 | `b9ce7ac` | Suit centralization, `AuctionStateMachine`, `LegalBidValidator`, conventions/strategy layer, `confirmAuction`, engine-first tactical validation, 162 tests, 3 E2E, coverage, Playwright. Verified in `docs/audit/SPRINT_57_VERIFICATION.md`. |
 | — | `886c425` | Card rank/suit symbols enlarged (all sizes, card dimensions unchanged). |
+
+---
+
+## Bridge domain remediation
+
+A bridge-domain audit found four serious defects and one architectural fault that
+made the worst of them expensive to fix. Turn order is clockwise where bridge is
+counter-clockwise, there is no contract scoring at all, `/practice` does not
+follow suit and treats spades as trumps in every hand, and "Deal of the day" is a
+decorative card fan whose button deals a different hand.
+
+Full findings: `docs/audit/BRIDGE_DOMAIN_AUDIT.md`
+Tasks, exit criteria and test methods: **`docs/BRIDGE_REMEDIATION_BACKLOG.md`**
+
+Kept as a separate list because the ordering matters: T1 (seat order) blocks
+everything above it, and a single flat backlog would hide that. The teaching
+content itself was audited and is correct — HCP, balanced shapes, doubling and
+redouble legality, declarer selection, trick resolution and every seeded quiz
+answer check out.
