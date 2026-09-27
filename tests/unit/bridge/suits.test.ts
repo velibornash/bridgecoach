@@ -45,11 +45,31 @@ describe("suit presentation — centralized colors", () => {
 });
 
 describe("seats", () => {
-  it("rotates clockwise", () => {
-    expect(nextPosition(Position.NORTH)).toBe(Position.EAST);
-    expect(nextPosition(Position.EAST)).toBe(Position.SOUTH);
-    expect(nextPosition(Position.SOUTH)).toBe(Position.WEST);
-    expect(nextPosition(Position.WEST)).toBe(Position.NORTH);
+  it("rotates counter-clockwise, as bridge is played", () => {
+    // The UI draws North top, West left, South bottom, East right. Play runs
+    // counter-clockwise around that diagram: top -> left -> bottom -> right.
+    // A dealer sitting North has West on their left, so North is followed by
+    // West.
+    //
+    // This test asserted the opposite (N -> E) and was named "rotates
+    // clockwise". The engine, the declarer calculator and the validator all
+    // agreed, so 300+ tests confirmed the error rather than catching it.
+    expect(nextPosition(Position.NORTH)).toBe(Position.WEST);
+    expect(nextPosition(Position.WEST)).toBe(Position.SOUTH);
+    expect(nextPosition(Position.SOUTH)).toBe(Position.EAST);
+    expect(nextPosition(Position.EAST)).toBe(Position.NORTH);
+  });
+
+  it("turns through every seat exactly once", () => {
+    // Guards against an edit that shortens or duplicates the cycle.
+    // Four seats must have four distinct successors, and applying the function
+    // four times must return to the start. A shortened or duplicated cycle fails
+    // one of these.
+    const seats = [Position.NORTH, Position.SOUTH, Position.EAST, Position.WEST];
+    expect(new Set(seats.map(nextPosition)).size).toBe(4);
+    let seat: Position = Position.NORTH;
+    for (let i = 0; i < 4; i += 1) seat = nextPosition(seat);
+    expect(seat).toBe(Position.NORTH);
   });
 
   it("knows partnerships", () => {

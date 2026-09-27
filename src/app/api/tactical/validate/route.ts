@@ -8,7 +8,7 @@ import {
   LegalBidValidator,
   parseBid,
   formatBid,
-  type Position,
+  SEAT_ORDER,
   type Vulnerability,
 } from "@/bridge";
 
@@ -118,9 +118,9 @@ export async function POST(request: NextRequest) {
   }
 
   // ---- Deterministic legality check (no LLM involved) ----
-  const positions: Position[] = ["N", "E", "S", "W"];
-  const parsedDealer = positions.find((p) => p === dealer) ?? "N";
-  const parsedTurn = positions.find((p) => p === turn) ?? null;
+  // Validated against the engine's seat list rather than a local copy.
+  const parsedDealer = SEAT_ORDER.find((p) => p === dealer) ?? "N";
+  const parsedTurn = SEAT_ORDER.find((p) => p === turn) ?? null;
   const proposed = parseBid(proposedBid);
 
   if (!proposed) {
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
   }
 
   // ---- Strategy evaluation: the LLM explains, the engine decides legality ----
-  const handLines = (["N", "E", "S", "W"] as const)
+  const handLines = SEAT_ORDER
     .map((pos) => `${pos}: ${(hands[pos] ?? []).join(" ")}`)
     .join("\n");
 

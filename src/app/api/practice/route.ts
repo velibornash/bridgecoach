@@ -10,7 +10,7 @@
  * it never computes them.
  */
 import { NextResponse } from "next/server";
-import type { Position } from "@/bridge";
+import { SEAT_ORDER, type Position } from "@/bridge";
 import { awardXp } from "@/lib/progression";
 import {
   handleRoute,
@@ -24,10 +24,11 @@ import {
 } from "@/lib/apiRoute";
 
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"] as const;
-const POSITIONS: Position[] = ["N", "E", "S", "W"];
+// The seat list, from the engine, so it cannot disagree with turn order.
+const POSITIONS = SEAT_ORDER;
 
 function parsePosition(value: unknown): Position | null {
-  return typeof value === "string" && (POSITIONS as string[]).includes(value)
+  return typeof value === "string" && POSITIONS.includes(value as Position)
     ? (value as Position)
     : null;
 }

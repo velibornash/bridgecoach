@@ -15,6 +15,7 @@ import {
   Position,
   Strain,
   isPartner,
+  seatAt,
 } from "./types";
 
 export class ContractCalculator {
@@ -39,18 +40,13 @@ export class ContractCalculator {
       redoubled: state.isRedoubled,
     };
 
-    const winningSideBidder = seatOfIndex(state, state.lastBidIndex);
+    const winningSideBidder = seatAt(state.dealer, state.lastBidIndex);
     const declarer = findDeclarer(state, finalBid.strain!, winningSideBidder);
 
     return { contract, declarer, passedOut: false };
   }
 }
 
-function seatOfIndex(state: AuctionState, index: number): Position {
-  const order: Position[] = ["N", "E", "S", "W"];
-  const startIdx = order.indexOf(state.dealer);
-  return order[(startIdx + index) % 4];
-}
 
 /** First player of the winning side to name the final strain. */
 function findDeclarer(
@@ -62,7 +58,7 @@ function findDeclarer(
     const call: BidCall = state.history[i];
     if (call.type !== "bid") continue;
     if (call.strain !== strain) continue;
-    const seat = seatOfIndex(state, i);
+    const seat = seatAt(state.dealer, i);
     if (isPartner(seat, winningSideBidder) || seat === winningSideBidder) {
       return seat;
     }

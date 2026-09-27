@@ -27,7 +27,7 @@ T7, T8 and T9+ are independent of T1 and can be taken at any point. They are lis
 
 ## T1 — Single source of seat order, and counter-clockwise
 
-**Audit refs:** A1, B1, S4 · **Status:** TODO
+**Audit refs:** A1, B1, S4 · **Status:** DONE
 
 ### What
 
@@ -45,13 +45,48 @@ A partial fix is worse than the current uniform bug. If the engine turns one way
 
 ### Exit criteria
 
-- [ ] `grep -rn '"N", "E", "S", "W"' src/` returns nothing
-- [ ] `nextPosition(N) === W`, `nextPosition(W) === S`, `nextPosition(S) === E`, `nextPosition(E) === N`
-- [ ] `seatAt(dealer, 0) === dealer` and `seatAt(dealer, 4) === dealer`
-- [ ] Declarer still correct for: `1♣ X 2♥`, `1NT P 2C P 2S P 4S P P P`
-- [ ] Doubling legality unchanged: partner of the bidder still cannot double
-- [ ] `npm run typecheck` 0, `npm run lint` 0 errors, `npm test` green, `npm run build` clean
-- [ ] Every pre-existing auction test re-read for *intent*, not just made to pass
+- [x] `grep -rn '"N", "E", "S", "W"' src/` returns nothing
+- [x] `nextPosition(N) === W`, `nextPosition(W) === S`, `nextPosition(S) === E`, `nextPosition(E) === N`
+- [x] `seatAt(dealer, 0) === dealer` and `seatAt(dealer, 4) === dealer`
+- [x] Declarer still correct for: `1♣ X 2♥`, `1NT P 2C P 2S P 4S P P P`
+- [x] Doubling legality unchanged: partner of the bidder still cannot double
+- [x] `npm run typecheck` 0, `npm run lint` 0 errors, `npm test` green, `npm run build` clean
+- [x] Every pre-existing auction test re-read for *intent*, not just made to pass
+
+### What actually happened
+
+The audit said three files; it was **seven**, in three distinct roles:
+
+- **turn order (5):** `nextPosition` and `seatAt` in `types.ts`, a private
+  `seatOfIndex` in both `contract.ts` and `validator.ts`, and `positionOrder`
+  in the tactical page. All five now import `SEAT_ORDER` / `seatAt`.
+- **seat lists (2 more):** `api/auctions/route.ts` and `api/practice/route.ts`
+  each had a `POSITIONS` array used only for a membership check. Order was
+  irrelevant there, but they were still copies that could drift, so they use
+  `SEAT_ORDER` too.
+- `nextPosition` and `seatAt` now throw on a non-seat instead of silently
+  returning `undefined` from `indexOf`.
+
+**The tests were the real problem.** Four failures were not wrong expectations —
+they were wrong *setups* that hard-coded which seat was on move. `legalCalls`
+was asked about East when it was West's turn; the double test asked about a
+partner's bid; one test named "the first illegal call is rejected" asserted
+`legal === true` while its name said the opposite. All three now derive the seat
+from `auction.currentBidder`, so they cannot re-encode an order. Added
+`legalCalls gives the opener's partner only a pass` and
+`a call from a seat that is not on move is rejected with a reason`, which turns
+two accidental tests into two real ones.
+
+**Every seat comment in the suite was written for the clockwise order** — 11 of
+them, in `contract.test.ts`, `auction.test.ts` and `confirmation.test.ts`. The
+assertions were all still correct (partnership is symmetric, so
+`isPartner(N,S)` is unchanged), which is exactly why nothing failed. Correct
+comments would have been the *first* thing to mislead the next reader, so they
+were checked mechanically against `SEAT_ORDER` and fixed.
+
+353 → 357 tests, none deleted. Lint stayed at its 31-warning baseline: fixing
+the orphaned `Position` import in the validate route paid for the one new
+warning my own change introduced.
 
 ### How to test
 
@@ -345,7 +380,7 @@ Render with a scenario containing a known mix of calls and cards; assert each re
 
 | Task | Status | Commit |
 |---|---|---|
-| T1 seat order | TODO | |
+| T1 seat order | **DONE** | `fix(bridge): turn order is counter-clockwise` |
 | T2 scoring | TODO | |
 | T3 trumps from contract | TODO | |
 | T4 follow suit | TODO | |

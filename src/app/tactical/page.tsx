@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";import { motion, AnimatePresence } from "framer-motion";
+import { SEAT_ORDER, seatAt } from "@/bridge";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -37,15 +38,19 @@ const positionMap: Record<Position, BridgeTableHand["position"]> = {
   W: "west",
 };
 
-const positionOrder: Position[] = ["N", "E", "S", "W"];
-
+/**
+ * Whose turn it is, using the engine's single seat-order rule.
+ *
+ * This was a fourth copy of the seat array, hard-coded clockwise. It is now
+ * `seatAt`, so a change to the order in `src/bridge/types.ts` cannot leave this
+ * page turning the wrong way.
+ */
 function getCurrentBidder(dealer: Position, bidsMade: number): Position {
-  const dealerIndex = positionOrder.indexOf(dealer);
-  return positionOrder[(dealerIndex + bidsMade) % 4];
+  return seatAt(dealer, bidsMade);
 }
 
 function toBridgeTableHands(hands: Record<Position, BridgeHand>): BridgeTableHand[] {
-  return (["N", "E", "S", "W"] as const).map((pos) => ({
+  return SEAT_ORDER.map((pos) => ({
     position: positionMap[pos],
     cards: [...hands[pos].spades, ...hands[pos].hearts, ...hands[pos].diamonds, ...hands[pos].clubs],
   }));
@@ -77,7 +82,7 @@ export default function TacticalPage() {
     try {
       const text = await getBidHint({
         hands: Object.fromEntries(
-          (["N", "E", "S", "W"] as const).map((pos) => [pos, toFlatCards(scenario.hands[pos])])
+          SEAT_ORDER.map((pos) => [pos, toFlatCards(scenario.hands[pos])] as const)
         ),
         dealer: scenario.dealer,
         vulnerability: scenario.vulnerability,
@@ -110,7 +115,7 @@ export default function TacticalPage() {
     try {
       const verdict = await validateTacticalBid({
         hands: Object.fromEntries(
-          (["N", "E", "S", "W"] as const).map((pos) => [pos, toFlatCards(scenario.hands[pos])])
+          SEAT_ORDER.map((pos) => [pos, toFlatCards(scenario.hands[pos])] as const)
         ),
         dealer: scenario.dealer,
         vulnerability: scenario.vulnerability,
@@ -228,7 +233,7 @@ export default function TacticalPage() {
                       <span className="text-xs text-text-tertiary self-center">No bids yet — enter your first bid.</span>
                     )}
                     {bids.map((b, i) => {
-                      const bidderPos = positionOrder[(positionOrder.indexOf(scenario.dealer) + i) % 4];
+                      const bidderPos = seatAt(scenario.dealer, i);
                       const bidderTablePos = positionMap[bidderPos];
                       return (
                         <motion.div

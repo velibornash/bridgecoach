@@ -14,6 +14,7 @@ import {
   AuctionStateMachine,
   LegalBidValidator,
   parseBid,
+  SEAT_ORDER,
   type BidCall,
   type Position,
   type Vulnerability,
@@ -33,12 +34,13 @@ const validator = new LegalBidValidator();
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const POSITIONS: Position[] = ["N", "E", "S", "W"];
+// The seat list, from the engine, so it cannot disagree with turn order.
+const POSITIONS = SEAT_ORDER;
 const VULNERABILITIES: Vulnerability[] = ["None", "NS", "EW", "All"];
 const STRAINS = ["C", "D", "H", "S", "NT"] as const;
 
 function parsePosition(value: unknown, field: string): Position {
-  if (typeof value === "string" && (POSITIONS as string[]).includes(value)) {
+  if (typeof value === "string" && POSITIONS.includes(value as Position)) {
     return value as Position;
   }
   throw badRequest(`"${field}" must be one of N, E, S, W`, "VALIDATION_ERROR");

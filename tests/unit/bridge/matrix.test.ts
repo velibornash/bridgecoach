@@ -279,10 +279,21 @@ describe("matrix: legality boundary (validate route guarantee)", () => {
     expect(validator.isLegal(state, "N", parseBid("1NT")!).legal).toBe(false);
   });
 
-  it("the first illegal call is rejected with a reason", () => {
+  it("a pass is always legal, from whichever seat is on move", () => {
+    // The test used to ask about East, which is not on move after the dealer
+    // opens, and asserted the result was legal. The engine correctly refused
+    // ("It is not E's turn") - the test's seat was the bug.
+    const state = stateFor(["1NT"]);
+    expect(state.currentBidder).toBe("W");
+    const check = validator.isLegal(state, state.currentBidder, parseBid("P")!);
+    expect(check.legal).toBe(true);
+  });
+
+  it("a call from a seat that is not on move is rejected with a reason", () => {
     const state = stateFor(["1NT"]);
     const check = validator.isLegal(state, "E", parseBid("P")!);
-    expect(check.legal).toBe(true);
+    expect(check.legal).toBe(false);
+    expect(check.reason).toMatch(/not E's turn/i);
   });
 
   it("legality is decided purely by the engine, never the AI", () => {

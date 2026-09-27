@@ -1,21 +1,32 @@
 import { describe, it, expect } from "vitest";
 import { AuctionStateMachine } from "@/bridge/auction";
-import { Position } from "@/bridge/types";
+import { Position, isPartner } from "@/bridge/types";
 import { LegalBidValidator } from "@/bridge/validator";
 import { parseBid } from "@/bridge/bid";
 
 describe("AuctionStateMachine — deterministic auction", () => {
-  it("tracks the current bidder around the table", () => {
+  it("tracks the current bidder counter-clockwise around the table", () => {
+    // With South dealing, the order is South -> East -> North -> West: the
+    // player to the dealer's left acts next. It previously ran South -> West ->
+    // North -> East, which is clockwise.
     const auction = new AuctionStateMachine({ dealer: Position.SOUTH });
     expect(auction.currentBidder).toBe(Position.SOUTH);
     auction.submit("P");
-    expect(auction.currentBidder).toBe(Position.WEST);
+    expect(auction.currentBidder).toBe(Position.EAST);
     auction.submit("P");
     expect(auction.currentBidder).toBe(Position.NORTH);
     auction.submit("P");
-    expect(auction.currentBidder).toBe(Position.EAST);
+    expect(auction.currentBidder).toBe(Position.WEST);
     auction.submit("P");
     expect(auction.currentBidder).toBe(Position.SOUTH);
+  });
+
+  it("puts the partner of the last caller in seat, not across the table", () => {
+    // After South passes, East is next - an opponent, and therefore the seat
+    // left to the dealer. North and West are dealt in after.
+    const auction = new AuctionStateMachine({ dealer: Position.SOUTH });
+    auction.submit("P");
+    expect(isPartner(Position.SOUTH, auction.currentBidder)).toBe(false);
   });
 
   it("records the auction history", () => {
@@ -67,12 +78,26 @@ describe("AuctionStateMachine — deterministic auction", () => {
   it("legalCalls returns only bids above the current contract", () => {
     const auction = new AuctionStateMachine({ dealer: Position.NORTH });
     auction.submit("3NT");
-    const legal = auction.legalCalls(Position.EAST);
+    // Derived, not hard-coded: after the opener it is West's turn, and West is
+    // an opponent of North. This test used to name East, which was only on
+    // move under the old clockwise order.
+    expect(auction.currentBidder).toBe(Position.WEST);
+    const legal = auction.legalCalls(auction.currentBidder);
     const bids = legal.filter((c) => c.type === "bid");
     expect(bids.length).toBe(20); // 4 levels (4-7) × 5 strains
     expect(bids.every((b) => b.level! >= 4)).toBe(true);
     expect(legal.some((c) => c.type === "double")).toBe(true);
     expect(legal.some((c) => c.type === "pass")).toBe(true);
+  });
+
+  it("legalCalls gives the opener's partner only a pass", () => {
+    // North opened 3NT; East is North's partner. You may not bid over your own
+    // partner and you may not double them, so East's only option is to pass -
+    // even though East is not on move.
+    const auction = new AuctionStateMachine({ dealer: Position.NORTH });
+    auction.submit("3NT");
+    const partnerCalls = auction.legalCalls(Position.EAST);
+    expect(partnerCalls.every((c) => c.type === "pass")).toBe(true);
   });
 
   it("passes out after four consecutive passes", () => {
@@ -95,18 +120,20 @@ describe("LegalBidValidator — doubles & redoubles", () => {
   it("allows double against an opponent's bid", () => {
     const auction = new AuctionStateMachine({ dealer: Position.NORTH });
     auction.submit("1NT"); // N opens
-    auction.submit("P");   // E
-    auction.submit("P");   // S
-    const isLegal = validator.isLegal(auction.getState(), Position.WEST, parseBid("X")!);
+    auction.submit("P");   // W
+    auction.submit("2NT"); // S - standing bid now belongs to East's opponent
+    expect(auction.currentBidder).toBe(Position.EAST);
+    expect(isPartner(Position.EAST, Position.NORTH)).toBe(false);
+    const isLegal = validator.isLegal(auction.getState(), auction.currentBidder, parseBid("X")!);
     expect(isLegal.legal).toBe(true);
   });
 
   it("forbids doubling your own side's bid", () => {
     const auction = new AuctionStateMachine({ dealer: Position.NORTH });
     auction.submit("1C");  // N opens
-    auction.submit("1S");  // E overcalls
+    auction.submit("1S");  // W overcalls
     auction.submit("2C");  // S raises partner
-    auction.submit("P");   // W
+    auction.submit("P");   // E
     // Current bidder is N; the standing contract is partner S's 2C.
     const isLegal = validator.isLegal(auction.getState(), Position.NORTH, parseBid("X")!);
     expect(isLegal.legal).toBe(false);
@@ -115,7 +142,7 @@ describe("LegalBidValidator — doubles & redoubles", () => {
   it("allows redouble only against a double of your side", () => {
     const auction = new AuctionStateMachine({ dealer: Position.NORTH });
     auction.submit("1NT"); // N
-    auction.submit("X");   // E doubles N-S
+    auction.submit("X");   // W doubles N-S
     const redouble = validator.isLegal(auction.getState(), Position.SOUTH, parseBid("XX")!);
     expect(redouble.legal).toBe(true);
     // West (E-W) may NOT redouble E's own double.
@@ -135,7 +162,7 @@ describe("LegalBidValidator — doubles & redoubles", () => {
   it("resets the double when the contract is raised", () => {
     const auction = new AuctionStateMachine({ dealer: Position.NORTH });
     auction.submit("1C"); // N
-    auction.submit("X");  // E
+    auction.submit("X");  // W
     auction.submit("2C"); // S raises
     expect(auction.currentContract!.doubled).toBe(false);
   });

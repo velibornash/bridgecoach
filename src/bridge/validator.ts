@@ -20,6 +20,7 @@ import {
   BidCall,
   Position,
   isPartner,
+  seatAt,
 } from "./types";
 import { bidOutranks } from "./bid";
 
@@ -129,7 +130,7 @@ export class LegalBidValidator {
     }
     if (!lastAction || lastAction.call.type !== "double") return false;
 
-    const doubler = seatOfIndex(state, lastAction.index);
+    const doubler = seatAt(state.dealer, lastAction.index);
     if (isPartner(position, doubler)) return false;
 
     return true;
@@ -138,11 +139,5 @@ export class LegalBidValidator {
 
 /** The seat that made the standing (highest) bid. */
 function standingBidder(state: AuctionState): Position {
-  return seatOfIndex(state, state.lastBidIndex);
-}
-
-function seatOfIndex(state: AuctionState, index: number): Position {
-  const order: Position[] = ["N", "E", "S", "W"];
-  const startIdx = order.indexOf(state.dealer);
-  return order[(startIdx + index) % 4];
+  return seatAt(state.dealer, state.lastBidIndex);
 }

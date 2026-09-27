@@ -22,7 +22,12 @@ export const Strain = {
 
 export type Strain = (typeof Strain)[keyof typeof Strain];
 
-/** Seats around the table, clockwise N → E → S → W. */
+/**
+ * Seats around the table.
+ *
+ * The names are compass points, not a turn order. Turn order is `SEAT_ORDER`
+ * below, and it is counter-clockwise because that is how bridge is played.
+ */
 export const Position = {
   NORTH: "N",
   EAST: "E",
@@ -31,6 +36,33 @@ export const Position = {
 } as const;
 
 export type Position = (typeof Position)[keyof typeof Position];
+
+/**
+ * The order seats act in: **counter-clockwise**, N → W → S → E.
+ *
+ * ## Why this array is the only one in the codebase
+ *
+ * The UI draws the standard diagram — North top, West left, South bottom, East
+ * right — and play runs N → W → S → E around it. The player to the dealer's
+ * left acts next, and a dealer sitting North has West on their left.
+ *
+ * This used to be `["N", "E", "S", "W"]`, which is clockwise: top → right →
+ * bottom → left. It was duplicated in five places (`nextPosition`, `seatAt`, and
+ * a private `seatOfIndex` in both `contract.ts` and `validator.ts`, plus an array
+ * in the tactical page), and two tests asserted the wrong order, so 300+ passing
+ * tests confirmed the bug rather than catching it.
+ *
+ * A partial fix would be worse than the uniform one: if the state machine turned
+ * one way and the declarer calculator the other, auctions would be subtly
+ * invalid instead of obviously broken, and nothing would throw. So the rule
+ * lives here, once, and everything imports it.
+ */
+export const SEAT_ORDER: readonly Position[] = Object.freeze([
+  Position.NORTH,
+  Position.WEST,
+  Position.SOUTH,
+  Position.EAST,
+] as const);
 
 export const Vulnerability = {
   NONE: "None",
@@ -91,17 +123,28 @@ export const STRAIN_ORDER: Record<Strain, number> = {
   NT: 5,
 };
 
-/** Next seat clockwise after `position`. */
+/** The next seat to act, counter-clockwise. */
 export function nextPosition(position: Position): Position {
-  const order: Position[] = ["N", "E", "S", "W"];
-  const idx = order.indexOf(position);
-  return order[(idx + 1) % 4];
+  const idx = SEAT_ORDER.indexOf(position);
+  if (idx === -1) {
+    throw new Error(`Not a seat: ${String(position)}`);
+  }
+  return SEAT_ORDER[(idx + 1) % SEAT_ORDER.length]!;
 }
 
-/** The seat that made the auction call at zero-based history index `index`. */
+/**
+ * The seat that made the call at zero-based history index `index`.
+ *
+ * Index 0 is the dealer. This is the single attribution rule for recorded
+ * auctions: every call in a persisted hand is mapped to a seat through here, so
+ * a replay can be reconciled with a real deal.
+ */
 export function seatAt(dealer: Position, index: number): Position {
-  const order: Position[] = ["N", "E", "S", "W"];
-  return order[(order.indexOf(dealer) + index) % 4];
+  const start = SEAT_ORDER.indexOf(dealer);
+  if (start === -1) {
+    throw new Error(`Not a seat: ${String(dealer)}`);
+  }
+  return SEAT_ORDER[(start + index) % SEAT_ORDER.length]!;
 }
 
 /** Partners (N-S and E-W). */
