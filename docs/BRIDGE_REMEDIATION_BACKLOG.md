@@ -25,74 +25,87 @@ T7, T8 and T9+ are independent of T1 and can be taken at any point. They are lis
 
 ---
 
-## T1 — Single source of seat order, and counter-clockwise
+## T1 — Single source of seat order
 
-**Audit refs:** A1, B1, S4 · **Status:** DONE
+**Audit refs:** A1 · **Status:** DONE (corrected once — read this before changing the order)
 
 ### What
 
-Turn order is currently `N → E → S → W` (clockwise) in three separate files plus a fourth array in the tactical page. Contract bridge is counter-clockwise: `N → W → S → E`.
+Turn order was duplicated in seven places across three roles: five that decide
+turn order (`nextPosition` and `seatAt` in `types.ts`, a private `seatOfIndex` in
+both `contract.ts` and `validator.ts`, and `positionOrder` in the tactical page),
+and two seat lists used only for membership checks. All seven now import
+`SEAT_ORDER` from `src/bridge/types.ts`, where the rule is stated once with its
+reasoning.
 
-1. Export one `SEAT_ORDER`, one `nextPosition` and one `seatAt` from `src/bridge/types.ts`.
-2. Delete the duplicate `seatOfIndex` from `src/bridge/contract.ts` and `src/bridge/validator.ts`.
-3. Delete `positionOrder` from `src/app/tactical/page.tsx` and import the shared one.
-4. Set the order to `["N", "W", "S", "E"]`.
-5. Fix the two tests that assert the old order.
+The order itself is `N → E → S → W`, and **it was never wrong.** See below.
 
-### Why together and not separately
+### The correction, and why it matters that it happened
 
-A partial fix is worse than the current uniform bug. If the engine turns one way and the declarer calculator the other, auctions become subtly invalid instead of obviously broken, and nothing throws.
+The first attempt at this task reversed the order to `N → W → S → E`, on the
+belief that bridge is played counter-clockwise. It is not.
+
+- The table is drawn North top, East right, South bottom, West left, and each
+  player faces the middle, so their left hand is on the far side from a viewer.
+  North's left-hand opponent is **East**.
+- ACBL **Law 17C**: *"The player to dealer's left makes the second call, and
+  thereafter each player calls in turn in a clockwise rotation."*
+- Law 18E ranks denominations NT, spades, hearts, diamonds, clubs — the same
+  clockwise N→E→S→W order around the compass.
+
+**The reversal survived because the code was self-consistent.** The engine, the
+declarer calculator, the validator, the tactical page and both seat lists had
+all been flipped to match, so every test derived its expectation from the same
+flipped array. The declarer tests could not possibly have caught it:
+`isPartner(N, S)` is true whichever way the seats run, so partnership is
+symmetric and every declarer assertion passed. A mechanical check of the
+*comments* against the code found the discrepancy, and only deriving the opening
+lead in T5 proved the order itself was wrong — with a North declarer, West has
+to lead, and in the reversed order West does not sit between the declarer and
+their partner at all.
+
+The consequence is the argument for this task existing. One constant, in one
+file, with the rule written beside it, is something a reader can check. Seven
+copies are seven chances to be wrong *in the same way and to agree with each
+other*.
+
+### Kept from the first attempt
+
+- `SEAT_ORDER` exported once; `seatOfIndex` deleted from `contract.ts` and
+  `validator.ts`; `positionOrder` deleted from the tactical page.
+- The two membership-check lists now use the shared constant, so they cannot
+  drift.
+- `nextPosition` and `seatAt` throw on a non-seat rather than returning
+  `undefined` from `indexOf`.
+- Tests that hard-coded which seat was on move now derive it, and one test that
+  was named "the first illegal call is rejected" while asserting `legal ===
+  true` was fixed to match its name.
+- Every seat comment across the suite was checked against the code mechanically.
+  They were already correct, and are now correct *and* verified, which is the
+  only reason this was caught.
 
 ### Exit criteria
 
-- [x] `grep -rn '"N", "E", "S", "W"' src/` returns nothing
-- [x] `nextPosition(N) === W`, `nextPosition(W) === S`, `nextPosition(S) === E`, `nextPosition(E) === N`
+- [x] No seat array outside `src/bridge/types.ts`
+- [x] `nextPosition(N) === E`, `(E) === S`, `(S) === W`, `(W) === N`
+- [x] Each seat is followed by its left-hand opponent, asserted as a fact about
+      the table and not as a walk of the array
 - [x] `seatAt(dealer, 0) === dealer` and `seatAt(dealer, 4) === dealer`
-- [x] Declarer still correct for: `1♣ X 2♥`, `1NT P 2C P 2S P 4S P P P`
-- [x] Doubling legality unchanged: partner of the bidder still cannot double
+- [x] Declarer correct for `1♣ X 2♥` and `1NT P 2C P 2S P 4S P P P`
+- [x] Doubling legality unchanged: a partner still cannot double
 - [x] `npm run typecheck` 0, `npm run lint` 0 errors, `npm test` green, `npm run build` clean
 - [x] Every pre-existing auction test re-read for *intent*, not just made to pass
 
-### What actually happened
+### Also checked, and deliberately not changed
 
-The audit said three files; it was **seven**, in three distinct roles:
-
-- **turn order (5):** `nextPosition` and `seatAt` in `types.ts`, a private
-  `seatOfIndex` in both `contract.ts` and `validator.ts`, and `positionOrder`
-  in the tactical page. All five now import `SEAT_ORDER` / `seatAt`.
-- **seat lists (2 more):** `api/auctions/route.ts` and `api/practice/route.ts`
-  each had a `POSITIONS` array used only for a membership check. Order was
-  irrelevant there, but they were still copies that could drift, so they use
-  `SEAT_ORDER` too.
-- `nextPosition` and `seatAt` now throw on a non-seat instead of silently
-  returning `undefined` from `indexOf`.
-
-**The tests were the real problem.** Four failures were not wrong expectations —
-they were wrong *setups* that hard-coded which seat was on move. `legalCalls`
-was asked about East when it was West's turn; the double test asked about a
-partner's bid; one test named "the first illegal call is rejected" asserted
-`legal === true` while its name said the opposite. All three now derive the seat
-from `auction.currentBidder`, so they cannot re-encode an order. Added
-`legalCalls gives the opener's partner only a pass` and
-`a call from a seat that is not on move is rejected with a reason`, which turns
-two accidental tests into two real ones.
-
-**Every seat comment in the suite was written for the clockwise order** — 11 of
-them, in `contract.test.ts`, `auction.test.ts` and `confirmation.test.ts`. The
-assertions were all still correct (partnership is symmetric, so
-`isPartner(N,S)` is unchanged), which is exactly why nothing failed. Correct
-comments would have been the *first* thing to mislead the next reader, so they
-were checked mechanically against `SEAT_ORDER` and fixed.
-
-353 → 357 tests, none deleted. Lint stayed at its 31-warning baseline: fixing
-the orphaned `Position` import in the validate route paid for the one new
-warning my own change introduced.
-
-### How to test
-
-New unit test asserting the counter-clockwise cycle explicitly. Then re-read all of `tests/unit/bridge/auction.test.ts` — assertions that pass with the old order were written against the bug and their intent must be preserved, not their expectation. Then `npm test`.
-
----
+**A player may bid over their partner.** This is taught as a rule and is not one
+in the current Laws — the restriction was deleted, and 1NT–2♣ transfers are a
+partner overbid that every partnership relies on. An attempt to forbid it broke
+the transfer and Stayman evaluations immediately, which is the clearest possible
+demonstration that it is not a law. It is a convention matter (Law 40,
+partnership agreement), and encoding it here would forbid transfers. `legalCalls`
+asks the player is on move, and any bid outranking the current contract is
+legal.
 
 ## T2 — Contract scoring
 

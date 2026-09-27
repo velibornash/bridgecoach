@@ -122,7 +122,7 @@ describe("confirmCall — answer validation", () => {
   it("does not claim INCORRECT_STRATEGY for a response (no rule supports it)", () => {
     const auction = new AuctionStateMachine({ dealer: Position.NORTH });
     auction.submit("1NT"); // N opens
-    auction.submit("P");   // W
+    auction.submit("P");   // E
     // Partner's response — we have NO response rules, so we must not judge it.
     const result = confirmCall(auction.getState(), Position.SOUTH, parseBid("2H")!, {
       hand: balanced16,

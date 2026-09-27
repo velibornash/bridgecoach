@@ -38,30 +38,41 @@ export const Position = {
 export type Position = (typeof Position)[keyof typeof Position];
 
 /**
- * The order seats act in: **counter-clockwise**, N → W → S → E.
+ * The order seats act in: N → E → S → W.
  *
- * ## Why this array is the only one in the codebase
+ * ## Why this order
  *
- * The UI draws the standard diagram — North top, West left, South bottom, East
- * right — and play runs N → W → S → E around it. The player to the dealer's
- * left acts next, and a dealer sitting North has West on their left.
+ * Each seat is followed by the player **on their left**, and the seat drawn
+ * above North is East — a player facing the middle of the table has their left
+ * hand on the opposite side from a viewer looking at them. So North's left-hand
+ * opponent is East, East's is South, South's is West, and West's is North. That
+ * gives the auction order North, East, South, West, which is why bridge is
+ * described as being played *clockwise*.
  *
- * This used to be `["N", "E", "S", "W"]`, which is clockwise: top → right →
- * bottom → left. It was duplicated in five places (`nextPosition`, `seatAt`, and
- * a private `seatOfIndex` in both `contract.ts` and `validator.ts`, plus an array
- * in the tactical page), and two tests asserted the wrong order, so 300+ passing
- * tests confirmed the bug rather than catching it.
+ * ## The correction, and why it matters that it happened
  *
- * A partial fix would be worse than the uniform one: if the state machine turned
- * one way and the declarer calculator the other, auctions would be subtly
- * invalid instead of obviously broken, and nothing would throw. So the rule
- * lives here, once, and everything imports it.
+ * This array was once `["N", "W", "S", "E"]` on the belief that bridge is played
+ * counter-clockwise. It is not, and the reversal was a real defect: with a North
+ * declarer, West is the seat that must lead, and in the reversed order West does
+ * not sit between the declarer and their partner at all.
+ *
+ * The reversal survived because the code was **self-consistent**. The engine,
+ * the declarer calculator and the validator all used the same wrong array, and
+ * every test derived its expectation from that same array. The declarer tests
+ * in particular could not have caught it: partnership is symmetric, so
+ * `isPartner(N, S)` is true whichever way the seats run. Only a mechanical
+ * check of the *comments* against the code found the discrepancy, and only
+ * deriving the opening lead in a later task proved the order was wrong.
+ *
+ * Which is the argument for the single-source rule below: one constant, in one
+ * file, is a thing a reader can check. Five copies are five chances to be
+ * wrong in the same way and agree with each other.
  */
 export const SEAT_ORDER: readonly Position[] = Object.freeze([
   Position.NORTH,
-  Position.WEST,
-  Position.SOUTH,
   Position.EAST,
+  Position.SOUTH,
+  Position.WEST,
 ] as const);
 
 export const Vulnerability = {
@@ -123,7 +134,7 @@ export const STRAIN_ORDER: Record<Strain, number> = {
   NT: 5,
 };
 
-/** The next seat to act, counter-clockwise. */
+/** The next seat to act: the player on `position`'s left. */
 export function nextPosition(position: Position): Position {
   const idx = SEAT_ORDER.indexOf(position);
   if (idx === -1) {

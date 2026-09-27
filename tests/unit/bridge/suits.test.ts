@@ -45,31 +45,28 @@ describe("suit presentation — centralized colors", () => {
 });
 
 describe("seats", () => {
-  it("rotates counter-clockwise, as bridge is played", () => {
-    // The UI draws North top, West left, South bottom, East right. Play runs
-    // counter-clockwise around that diagram: top -> left -> bottom -> right.
-    // A dealer sitting North has West on their left, so North is followed by
-    // West.
-    //
-    // This test asserted the opposite (N -> E) and was named "rotates
-    // clockwise". The engine, the declarer calculator and the validator all
-    // agreed, so 300+ tests confirmed the error rather than catching it.
-    expect(nextPosition(Position.NORTH)).toBe(Position.WEST);
-    expect(nextPosition(Position.WEST)).toBe(Position.SOUTH);
-    expect(nextPosition(Position.SOUTH)).toBe(Position.EAST);
-    expect(nextPosition(Position.EAST)).toBe(Position.NORTH);
+  it("rotates clockwise", () => {
+    expect(nextPosition(Position.NORTH)).toBe(Position.EAST);
+    expect(nextPosition(Position.EAST)).toBe(Position.SOUTH);
+    expect(nextPosition(Position.SOUTH)).toBe(Position.WEST);
+    expect(nextPosition(Position.WEST)).toBe(Position.NORTH);
   });
 
-  it("turns through every seat exactly once", () => {
-    // Guards against an edit that shortens or duplicates the cycle.
-    // Four seats must have four distinct successors, and applying the function
-    // four times must return to the start. A shortened or duplicated cycle fails
-    // one of these.
-    const seats = [Position.NORTH, Position.SOUTH, Position.EAST, Position.WEST];
-    expect(new Set(seats.map(nextPosition)).size).toBe(4);
-    let seat: Position = Position.NORTH;
-    for (let i = 0; i < 4; i += 1) seat = nextPosition(seat);
-    expect(seat).toBe(Position.NORTH);
+  it("gives each seat the player on their left as the next to act", () => {
+    // Stated as a fact about the table rather than as a walk of the array above,
+    // so the two have to agree for the right reason. Each player faces the middle
+    // of the table, which puts their left hand on the far side from a viewer:
+    // North's left-hand opponent is East, and the auction runs clockwise.
+    //
+    // This is the check that was missing when the order was briefly reversed to
+    // N -> W -> S -> E: every copy of the array agreed with every other, and
+    // only this physical statement of the rule could contradict them.
+    const leftHandOpponent: Record<string, string> = {
+      N: "E", E: "S", S: "W", W: "N",
+    };
+    for (const [seat, opponent] of Object.entries(leftHandOpponent)) {
+      expect(nextPosition(seat as Position), seat).toBe(opponent);
+    }
   });
 
   it("knows partnerships", () => {

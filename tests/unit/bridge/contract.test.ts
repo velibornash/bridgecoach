@@ -5,14 +5,13 @@ import { Position } from "@/bridge/types";
 describe("ContractCalculator — declarer & final contract", () => {
   it("finds the declarer when partner bid the strain first", () => {
     // N opens 1S, S raises to 3S. Auction ends. Declarer should be N.
-    // Seats act counter-clockwise N -> W -> S -> E.
     const auction = new AuctionStateMachine({ dealer: Position.NORTH });
     auction.submit("1S"); // N
-    auction.submit("P");  // W
-    auction.submit("3S"); // S
     auction.submit("P");  // E
-    auction.submit("P");  // N
+    auction.submit("3S"); // S
     auction.submit("P");  // W
+    auction.submit("P");  // N
+    auction.submit("P");  // E
     const final = auction.finalContract()!;
     expect(final.passedOut).toBe(false);
     expect(final.contract).toEqual({ level: 3, strain: "S", doubled: false, redoubled: false });
@@ -23,11 +22,11 @@ describe("ContractCalculator — declarer & final contract", () => {
     // E opens 1C, W raises to 2C. Declarer should be E.
     const auction = new AuctionStateMachine({ dealer: Position.EAST });
     auction.submit("1C"); // E
-    auction.submit("P");  // N
-    auction.submit("2C"); // W
     auction.submit("P");  // S
-    auction.submit("P");  // E
+    auction.submit("2C"); // W
     auction.submit("P");  // N
+    auction.submit("P");  // E
+    auction.submit("P");  // S
     const final = auction.finalContract()!;
     expect(final.declarer).toBe(Position.EAST);
   });
@@ -35,11 +34,11 @@ describe("ContractCalculator — declarer & final contract", () => {
   it("carries doubled/redoubled state into the final contract", () => {
     const auction = new AuctionStateMachine({ dealer: Position.SOUTH });
     auction.submit("1NT"); // S
-    auction.submit("X");   // E doubles
-    auction.submit("XX");  // N redoubles - S's partner
-    auction.submit("P");   // W
-    auction.submit("P");   // S
+    auction.submit("X");   // W doubles
+    auction.submit("XX");  // N redoubles
     auction.submit("P");   // E
+    auction.submit("P");   // S
+    auction.submit("P");   // W
     const final = auction.finalContract()!;
     expect(final.contract!.doubled).toBe(true);
     expect(final.contract!.redoubled).toBe(true);
