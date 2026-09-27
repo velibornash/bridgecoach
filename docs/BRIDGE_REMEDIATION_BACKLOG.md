@@ -461,7 +461,7 @@ Unit test determinism: run the generator twice, compare; run for two dates, asse
 
 ## T8 — The AI is not shown the answer before judging
 
-**Audit refs:** P1 · **Status:** TODO
+**Audit refs:** P1 · **Status:** DONE
 
 ### What
 
@@ -472,10 +472,34 @@ Unit test determinism: run the generator twice, compare; run for two dates, asse
 
 ### Exit criteria
 
-- [ ] The judgement request body contains no expected bid
-- [ ] The hint request still does
-- [ ] Judging a bid that matches the book line and one that does not both work
-- [ ] Full gate green
+- [x] The judgement request body contains no expected bid
+- [x] The hint request still does
+- [x] Judging a bid that matches the book line and one that does not both work
+- [x] Full gate green
+
+### What actually happened
+
+**No answer was leaking.** `validateTacticalBid` builds its body field by field
+and `expectedNextBid` was never one of them, and the page did not pass it.
+
+The problem was structural: `BidValidationContext extends BidHintContext`, so the
+judgement context *inherited* the answer field. It was a latent leak rather than
+a live one — harmless until someone serialises the context wholesale instead of
+listing fields, at which point the answer key ships to the model that is supposed
+to be deciding whether the learner found it independently.
+
+The contexts are now split around a shared `BidDrillContext` (hands, dealer,
+vulnerability, auction, turn). The hint extends it with `expectedNextBid`; the
+judgement extends it with `proposedBid` and has nowhere to put an answer. "Does
+this context know the expected call?" is now answerable from the type, and a
+`@ts-expect-error` test asserts the judgement cannot be handed one.
+
+**The tests inspect the request, because nothing else can.** A model told the
+answer agrees readily, which is indistinguishable from a model reasoning well, so
+the only defence is checking what went out. The judgement test asserts the exact
+key set and that the serialised body contains no `expected`/`correct`/`answer`/
+`suggest` anywhere; the hint test asserts the answer *is* present, in the prompt
+text, so the split cannot be "fixed" by quietly removing it from both.
 
 ### How to test
 
@@ -596,7 +620,7 @@ says so before someone removes the guard believing it is one.
 | T5 hand lifecycle | **DONE** | `feat(bridge): a hand is a hand - deal, declarer, lead, 13 tricks` |
 | T6 practice is bridge | TODO | |
 | T7 daily hand | TODO | |
-| T8 AI hint vs judgement | TODO | |
+| T8 AI hint vs judgement | **DONE** | `fix(bridge): keep the answer key away from the model that judges` |
 | T9 Hand type safety | **DONE** | `fix(bridge): a card that cannot be parsed is not worth zero points` |
 | T10 tactical judgement | TODO | |
 | T11 replayer | TODO | |

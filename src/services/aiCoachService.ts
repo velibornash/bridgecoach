@@ -47,12 +47,30 @@ export function getSuggestedQuestions(): string[] {
   return suggestedQuestions;
 }
 
-export interface BidHintContext {
+/**
+ * Everything both the hint and the judgement are allowed to know: the deal, the
+ * auction so far, and whose turn it is.
+ *
+ * Notably **not** here: the expected call. Keeping the answer out of the shared
+ * base is what makes the split structural rather than a matter of remembering to
+ * omit a field — a judgement context that cannot hold the answer cannot be built
+ * from it by accident.
+ */
+export interface BidDrillContext {
   hands: Record<string, string[]>;
   dealer: string;
   vulnerability: string;
   auction: string[];
   turn: string;
+}
+
+/**
+ * The hint is allowed to know the answer - that is what a hint is.
+ *
+ * It is a separate interface extending the base, not an extra field on it, so
+ * "does this context know the expected call?" is answerable from the type.
+ */
+export interface BidHintContext extends BidDrillContext {
   expectedNextBid?: string;
 }
 
@@ -112,7 +130,18 @@ function offlineHint(ctx: BidHintContext): string {
   return `Offline mode: the drill expects ${expected} here. Try it and read the feedback — a configured AI provider would explain the full reasoning.`;
 }
 
-export interface BidValidationContext extends BidHintContext {
+/**
+ * The judgement must **not** know the expected call.
+ *
+ * This previously extended `BidHintContext`, so it inherited `expectedNextBid`.
+ * Nothing passed it, so no answer was leaked — but the type permitted it, and the
+ * body is built by listing fields, so any future refactor that serialised the
+ * context wholesale would have shipped the answer key to the model that is meant
+ * to be judging whether the learner found it independently. The model agreeing
+ * readily is indistinguishable from the model being right, so the only defence is
+ * that the answer cannot reach it.
+ */
+export interface BidValidationContext extends BidDrillContext {
   proposedBid: string;
 }
 
