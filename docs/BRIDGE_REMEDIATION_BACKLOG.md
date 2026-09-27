@@ -191,7 +191,7 @@ Table-driven unit tests, one case per cell. Assert the boundary on both sides of
 
 ## T3 — Trumps derived from the contract
 
-**Audit refs:** S8, B3.2 · **Status:** TODO · **Blocked by:** T2
+**Audit refs:** S8, B3.2 · **Status:** DONE · **Blocked by:** T2
 
 ### What
 
@@ -203,11 +203,47 @@ Table-driven unit tests, one case per cell. Assert the boundary on both sides of
 
 ### Exit criteria
 
-- [ ] `useState<Suit>('♠')` no longer appears in `/play`
-- [ ] A 3NT contract results in no trump suit
-- [ ] A recorded 3NT auction persists `strain: "NT"`
-- [ ] `getWinner` with no trumps never lets an off-suit card win
-- [ ] Full gate green
+- [x] `useState<Suit>('♠')` no longer appears in `/play`
+- [x] A 3NT contract results in no trump suit
+- [x] A recorded 3NT auction persists `strain: "NT"`
+- [x] `getWinner` with no trumps never lets an off-suit card win
+- [x] Full gate green
+
+### What actually happened
+
+`trumpSuitOf(contract)` is new in the engine and returns `Suit | null`, with
+`null` meaning notrump. `/play` now holds an `AuctionStateMachine`, submits the
+player's call to it, and reads the contract back out with the machine's own
+`finalContract()` — so the auction, not the page, decides what is being played.
+
+**The recording path was broken in three separate ways**, all of which had to be
+fixed before "a recorded 3NT auction persists NT" could even be tested:
+
+1. `RecordedAction.bid` was typed as `{ type, level, strain }` while the route
+   calls `requireString` on it. Every auction from /play was a **400**.
+2. `createAuction` read `response.data.auction`, but the route returns the
+   created auction **flat**. A successful request yielded `data: null`.
+3. `createHand` posts `kind: "hand"` to a route that only ever calls
+   `prisma.auction.create`, so no `Hand` row is created and `handId` stays null.
+
+None of these threw, and `finishHand` reported a failure the user could act on
+but nobody traced back to the wire format. Commit `49fb5d0` was titled *"the core
+loop recorded nothing"* and fixed none of the three. **1 and 2 are fixed here.**
+3 is the `Hand` lifecycle and is fixed in T5.
+
+The client now sends the call as it was spoken — `"3NT"`, `"P"` — so the engine
+parses the strain once instead of the client rebuilding it and the server
+re-parsing it. The POST response is typed as `CreatedAuction` on its own terms
+rather than being passed off as an `AuctionRecord`, because it is a smaller shape
+than the `GET` record.
+
+Also removed: `TrickEngine`'s `trumpSuit = '♠'` default (a missing trump is
+notrump, not spades) and the write-only `color` field on `playedCards`, which
+was declared in a type and read nowhere.
+
+**Not fixed here, on purpose:** `/play` still hard-codes `dealer: "S"`, always
+plays from South, and counts tricks for whichever side is North-South. That is
+the declarer and lead lifecycle — T5.
 
 ### How to test
 
@@ -432,7 +468,7 @@ Render with a scenario containing a known mix of calls and cards; assert each re
 |---|---|---|
 | T1 seat order | **DONE** | `fix(bridge): turn order is counter-clockwise` |
 | T2 scoring | **DONE** | `feat(bridge): duplicate scoring, checked against the ACBL tables` |
-| T3 trumps from contract | TODO | |
+| T3 trumps from contract | **DONE** | `fix(bridge): trumps come from the contract, not a fixed spade` |
 | T4 follow suit | TODO | |
 | T5 hand lifecycle | TODO | |
 | T6 practice is bridge | TODO | |

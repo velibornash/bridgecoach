@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import type { BridgeCard, CardSize, Suit } from "@/components/cardEngine/types";
 
 interface TrickEngineProps {
-  playedCards: Array<{ player: string; card: BridgeCard; color: Suit }>;
+  playedCards: Array<{ player: string; card: BridgeCard }>;
   trumpSuit?: Suit;
   currentTrick?: number;
   size?: CardSize;
@@ -54,7 +54,15 @@ export function getWinner(
   return winningCard.player;
 }
 
-export function TrickEngine({ playedCards = [], trumpSuit = '♠', currentTrick = 1, size = 'md', animate = true, highlightWinner = false, winner = null }: TrickEngineProps) {
+/**
+ * Renders the trick so far and who is winning it.
+ *
+ * `trumpSuit` has no default on purpose. It used to default to `'♠'`, so a caller
+ * that had not worked out the contract silently got a spade trump — in a notrump
+ * hand that made every spade an automatic winner. A missing trump is not an
+ * error, it is notrump, and the absence says so.
+ */
+export function TrickEngine({ playedCards = [], trumpSuit, currentTrick = 1, size = 'md', animate = true, highlightWinner = false, winner = null }: TrickEngineProps) {
   const playerLabels: Record<string, string> = {
     north: 'North', south: 'South', east: 'East', west: 'West',
   };

@@ -89,6 +89,22 @@ export const SUIT_SYMBOL_TO_CODE: Record<string, Suit> = {
   "♣": Suit.CLUBS,
 };
 
+/**
+ * Maps a display symbol to its engine suit code, e.g. "♠" → Suit.SPADES.
+ *
+ * Strict on purpose. The `SUIT_SYMBOL_TO_CODE` table returns `undefined` for
+ * anything it does not know, so `SUIT_SYMBOL_TO_CODE[x]` happily yields
+ * `undefined` and passes it on as a strain. Throwing here means the caller
+ * finds out at the conversion instead of persisting a call with no strain.
+ */
+export function suitCodeFromSymbol(symbol: string): Suit {
+  const code = SUIT_SYMBOL_TO_CODE[symbol];
+  if (!code) {
+    throw new Error(`Not a suit symbol: ${String(symbol)}.`);
+  }
+  return code;
+}
+
 /** Returns the presentation for a suit code. */
 export function getSuitPresentation(suit: Suit): SuitPresentation {
   return suitPresentation[suit];

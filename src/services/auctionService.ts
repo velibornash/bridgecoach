@@ -10,9 +10,23 @@
  */
 import { apiFetchSafe } from "./api";
 
+/**
+ * One recorded call, in the shape `POST /api/auctions` accepts.
+ *
+ * `bid` is the call as it was spoken — `"3NT"`, `"P"`, `"X"`, `"XX"` — not a
+ * structured object. It used to be `{ type, level, strain }`, which the route
+ * rejected with `"actions[0].bid" is required` because it calls `requireString`
+ * on it. Nothing from /play was ever persisted as a result: the type said the
+ * object was fine, the server disagreed, and the failure was a 400 nobody saw
+ * because the page had no hand to attach the auction to either.
+ *
+ * The route parses the string with the engine's own `parseBid`, so the strain is
+ * derived once, in one place, rather than being reconstructed by the client and
+ * then re-parsed.
+ */
 export interface RecordedAction {
   player: "N" | "E" | "S" | "W";
-  bid?: { type: "bid" | "pass" | "double" | "redouble"; level?: number; strain?: string } | null;
+  bid: string;
 }
 
 /**
@@ -77,18 +91,44 @@ export async function createHand(input: {
   return { data: result.data?.hand ?? null, error: result.data ? null : result.error };
 }
 
+/**
+ * What `POST /api/auctions` returns when it creates an auction: the created row
+ * plus its actions, flat, not wrapped in an `auction` key.
+ *
+ * It is a deliberately smaller shape than the `GET` record — no timestamps, no
+ * engine block, `declarer` instead of a full `FinalContract` — so it is typed on
+ * its own terms rather than being passed off as an `AuctionRecord`. Reading
+ * `.auction` off this response, which is what the client used to do, yielded
+ * `undefined` while the request had in fact succeeded.
+ */
+export interface CreatedAuction {
+  id: string;
+  dealer: string;
+  vulnerability: string;
+  isComplete: boolean;
+  declarer: string | null;
+  actions: Array<{
+    sequence: number;
+    player: string;
+    type: string;
+    level: number | null;
+    strain: string | null;
+    engineLegal: boolean;
+  }>;
+}
+
 /** Appends the auction, once it has finished. */
 export async function createAuction(input: {
-  handId: string;
+  handId: string | null;
   dealer: string;
   actions: RecordedAction[];
   isComplete?: boolean;
-}): Promise<{ data: AuctionRecord | null; error: string | null }> {
-  const result = await apiFetchSafe<{ auction: AuctionRecord }>("/api/auctions", {
+}): Promise<{ data: CreatedAuction | null; error: string | null }> {
+  const result = await apiFetchSafe<CreatedAuction>("/api/auctions", {
     method: "POST",
     body: input,
   });
-  return { data: result.data?.auction ?? null, error: result.data ? null : result.error };
+  return { data: result.data ?? null, error: result.data ? null : result.error };
 }
 
 export async function fetchAuctions(): Promise<{

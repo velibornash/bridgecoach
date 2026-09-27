@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -17,8 +17,20 @@ import {
   type RecordedAction,
 } from "@/services/auctionService";
 import { recordPracticeSession, type PracticeActionInput } from "@/services/practiceService";
+import { AuctionStateMachine, formatBid } from "@/bridge";
+import { trumpSuitOf } from "@/bridge/contract";
+import { getSuitPresentation, suitCodeFromSymbol } from "@/bridge/suits";
+import type { BidCall, Contract, Strain } from "@/bridge/types";
 
 type Player = 'north' | 'east' | 'south' | 'west';
+
+/**
+ * The bidding box names suits as symbols ("♠"), the engine as codes ("S").
+ * Notrump is already a code in both.
+ */
+function toStrain(suit: string): Strain {
+  return suit === "NT" ? "NT" : suitCodeFromSymbol(suit);
+}
 
 export default function PlayDemoPage() {
   const [phase, setPhase] = useState<'idle' | 'dealing' | 'bidding' | 'trick'>('idle');
@@ -26,9 +38,31 @@ export default function PlayDemoPage() {
     north: [], east: [], south: [], west: [],
   });
   const [currentBid, setCurrentBid] = useState<Bid | null>(null);
-  const [trumpSuit] = useState<Suit>('♠');
+  /**
+   * The auction as the engine sees it, plus the contract it produced.
+   *
+   * The engine is the only thing that decides what the contract is, so the page
+   * holds an `AuctionStateMachine` and reads the contract back out of it with
+   * its own `finalContract()`. This used to be `useState<Suit>('♠')` with no
+   * setter, which made spades trumps in every hand including notrump, and
+   * recorded every call as `strain: "S"` — a 3NT auction persisted as 3♠.
+   */
+  const auctionRef = useRef<AuctionStateMachine | null>(null);
+  const [contract, setContract] = useState<Contract | null>(null);
+
+  /**
+   * Trumps for the hand, as a display symbol, or undefined in notrump.
+   *
+   * `undefined` is meaningful: it tells the trick engine that nothing is trump,
+   * so only the lead suit can win. Passing a placeholder suit here is what let
+   * an off-suit ace win a notrump trick.
+   */
+  const trumpSuit: Suit | undefined = useMemo(() => {
+    const code = trumpSuitOf(contract);
+    return code ? (getSuitPresentation(code).symbol as Suit) : undefined;
+  }, [contract]);
   const [currentTrick, setCurrentTrick] = useState(1);
-  const [playedCards, setPlayedCards] = useState<Array<{ player: Player; card: BridgeCard; color: Suit }>>([]);
+  const [playedCards, setPlayedCards] = useState<Array<{ player: Player; card: BridgeCard }>>([]);
   const [trickWinner, setTrickWinner] = useState<string | null>(null);
   const [tricksByDeclarer, setTricksByDeclarer] = useState(0);
   const [tab, setTab] = useState<'deal' | 'bidding' | 'trick'>('deal');
@@ -77,31 +111,40 @@ export default function PlayDemoPage() {
 
   const handleBid = useCallback((bid: Bid) => {
     setCurrentBid(bid);
-    // Recorded as the call that was made. `engineLegal` is decided server-side
-    // from the engine's own rules, not asserted here.
-    //
-    // The strain is the trump suit as stored — a single letter. Notrump is a
-    // property of the contract, not one of the four `Suit` values, so it is not
-    // invented here.
-    bidCalls.current.push({
-      player: "S",
-      bid: {
-        type: bid.label === "Pass" ? "pass" : "bid",
-        level: bid.level,
-        strain: trumpSuit,
-      },
-    });
-    if (bid.label !== 'Pass') {
+    // Recorded as the call that was made, in the form the API accepts. The
+    // engine's `formatBid` writes it, so a notrump call is stored as "3NT" and
+    // not as a suit: the strain is the one the player bid, not the page's fixed
+    // trump suit, which made every call a spade call.
+    const isPass = bid.label === "Pass";
+    const call: BidCall = isPass
+      ? { type: "pass" }
+      : { type: "bid", level: bid.level, strain: toStrain(bid.suit) };
+    bidCalls.current.push({ player: "S", bid: formatBid(call) });
+
+    // Feed the same call to the engine and let it work out the contract, rather
+    // than tracking the strain here as well.
+    const machine = auctionRef.current ?? new AuctionStateMachine({ dealer: "S" });
+    auctionRef.current = machine;
+    machine.submit(call);
+
+    if (!isPass) {
+      // The other three seats pass, so the auction ends here and the contract is
+      // real. These passes are simulation, not user input, and are deliberately
+      // not added to `bidCalls` - only calls the user made are recorded as their
+      // actions.
+      for (let i = 0; i < 3; i += 1) machine.submit("P");
+      setContract(machine.finalContract()?.contract ?? null);
+
       // Simulate opponents passing around the table, then start play
       setTimeout(() => {
         setPhase('trick');
         setTab('trick');
       }, 900);
     }
-  }, [trumpSuit]);
+  }, []);
 
   const playCardFor = (player: Player, card: BridgeCard) => {
-    setPlayedCards((prev) => [...prev, { player, card, color: trumpSuit }]);
+    setPlayedCards((prev) => [...prev, { player, card }]);
     setHands((prev) => ({
       ...prev,
       [player]: prev[player].filter((c) => c.id !== card.id),
@@ -119,7 +162,7 @@ export default function PlayDemoPage() {
       } else {
         card = hand[0];
       }
-      setPlayedCards((prev) => [...prev, { player, card, color: trumpSuit }]);
+      setPlayedCards((prev) => [...prev, { player, card }]);
       setHands((prev) => ({
         ...prev,
         [player]: prev[player].filter((c) => c.id !== card.id),
