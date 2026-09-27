@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { isLegalPlay, legalSuitsToPlay, playRefusalReason } from "@/bridge/play";
+import {
+  isLegalPlay,
+  legalSuitsToPlay,
+  openingLeader,
+  openingTrickOrder,
+  playRefusalReason,
+} from "@/bridge/play";
+import { Position, isPartner, nextPosition } from "@/bridge/types";
 import { getWinner } from "@/components/trickEngine/TrickEngine";
 import type { BridgeCard } from "@/components/cardEngine/types";
 
@@ -103,5 +110,60 @@ describe("following suit and trick resolution together", () => {
   it("a player who must follow cannot ruff instead", () => {
     // Same cards, but South still holds a heart, so the spade is not available.
     expect(isLegalPlay("S", ["H", "S"], "H")).toBe(false);
+  });
+});
+
+
+describe("opening lead and the opening trick", () => {
+  it("is made by the declarer's left-hand opponent (Law 41A)", () => {
+    // Law 41A: "the defender on presumed declarer's left makes the opening
+    // lead". Each seat is followed by the player on their left, so that is the
+    // next seat in SEAT_ORDER.
+    expect(openingLeader(Position.NORTH)).toBe(Position.EAST);
+    expect(openingLeader(Position.EAST)).toBe(Position.SOUTH);
+    expect(openingLeader(Position.SOUTH)).toBe(Position.WEST);
+    expect(openingLeader(Position.WEST)).toBe(Position.NORTH);
+  });
+
+  it("is always a defender, never the declarer or dummy", () => {
+    for (const declarer of [Position.NORTH, Position.EAST, Position.SOUTH, Position.WEST]) {
+      const leader = openingLeader(declarer);
+      expect(leader).not.toBe(declarer);
+      expect(isPartner(leader, declarer)).toBe(false);
+    }
+  });
+
+  it("puts the declarer fourth, with dummy second", () => {
+    // Law 41A's footnote: "Declarer's first turn to play is from dummy." The
+    // assumption that the declarer plays second is the standard misreading and
+    // skips a card in every hand.
+    expect(openingTrickOrder(Position.SOUTH)).toEqual([
+      Position.WEST,  // the lead
+      Position.NORTH,  // dummy
+      Position.EAST,
+      Position.SOUTH,  // declarer
+    ]);
+  });
+
+  it("runs in turn order all the way round, whichever seat declares", () => {
+    for (const declarer of [Position.NORTH, Position.EAST, Position.SOUTH, Position.WEST]) {
+      const order = openingTrickOrder(declarer);
+      expect(new Set(order).size, String(declarer)).toBe(4);
+      for (let i = 0; i < 3; i += 1) {
+        expect(order[i + 1], `${declarer} step ${i}`).toBe(nextPosition(order[i]!));
+      }
+      // Dummy is the declarer's partner and plays second.
+      expect(isPartner(order[0]!, declarer), String(declarer)).toBe(false);
+      expect(isPartner(order[1]!, declarer), String(declarer)).toBe(true);
+      expect(order[3]).toBe(declarer);
+    }
+  });
+
+  it("matches a South declarer being led to by West", () => {
+    // The worked example from every beginner text: South declares, West leads,
+    // and dummy (North) plays the second card.
+    const order = openingTrickOrder(Position.SOUTH);
+    expect(order[0]).toBe(Position.WEST);
+    expect(order[1]).toBe(Position.NORTH);
   });
 });

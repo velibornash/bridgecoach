@@ -76,19 +76,28 @@ export interface HandRecord {
   createdAt: string;
 }
 
-/** Creates a hand. The replayer needs the cards, so the deal is stored. */
+/**
+ * Creates a hand. The replayer needs the cards, so the deal is stored.
+ *
+ * This posts to `/api/hands`, not `/api/auctions`. It used to post
+ * `kind: "hand"` to the auctions route, which only ever creates an `Auction`, so
+ * nothing was stored, `data` came back null, and `handId` stayed null — which
+ * made every later save unreachable. `HandRecord` is returned flat because that
+ * is what the route returns.
+ */
 export async function createHand(input: {
   dealer: string;
   north: unknown;
   east: unknown;
   south: unknown;
   west: unknown;
+  label?: string;
 }): Promise<{ data: HandRecord | null; error: string | null }> {
-  const result = await apiFetchSafe<{ hand: HandRecord }>("/api/auctions", {
+  const result = await apiFetchSafe<HandRecord>("/api/hands", {
     method: "POST",
-    body: { ...input, kind: "hand" },
+    body: input,
   });
-  return { data: result.data?.hand ?? null, error: result.data ? null : result.error };
+  return { data: result.data ?? null, error: result.data ? null : result.error };
 }
 
 /**

@@ -333,30 +333,75 @@ Unit test the legality function over: follows suit / must follow but did not / v
 
 ## T5 — Hand lifecycle: declarer, opening lead, 13 tricks
 
-**Audit refs:** B3.3 · **Status:** TODO · **Blocked by:** T4
+**Audit refs:** B3.3 · **Status:** DONE · **Blocked by:** T4
 
 ### What
 
-`/play` hard-codes `dealer: "S"` and plays as South, but with South dealing the declarer is East. There is no opening lead, and no hand completion.
+1. The declarer is whatever the engine says it is, and the opening lead is made
+   by the declarer's left-hand opponent.
+2. The hand runs a full 13 tricks and is scored with the T2 tables.
+3. The deal is actually stored, in a notation the engine can read back.
 
-1. Declarer = the player left of the dealer, from the engine — not a hard-coded seat.
-2. The opening lead is made by the player left of the declarer.
-3. The hand completes at 13 tricks and the result is scored with T2.
+### A correction to this task's own spec
+
+The spec said *"with South dealing the declarer is East"*. The declarer is not
+"the player left of the dealer" — it is **the first player of the winning side to
+name the final strain** (ACBL Law 22 / the standard definition). With South
+dealing and South bidding 1NT that happens to be South, not East. An
+implementation built on the spec's version would have credited the wrong
+partnership with every trick.
+
+A second assumption, which was mine and was wrong: the declarer does **not** play
+second. ACBL **Law 41A**'s footnote says *"Declarer's first turn to play is from
+dummy"*, so the opening trick runs declarer's LHO, **dummy**, declarer's RHO,
+declarer — the declarer is fourth. "Declarer plays second" is the standard
+misreading, and an implementation built on it skips a card in every hand.
+
+`openingTrickOrder` in `src/bridge/play.ts` returns the whole rotation so the
+rule lives in one place, and a test asserts all four seats for all four
+declarers.
+
+### What actually happened
+
+- **New `POST /api/hands`.** `createHand` was posting `kind: "hand"` to
+  `POST /api/auctions`, which only ever calls `prisma.auction.create` — so no
+  `Hand` row was created, `handId` stayed `null`, and `finishHand` returned
+  early on every hand. Hands now have their own route, which validates the deal
+  properly: 13 cards a seat, every card in engine notation, and all 52 distinct
+  across the table. A deal that is not a full pack is a 400, not an unplayable
+  hand in the replayer looking like a real one.
+- **Notation fixed.** Cards were written as `${c.suit}${c.rank}` with the display
+  symbol, so a spade ace was stored as the two characters `"♠A"`. The schema
+  documents engine notation (`"SA"`) and nothing could parse the other form. Both
+  the deal and the practice actions now use `suitCodeFromSymbol`.
+- **Dealer is state,** with a picker, instead of `dealer: "S"` written into every
+  call. Declarer, opening leader and the sides' names all follow from it.
+- **Play is driven by the turn.** The page played a fixed `west, north, east`
+  after South's card, which ignored the declarer entirely — so on any hand where
+  the declarer was not South the cards went down out of order. The AI now plays
+  whichever seat the engine says is on turn.
+- **Tricks are credited to the declarer's partnership,** found via
+  `isPartner(winner, declarer)`, rather than `winner === 'south' ||
+  'north'`, which was only right when the declarer happened to be in North-South.
+- **The hand now ends at 13.** The old resolution was `t >= 13 ? 13 : t + 1`,
+  which stopped after the twelfth trick: the last trick was never played and the
+  count could only reach 12. The result is scored with `contractOutcome` and
+  shown.
 
 ### Exit criteria
 
-- [ ] `dealer: "S"` is not hard-coded in `/play`
-- [ ] Declarer matches `findDeclarer` output for the auction actually played
-- [ ] Opening lead is by the correct seat
-- [ ] The hand ends at 13 tricks and reports made / not made from T2
-- [ ] A completed hand persists its result and the contract
-- [ ] Full gate green
+- [x] `dealer: "S"` is not hard-coded in `/play`
+- [x] Declarer matches the engine for the auction actually played
+- [x] Opening lead is by the declarer's left-hand opponent, dummy second
+- [x] The hand ends at 13 tricks and reports made / not made from T2
+- [x] A completed hand persists its result and the contract
+- [x] Full gate green
 
-### How to test
+### Left for T6
 
-Integration test over a scripted auction: assert the declarer, assert who leads, play out the hand, assert the outcome matches `contractOutcome`. The declarer assertion is the one that fails if T1 regressed.
-
----
+The played cards still go to `PracticeSession`, and `/practice` is not a bridge
+hand at all — no declarer, no lead, no scoring. T5 made `/play` a hand; it did
+not make the other page one.
 
 ## T6 — `/practice` is either bridge, or honestly a sandbox
 
@@ -525,7 +570,7 @@ Render with a scenario containing a known mix of calls and cards; assert each re
 | T2 scoring | **DONE** | `feat(bridge): duplicate scoring, checked against the ACBL tables` |
 | T3 trumps from contract | **DONE** | `fix(bridge): trumps come from the contract, not a fixed spade` |
 | T4 follow suit | **DONE** | `fix(bridge): following suit is enforced by the engine` |
-| T5 hand lifecycle | TODO | |
+| T5 hand lifecycle | **DONE** | `feat(bridge): a hand is a hand - deal, declarer, lead, 13 tricks` |
 | T6 practice is bridge | TODO | |
 | T7 daily hand | TODO | |
 | T8 AI hint vs judgement | TODO | |

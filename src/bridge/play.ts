@@ -6,7 +6,7 @@
  * so they cannot be bypassed by a page that forgets to check.
  */
 
-import { Suit } from "./types";
+import { Position, Suit, nextPosition } from "./types";
 
 /** The four suits, in the order the bidding box lists them. */
 const ALL_SUITS: readonly Suit[] = ["C", "D", "H", "S"];
@@ -45,6 +45,50 @@ export function isLegalPlay(
   leadSuit: Suit | null,
 ): boolean {
   return legalSuitsToPlay(heldSuits, leadSuit).includes(cardSuit);
+}
+
+/**
+ * The seat that makes the opening lead.
+ *
+ * ACBL **Law 41A**: *"After a bid, double or redouble has been followed by three
+ * passes in rotation, the defender on presumed declarer's left makes the opening
+ * lead."* Since each seat is followed by the player on their left, that is the
+ * seat immediately after the declarer in `SEAT_ORDER`.
+ *
+ * ## The part that is easy to get wrong
+ *
+ * The common assumption is that the declarer plays second, immediately after the
+ * lead. They do not. Law 41A's footnote is explicit: *"Declarer's first turn to
+ * play is from dummy unless accepting an opening lead out of turn."* So the
+ * opening trick runs:
+ *
+ *   1. declarer's left-hand opponent — the opening lead
+ *   2. **dummy** (the declarer's partner)
+ *   3. the declarer's right-hand opponent
+ *   4. the declarer
+ *
+ * A South declarer is led to by **West**, and dummy (North) plays second. An
+ * implementation that hands the second card to the declarer looks entirely
+ * plausible and skips a card for every hand.
+ */
+export function openingLeader(declarer: Position): Position {
+  return nextPosition(declarer);
+}
+
+/**
+ * Seat order for the opening trick, in play order.
+ *
+ * Returned whole rather than derived by callers so the "declarer is fourth"
+ * rule lives in one place, and so a test can assert the whole rotation.
+ */
+export function openingTrickOrder(declarer: Position): readonly Position[] {
+  const leader = openingLeader(declarer);
+  return [
+    leader,
+    nextPosition(leader),
+    nextPosition(nextPosition(leader)),
+    declarer,
+  ];
 }
 
 /**

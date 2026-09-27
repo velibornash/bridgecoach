@@ -17,12 +17,38 @@ import {
   type RecordedAction,
 } from "@/services/auctionService";
 import { recordPracticeSession, type PracticeActionInput } from "@/services/practiceService";
-import { AuctionStateMachine, formatBid, isLegalPlay, playRefusalReason } from "@/bridge";
+import {
+  AuctionStateMachine,
+  formatBid,
+  isLegalPlay,
+  openingTrickOrder,
+  playRefusalReason,
+} from "@/bridge";
+import {
+  Position as EnginePosition,
+  Vulnerability as EngineVulnerability,
+  nextPosition,
+  isPartner,
+} from "@/bridge/types";
+import { contractOutcome, type ContractOutcome } from "@/bridge/scoring";
 import { trumpSuitOf } from "@/bridge/contract";
 import { getSuitPresentation, suitCodeFromSymbol } from "@/bridge/suits";
 import type { BidCall, Contract, Strain, Suit as EngineSuit } from "@/bridge/types";
 
 type Player = 'north' | 'east' | 'south' | 'west';
+
+/** Engine seat code -> the player key this page uses for that seat. */
+const SEAT_TO_PLAYER: Record<string, Player> = {
+  N: 'north', E: 'east', S: 'south', W: 'west',
+};
+
+/** The inverse, for recording which seat made a call. */
+const PLAYER_TO_SEAT: Record<Player, EnginePosition> = {
+  north: EnginePosition.NORTH,
+  east: EnginePosition.EAST,
+  south: EnginePosition.SOUTH,
+  west: EnginePosition.WEST,
+};
 
 /**
  * The bidding box names suits as symbols ("♠"), the engine as codes ("S").
@@ -51,6 +77,20 @@ export default function PlayDemoPage() {
   const [contract, setContract] = useState<Contract | null>(null);
 
   /**
+   * Who deals, and therefore who is the declarer.
+   *
+   * This was `dealer: "S"` written into every call, which quietly made South the
+   * dealer, South the player, and the tricks credited to whichever side happens
+   * to be North-South regardless of who declared. The dealer is now state, and
+   * the declarer is whatever the engine says it is.
+   */
+  const [dealer, setDealer] = useState<EnginePosition>(EnginePosition.SOUTH);
+  /** The seat the human is playing. */
+  const humanSeat: Player = 'south';
+  /** Who the engine says is declaring, once the auction is complete. */
+  const [declarer, setDeclarer] = useState<EnginePosition | null>(null);
+
+  /**
    * Trumps for the hand, as a display symbol, or undefined in notrump.
    *
    * `undefined` is meaningful: it tells the trick engine that nothing is trump,
@@ -61,7 +101,12 @@ export default function PlayDemoPage() {
     const code = trumpSuitOf(contract);
     return code ? (getSuitPresentation(code).symbol as Suit) : undefined;
   }, [contract]);
+
+  /** The seat whose turn it is, or null when it is not their turn. */
+  const [turn, setTurn] = useState<EnginePosition | null>(null);
   const [currentTrick, setCurrentTrick] = useState(1);
+  /** The finished hand, scored by the engine. Null until the hand is over. */
+  const [result, setResult] = useState<ContractOutcome | null>(null);
   const [playedCards, setPlayedCards] = useState<Array<{ player: Player; card: BridgeCard }>>([]);
   const [trickWinner, setTrickWinner] = useState<string | null>(null);
   const [tricksByDeclarer, setTricksByDeclarer] = useState(0);
@@ -88,6 +133,13 @@ export default function PlayDemoPage() {
    */
   const cardCalls = useRef<PracticeActionInput[]>([]);
   const handId = useRef<string | null>(null);
+  /** Tricks played and won by the declarer, as refs so the 13th is detectable. */
+  const tricksPlayed = useRef(0);
+  const declarerTricks = useRef(0);
+  /** Guards the one-and-only write of a finished hand. */
+  const recorded = useRef(false);
+  /** Guards the one-and-only write of a finished hand. */
+
 
   const handleDealComplete = useCallback(async (dealtHands: Record<string, BridgeCard[]>) => {
     setHands(dealtHands as Record<Player, BridgeCard[]>);
@@ -95,19 +147,26 @@ export default function PlayDemoPage() {
     setTab('bidding');
     bidCalls.current = [];
     cardCalls.current = [];
+    tricksPlayed.current = 0;
+    declarerTricks.current = 0;
+    setResult(null);
+    recorded.current = false;
 
-    // Store the deal. Engine notation is what the schema documents ("SA").
+    // Store the deal in the engine's notation ("SA"), which is what the schema
+    // documents. It used to interpolate the display symbol, so a spade ace was
+    // stored as the two characters "♠A" - not a card, and unreadable by anything
+    // that tried to parse it back.
     const notation = (cards: BridgeCard[]) =>
-      Object.fromEntries(cards.map((c) => [c.id, `${c.suit}${c.rank}`]));
+      Object.fromEntries(cards.map((c) => [c.id, `${suitCodeFromSymbol(c.suit)}${c.rank}`]));
     const result = await createHand({
-      dealer: "S",
+      dealer,
       north: notation((dealtHands as Record<string, BridgeCard[]>).north ?? []),
       east: notation((dealtHands as Record<string, BridgeCard[]>).east ?? []),
       south: notation((dealtHands as Record<string, BridgeCard[]>).south ?? []),
       west: notation((dealtHands as Record<string, BridgeCard[]>).west ?? []),
     });
     handId.current = result.data?.id ?? null;
-  }, []);
+  }, [dealer]);
 
   const handleBid = useCallback((bid: Bid) => {
     setCurrentBid(bid);
@@ -119,11 +178,11 @@ export default function PlayDemoPage() {
     const call: BidCall = isPass
       ? { type: "pass" }
       : { type: "bid", level: bid.level, strain: toStrain(bid.suit) };
-    bidCalls.current.push({ player: "S", bid: formatBid(call) });
+    bidCalls.current.push({ player: PLAYER_TO_SEAT[humanSeat], bid: formatBid(call) });
 
     // Feed the same call to the engine and let it work out the contract, rather
     // than tracking the strain here as well.
-    const machine = auctionRef.current ?? new AuctionStateMachine({ dealer: "S" });
+    const machine = auctionRef.current ?? new AuctionStateMachine({ dealer });
     auctionRef.current = machine;
     machine.submit(call);
 
@@ -133,7 +192,11 @@ export default function PlayDemoPage() {
       // not added to `bidCalls` - only calls the user made are recorded as their
       // actions.
       for (let i = 0; i < 3; i += 1) machine.submit("P");
-      setContract(machine.finalContract()?.contract ?? null);
+      const final = machine.finalContract();
+      setContract(final?.contract ?? null);
+      setDeclarer(final?.declarer ?? null);
+      // The declarer's left-hand opponent leads, and the declarer plays fourth.
+      setTurn(final?.declarer ? openingTrickOrder(final.declarer)[0]! : null);
 
       // Simulate opponents passing around the table, then start play
       setTimeout(() => {
@@ -141,7 +204,7 @@ export default function PlayDemoPage() {
         setTab('trick');
       }, 900);
     }
-  }, []);
+  }, [dealer]);
 
   const playCardFor = (player: Player, card: BridgeCard) => {
     setPlayedCards((prev) => [...prev, { player, card }]);
@@ -151,24 +214,29 @@ export default function PlayDemoPage() {
     }));
   };
 
-  const autoPlayOpponent = useCallback((player: Player, leadSuit: Suit | null) => {
-    setTimeout(() => {
-      const hand = handsRef.current[player];
-      if (!hand || hand.length === 0) return;
-      let card: BridgeCard;
-      if (leadSuit) {
-        const follow = hand.filter((c) => c.suit === leadSuit);
-        card = (follow.length > 0 ? follow : hand)[0];
-      } else {
-        card = hand[0];
-      }
-      setPlayedCards((prev) => [...prev, { player, card }]);
-      setHands((prev) => ({
-        ...prev,
-        [player]: prev[player].filter((c) => c.id !== card.id),
-      }));
-    }, 600);
-  }, [trumpSuit]);
+  /**
+   * Play a card for an AI seat, following suit when it can.
+   *
+   * When void it plays whatever it holds, which is legal: a void player may
+   * discard, and a trump discard wins the trick.
+   */
+  const autoPlayFor = useCallback((seat: EnginePosition, leadSuit: Suit | null) => {
+    const player = SEAT_TO_PLAYER[seat]!;
+    const hand = handsRef.current[player];
+    if (!hand || hand.length === 0) return;
+    const follow = leadSuit ? hand.filter((c) => c.suit === leadSuit) : [];
+    const card = (follow.length > 0 ? follow : hand)[0]!;
+    cardCalls.current.push({
+      phase: "play",
+      player: PLAYER_TO_SEAT[player],
+      card: `${suitCodeFromSymbol(card.suit)}${card.rank}`,
+    });
+    setPlayedCards((prev) => [...prev, { player, card }]);
+    setHands((prev) => ({
+      ...prev,
+      [player]: prev[player].filter((c) => c.id !== card.id),
+    }));
+  }, []);
 
   /**
    * The suit of the card that opened the current trick, or null when it is
@@ -214,15 +282,19 @@ export default function PlayDemoPage() {
     playCardFor('south', card);
 
     // Card plays are recorded as practice actions, not auction actions.
-    cardCalls.current.push({ phase: "play", player: "S", card: `${card.suit}${card.rank}` });
+    // Engine notation again, for the same reason as the deal.
+    cardCalls.current.push({
+      phase: "play",
+      player: "S",
+      card: `${suitCodeFromSymbol(card.suit)}${card.rank}`,
+    });
 
-    // The opponents follow the suit South just led.
-    autoPlayOpponent('west', card.suit);
-    setTimeout(() => autoPlayOpponent('north', card.suit), 650);
-    setTimeout(() => autoPlayOpponent('east', card.suit), 1300);
-  }, [playedCards, autoPlayOpponent, southHeldSuits, leadSuit]);
+    // The next seat is whatever the engine says, not a fixed west/north/east
+    // sequence. That sequence ignored the declarer entirely, so on any hand the
+    // declarer was not South the cards were played out of order.
+    setTurn((t) => (t ? nextPosition(t) : t));
+  }, [playedCards, southHeldSuits, leadSuit]);
 
-  const recorded = useRef(false);
   const [recording, setRecording] = useState<"idle" | "saving" | "saved" | "failed">("idle");
 
   /**
@@ -242,7 +314,7 @@ export default function PlayDemoPage() {
     setRecording("saving");
     const auction = await createAuction({
       handId: handId.current,
-      dealer: "S",
+      dealer,
       actions: bidCalls.current,
       isComplete: true,
     });
@@ -255,7 +327,34 @@ export default function PlayDemoPage() {
       return;
     }
     setRecording("saved");
-  }, []);
+  }, [dealer]);
+
+  /** "North-South" or "East-West", whichever is declaring. */
+  const declarerSideName = declarer === EnginePosition.EAST || declarer === EnginePosition.WEST
+    ? "EW"
+    : "NS";
+  const defenderSideName = declarerSideName === "NS" ? "EW" : "NS";
+
+  /**
+   * Drive the non-human seats from the engine's turn order.
+   *
+   * Whichever seat the engine says is on turn plays, so the sequence is a real
+   * rotation: the declarer's left-hand opponent leads, dummy plays second on the
+   * opening trick, and each trick thereafter starts with whoever won the last.
+   */
+  useEffect(() => {
+    if (phase !== 'trick' || turn === null) return;
+    if (SEAT_TO_PLAYER[turn] === humanSeat) return;
+    if (playedCards.length >= 4) return;
+    const timer = setTimeout(() => autoPlayFor(turn, leadSuit), 600);
+    return () => clearTimeout(timer);
+  }, [phase, turn, playedCards, leadSuit, autoPlayFor]);
+
+  /** Score the hand from what was actually played, once all 13 tricks are in. */
+  const scoreHand = (tricks: number) => {
+    if (!contract) return;
+    setResult(contractOutcome(contract, tricks, EngineVulnerability.NONE));
+  };
 
   // Resolve the trick once all 4 cards are played
   useEffect(() => {
@@ -263,26 +362,51 @@ export default function PlayDemoPage() {
     const timer = setTimeout(() => {
       const winner = getWinner(playedCards, trumpSuit);
       setTrickWinner(winner);
-      if (winner === 'south' || winner === 'north') {
-        setTricksByDeclarer((t) => t + 1);
-      }
+
+      // Credit the declarer's partnership, not "North-South" whatever the deal.
+      // The old test was `winner === 'south' || winner === 'north'`, which is
+      // only right when the declarer happens to be in that partnership.
+      const winnerSeat = winner
+        ? (Object.keys(SEAT_TO_PLAYER).find((k) => SEAT_TO_PLAYER[k as EnginePosition] === winner) as
+            | EnginePosition
+            | undefined)
+        : undefined;
+      const declarerSideWon =
+        winnerSeat != null && declarer != null && isPartner(winnerSeat, declarer);
+
       const finishTimer = setTimeout(() => {
         setPlayedCards([]);
         setTrickWinner(null);
-        setCurrentTrick((t) => {
-          const next = t >= 13 ? 13 : t + 1;
-          // Thirteen tricks ends the hand; record it once, then.
-          if (next === 13 && handId.current && !recorded.current) {
+        if (declarerSideWon) setTricksByDeclarer((t) => t + 1);
+        setTurn((t) => (winnerSeat ? nextPosition(winnerSeat) : t));
+
+        // Count in refs so the thirteenth trick can be recognised here, rather
+        // than in a follow-up effect that would setState synchronously and
+        // cascade a render.
+        tricksPlayed.current += 1;
+        declarerTricks.current += declarerSideWon ? 1 : 0;
+        setCurrentTrick(Math.min(tricksPlayed.current, 13));
+
+        // A hand is 13 tricks. The old code stopped at 12: `t >= 13 ? 13 :
+        // t + 1` meant the last trick was never played and the count could only
+        // ever reach 12.
+        if (tricksPlayed.current === 13) {
+          scoreHand(declarerTricks.current);
+          if (handId.current && !recorded.current) {
             recorded.current = true;
             void finishHand();
           }
-          return next;
-        });
+        }
       }, 2200);
       return () => clearTimeout(finishTimer);
     }, 700);
     return () => clearTimeout(timer);
-  }, [playedCards, trumpSuit]);
+    // scoreHand and finishHand are stable enough here: both read refs and state
+    // setters only, and re-running this effect is keyed on the trick in progress.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playedCards, trumpSuit, declarer]);
+
+
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -342,6 +466,26 @@ export default function PlayDemoPage() {
             )}
 
             {tab === 'deal' && (
+              <div className="mb-4 flex items-center justify-center gap-2">
+                <span className="text-xs text-text-tertiary">Dealer:</span>
+                {(["N", "E", "S", "W"] as const).map((seat) => (
+                  <button
+                    key={seat}
+                    type="button"
+                    onClick={() => setDealer(seat)}
+                    className={`px-2 py-1 text-xs rounded ${
+                      dealer === seat
+                        ? "bg-accent text-white"
+                        : "bg-bg-secondary text-text-secondary"
+                    }`}
+                  >
+                    {seat}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {tab === 'deal' && (
               <DealAnimation onComplete={handleDealComplete} size="lg" />
             )}
 
@@ -383,12 +527,47 @@ export default function PlayDemoPage() {
                   winner={trickWinner}
                 />
 
+                {/* Whose turn it is, from the engine. */}
+                {turn && !result && (
+                  <p className="text-center text-xs text-text-tertiary">
+                    {SEAT_TO_PLAYER[turn] === humanSeat
+                      ? "Your turn — play a card."
+                      : `${turn} to play…`}
+                  </p>
+                )}
+
                 {/* Result row */}
                 <div className="flex items-center justify-center gap-4">
-                  <Badge variant="primary">NS tricks: {tricksByDeclarer}</Badge>
-                  <Badge variant="default">EW tricks: {Math.max(0, currentTrick - 1 - tricksByDeclarer)}</Badge>
-                  <Badge variant="default">Trick {currentTrick}/13</Badge>
+                  <Badge variant="primary">
+                    {declarerSideName} tricks: {tricksByDeclarer}
+                  </Badge>
+                  <Badge variant="default">
+                    {defenderSideName} tricks: {Math.max(0, Math.min(13, currentTrick - 1) - tricksByDeclarer)}
+                  </Badge>
+                  <Badge variant="default">Trick {Math.min(currentTrick, 13)}/13</Badge>
+                  {declarer && (
+                    <Badge variant="default">
+                      {declarer} declares{contract ? ` ${contract.level}${contract.strain}` : ""}
+                    </Badge>
+                  )}
                 </div>
+
+                {result && (
+                  <div
+                    role="status"
+                    className="rounded-xl border border-border bg-bg-card p-4 text-center space-y-1"
+                  >
+                    <p className="font-semibold">
+                      {contract?.level}
+                      {contract?.strain}
+                      {contract?.doubled ? (contract.redoubled ? "XX" : "X") : ""} — {result.made ? "made" : "down"}
+                    </p>
+                    <p className="text-sm text-text-secondary">{result.label}</p>
+                    <p className="text-xs text-text-tertiary">
+                      Declarer needed {result.tricksRequired} of 13 and took {result.tricksTaken}.
+                    </p>
+                  </div>
+                )}
 
                 {/* Playable cards for the user */}
                 {playedCards.some((p) => p.player === 'south') ? (
