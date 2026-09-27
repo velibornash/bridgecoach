@@ -13,12 +13,37 @@ import {
   type Hand,
 } from "@/bridge";
 
+/**
+ * Build a hand from rank strings, e.g. hand("AKQ", "", "A2", "T9876").
+ *
+ * Ranks are read as **tokens**, not characters. This used to be
+ * `.split("")`, which turned a ten into the two cards "1" and "0" - so no
+ * fixture could express a ten at all, and the resulting "cards" were not cards.
+ * That went unnoticed because `hcp` scored anything it could not read as zero,
+ * and a ten is worth zero anyway. Tightening the engine exposed it.
+ */
+const RANK_TOKENS = "A K Q J T 10 9 8 7 6 5 4 3 2".split(" ");
+
+function ranks(ranksText: string): string[] {
+  return (ranksText || "")
+    .replace(/10/g, "T")
+    .split("")
+    .map((r) => r.toUpperCase())
+    .filter((r) => r.length > 0)
+    .map((r) => {
+      if (!RANK_TOKENS.includes(r)) {
+        throw new Error(`Not a rank: ${JSON.stringify(r)} in ${JSON.stringify(ranksText)}`);
+      }
+      return r === "T" ? "10" : r;
+    });
+}
+
 function hand(spades: string, hearts: string, diamonds: string, clubs: string): Hand {
   return {
-    spades: (spades || "").split("").map((r) => `S${r}`),
-    hearts: (hearts || "").split("").map((r) => `H${r}`),
-    diamonds: (diamonds || "").split("").map((r) => `D${r}`),
-    clubs: (clubs || "").split("").map((r) => `C${r}`),
+    spades: ranks(spades).map((r) => `S${r}`),
+    hearts: ranks(hearts).map((r) => `H${r}`),
+    diamonds: ranks(diamonds).map((r) => `D${r}`),
+    clubs: ranks(clubs).map((r) => `C${r}`),
   };
 }
 

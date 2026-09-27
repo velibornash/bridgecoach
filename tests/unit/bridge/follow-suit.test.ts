@@ -7,6 +7,8 @@ import {
   playRefusalReason,
 } from "@/bridge/play";
 import { Position, isPartner, nextPosition } from "@/bridge/types";
+import { hcp } from "@/bridge/evaluation";
+import { parseCard } from "@/bridge/play";
 import { getWinner } from "@/components/trickEngine/TrickEngine";
 import type { BridgeCard } from "@/components/cardEngine/types";
 
@@ -165,5 +167,32 @@ describe("opening lead and the opening trick", () => {
     const order = openingTrickOrder(Position.SOUTH);
     expect(order[0]).toBe(Position.WEST);
     expect(order[1]).toBe(Position.NORTH);
+  });
+});
+
+describe("card notation is checked, not guessed", () => {
+  it("parses engine notation", () => {
+    expect(parseCard("SA")).toEqual({ suit: "S", rank: "A" });
+    expect(parseCard("H10")).toEqual({ suit: "H", rank: "10" });
+    expect(parseCard("C2")).toEqual({ suit: "C", rank: "2" });
+  });
+
+  it("rejects a card it cannot read instead of scoring it as nothing", () => {
+    // "A" with no suit is the case that used to score zero: slice(1) gives "",
+    // which matches no rank, and the ace was worth 0 points. A hand written that
+    // way is four points light and every bid built on it is wrong.
+    expect(() => parseCard("A")).toThrow(/engine notation/);
+    expect(() => parseCard("")).toThrow(/engine notation/);
+    expect(() => parseCard("Z9")).toThrow(/engine notation/);
+    expect(() => parseCard("S1")).toThrow(/engine notation/);
+    expect(() => parseCard("SX")).toThrow(/engine notation/);
+  });
+
+  it("raises from hcp rather than returning 0 for a bad card", () => {
+    expect(() => hcp({ spades: ["A"], hearts: [], diamonds: [], clubs: [] })).toThrow(
+      /engine notation/,
+    );
+    // The regression net: real notation still scores.
+    expect(hcp({ spades: ["SA"], hearts: ["HK"], diamonds: ["DQ"], clubs: [] })).toBe(9);
   });
 });

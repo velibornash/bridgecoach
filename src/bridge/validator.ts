@@ -103,12 +103,32 @@ export class LegalBidValidator {
     return { legal: false, reason: "Unknown call." };
   }
 
-  /** Double is legal against an opponent's standing (undoubled) contract. */
+  /**
+   * Double is legal against an opponent's standing (undoubled) contract.
+   *
+   * ## Deliberate simplification: a partner cannot be doubled
+   *
+   * The `isPartner` guard below refuses a double of your own partner's bid. In
+   * duplicate bridge that call is *lawful* — the current Laws place no
+   * restriction on it, the same way they place none on bidding over a partner —
+   * but it is almost always a mistake, and it is not something a beginner should
+   * be steered into by a tool that offers it.
+   *
+   * So the engine teaches one rule: you double an opponent, or you do not
+   * double. This is a teaching choice, not a claim about the Laws, and it is
+   * recorded here so nobody later "fixes" it into a law it was never meant to
+   * be, or removes it believing it is a bug.
+   *
+   * Consequence to be aware of: the engine will reject an auction that a real
+   * table would accept, so a hand recorded elsewhere and replayed here may be
+   * refused at the double. That is the cost of the simplification and is
+   * preferable to teaching a call that loses tricks.
+   */
   private canDouble(state: AuctionState, position: Position): boolean {
     if (!state.currentContract) return false;
     if (state.isDoubled) return false;
     const bidder = standingBidder(state);
-    if (isPartner(position, bidder)) return false;
+    if (isPartner(position, bidder)) return false; // See the note above.
     return true;
   }
 

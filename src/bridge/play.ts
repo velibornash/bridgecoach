@@ -6,7 +6,42 @@
  * so they cannot be bypassed by a page that forgets to check.
  */
 
-import { Position, Suit, nextPosition } from "./types";
+import { Position, Strain, Suit, nextPosition } from "./types";
+
+/** A card in the engine's notation, split into its parts. */
+export interface ParsedCard {
+  readonly suit: Suit;
+  readonly rank: string;
+}
+
+const RANKS: readonly string[] = ["A", "K", "Q", "J", "10", "9", "8", "7", "6", "5", "4", "3", "2"];
+const SUIT_CODES: readonly string[] = ["S", "H", "D", "C"];
+
+/**
+ * Parse a card written in the engine's notation: a suit code then a rank, e.g.
+ * `"SA"`, `"H10"`.
+ *
+ * **This throws on anything else, and that is the point.** The alternative is
+ * `card.slice(1)`, which turns `"A"` into `""`, matches no rank, and scores the
+ * card as **zero points** — no error, no warning, just a hand that quietly looks
+ * four points weaker than it is. A player with two aces would be told to pass on
+ * a hand they should open, and nothing anywhere would say why.
+ *
+ * So the encoding is checked once, here, and every caller gets either a card or a
+ * loud failure. `RANKS` is used to build the check rather than a loose pattern, so
+ * "S1" and "SJ" are as unacceptable as "A".
+ */
+export function parseCard(card: string): ParsedCard {
+  const suit = card.slice(0, 1);
+  const rank = card.slice(1);
+  if (!SUIT_CODES.includes(suit) || !RANKS.includes(rank)) {
+    throw new Error(
+      `Not a card in engine notation (e.g. "SA", "H10"): ${JSON.stringify(card)}. ` +
+        `Expected a suit code (S/H/D/C) followed by a rank (A/K/Q/J/10-2).`,
+    );
+  }
+  return { suit: suit as Suit, rank };
+}
 
 /** The four suits, in the order the bidding box lists them. */
 const ALL_SUITS: readonly Suit[] = ["C", "D", "H", "S"];

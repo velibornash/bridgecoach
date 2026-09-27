@@ -14,13 +14,21 @@
 
 import { AuctionState, BidCall, Hand, Position, Strain, Suit, isPartner, seatAt } from "./types";
 import { suitPresentation } from "./suits";
+import { parseCard } from "./play";
 
-/** High-card points: A=4, K=3, Q=2, J=1. */
+/**
+ * High-card points: A=4, K=3, Q=2, J=1.
+ *
+ * Cards go through `parseCard`, which throws on an unrecognised encoding. The
+ * previous `card.slice(1)` scored anything it could not read as **zero** - a hand
+ * written as `["A"]` rather than `["SA"]` came out 4 points light, with no
+ * signal at all, and the advice built on it was confidently wrong.
+ */
 export function hcp(hand: Hand): number {
   let points = 0;
   for (const suitKey of ["spades", "hearts", "diamonds", "clubs"] as const) {
     for (const card of hand[suitKey]) {
-      const rank = card.slice(1);
+      const { rank } = parseCard(card);
       if (rank === "A") points += 4;
       else if (rank === "K") points += 3;
       else if (rank === "Q") points += 2;

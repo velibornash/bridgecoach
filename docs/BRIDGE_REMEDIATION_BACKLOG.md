@@ -485,7 +485,7 @@ Assert the request bodies. A test that inspects what was sent is the only thing 
 
 ## T9 — `Hand` cannot silently score zero
 
-**Audit refs:** S1 · **Status:** TODO
+**Audit refs:** S1 · **Status:** DONE
 
 ### What
 
@@ -495,10 +495,26 @@ Make the card a typed `{ suit, rank }`, or validate and reject unknown encoding.
 
 ### Exit criteria
 
-- [ ] An unparseable card raises rather than scoring 0
-- [ ] `hcp({ spades: ["A"] })` no longer returns 0 silently
-- [ ] Valid engine notation still scores correctly
-- [ ] Full gate green
+- [x] An unparseable card raises rather than scoring 0
+- [x] `hcp({ spades: ["A"] })` no longer returns 0 silently
+- [x] Valid engine notation still scores correctly
+- [x] Full gate green
+
+### What actually happened
+
+`parseCard(code)` in `src/bridge/play.ts` splits engine notation and **throws** on
+anything else, validating the rank against the real rank list so `"S1"` and
+`"SX"` are as unacceptable as `"A"`. `hcp` goes through it.
+
+**It immediately caught a second defect in the test fixtures.** The hand helper
+in three test files built cards with `.split("")` — one character per rank — so
+the ten became two cards, `"1"` and `"0"`. No fixture could express a ten at all,
+and the two halves were not cards. This had been invisible precisely because
+`hcp` scored unreadable cards as zero and a ten is worth zero anyway: the bug
+was hiding behind the bug this task was about.
+
+The helper now reads ranks as tokens, and the existing HCP and balance tests pass
+unchanged, which is the regression net this task needed.
 
 ### How to test
 
@@ -556,7 +572,14 @@ Render with a scenario containing a known mix of calls and cards; assert each re
 
 ## Documented, not changing
 
-**S2 — doubling a partner is refused.** `canDouble` requires the doubler not to be the bidder's partner. Doubling a partner's bid is legal, if rare and usually bad. A defensible teaching simplification. It is currently undocumented as one.
+**S2 — doubling a partner is refused.** `canDouble` requires the doubler not to be
+the bidder's partner. Doubling a partner's bid is lawful — the current Laws place
+no restriction on it, the same way they place none on bidding over a partner — but
+it is almost always a mistake. A defensible teaching simplification, now
+documented in `canDouble` itself, including its cost: the engine will refuse an
+auction a real table would accept, so a hand recorded elsewhere and replayed here
+can be rejected at the double. That is a known price, not a bug, and the comment
+says so before someone removes the guard believing it is one.
 
 - [ ] Add a comment to `canDouble` stating the simplification and its reason
 
@@ -574,7 +597,7 @@ Render with a scenario containing a known mix of calls and cards; assert each re
 | T6 practice is bridge | TODO | |
 | T7 daily hand | TODO | |
 | T8 AI hint vs judgement | TODO | |
-| T9 Hand type safety | TODO | |
+| T9 Hand type safety | **DONE** | `fix(bridge): a card that cannot be parsed is not worth zero points` |
 | T10 tactical judgement | TODO | |
 | T11 replayer | TODO | |
-| S2 document | TODO | |
+| S2 document | **DONE** | `docs: record the doubling simplification where it lives` |
