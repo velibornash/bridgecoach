@@ -6,6 +6,7 @@
  *     ├── Auction State        (auction.ts — AuctionStateMachine)
  *     ├── Legal Bid Validator  (validator.ts)
  *     ├── Contract Calculator  (contract.ts)
+ *     ├── Duplicate Scoring    (scoring.ts)
  *     └── Bidding Evaluation   (strategy.ts → evaluation.ts + conventions.ts)
  *           ├── Conventions    (conventions.ts — Stayman, Jacoby transfers)
  *           ├── Rules          (evaluation.ts — deterministic)
@@ -18,6 +19,7 @@ export * from "./bid";
 export * from "./auction";
 export * from "./validator";
 export * from "./contract";
+export * from "./scoring";
 export * from "./evaluation";
 export * from "./conventions";
 export * from "./strategy";

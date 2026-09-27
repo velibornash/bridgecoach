@@ -96,7 +96,7 @@ New unit test asserting the counter-clockwise cycle explicitly. Then re-read all
 
 ## T2 — Contract scoring
 
-**Audit refs:** B2 · **Status:** TODO · **Blocked by:** T1
+**Audit refs:** B2 · **Status:** DONE · **Blocked by:** T1
 
 ### What
 
@@ -125,13 +125,63 @@ Vulnerable XX: +1 small, +2 otherwise.
 
 ### Exit criteria
 
-- [ ] `src/bridge/scoring.ts` imports no Prisma and no `src/lib/db`
-- [ ] `tricksRequired` correct for all 35 (level × strain) combinations plus 6NT
-- [ ] `tricksRequired(1, 'NT', 'none') === 7` and `=== 7` for every notrump level at its own value
-- [ ] `contractOutcome(3NT, 9, 'None')` → made; `(3NT, 8, 'None')` → not made
-- [ ] Vulnerable and non-vulnerable outcomes differ and are both tested
-- [ ] Every product-reachable combination has a test; none skipped
-- [ ] Full gate green
+- [x] `src/bridge/scoring.ts` imports no Prisma and no `src/lib/db`
+- [x] `tricksRequired` correct for all 35 (level × strain) combinations
+- [x] every notrump level asserted at its own value
+- [x] `contractOutcome(3NT, 9, 'None')` → made; `(3NT, 8, 'None')` → not made
+- [x] Vulnerable and non-vulnerable outcomes differ and are both tested
+- [x] Every product-reachable combination has a test; none skipped
+- [x] Full gate green
+
+### Two corrections to this task's own spec
+
+**The signature changed.** The sketch said
+`tricksRequired(level, strain, doubling: 'none' | 'doubled' | 'redoubled')`, but
+`Contract` already carries the doubling state as two booleans. Adding a string
+union would have created a second representation of the same fact — the exact
+duplication T1 just removed. It now takes a `Contract`:
+`tricksRequired(contract)`, alongside `contractOutcome(contract, ...)`.
+
+**`tricksRequired(1, 'NT', 'none') === 7` and `=== 7` for every notrump level
+at its own value` was self-contradictory** as written (7 for every level is the
+bug, not the rule). The real requirement, now asserted level by level: 1NT 7,
+2NT 8, 3NT 9, 4NT 10, 5NT 10, 6NT 12, 7NT 13. The separate "plus 6NT" also
+double-counted — 35 combinations is 7 levels × 5 strains, 6NT included.
+
+**`contractOutcome` rejects `NS` and `EW`.** A board vulnerable to NS does not
+say whether the *declarer* was vulnerable, and guessing scores the wrong side —
+a 200-point error that renders normally. `declarerVulnerability(board, declarer)`
+resolves it first, and passing a raw board value throws with a pointer to it.
+
+### What actually happened
+
+The tables are the deliverable, so they were checked against the ACBL scoring
+tables and rpbridge.net rather than written from memory. **Two rows were wrong**
+in the first draft, in the direction that looks most natural:
+
+- a doubled failure is **not** 100, 200, 200, 300 — it is 100, 300, 500, 800,
+  1100, then +300 each. It accelerates, which is the whole reason a doubled
+  slam is worth avoiding;
+- a doubled overtrick is a **flat 100**, not 100 for the first and 50 after.
+  These two rules differ only from the second overtrick, so a spot check on one
+  overtrick cannot tell them apart.
+
+The second bug was nearly worse: the test I wrote to "confirm" it used the same
+remembered values, so it passed against the wrong code. Both now have named
+regression tests, and the redouble rule is asserted as an identity — a redoubled
+failure is exactly twice the doubled one, for every undertrick and both
+vulnerabilities — so a future edit cannot quietly give redoubles their own table.
+
+Also worth recording: **3NT is a part score.** It is 50 trick points, so it
+totals 100 with the part-score bonus, and it never earns a game bonus even when
+vulnerable. Three separate test expectations had this wrong while the
+implementation had it right.
+
+**Deliberately not built:** rubber points, match points and board averages. They
+need a session the engine does not model, and a plausible-looking guess would be
+worse than an honest gap. A two-sided `boardResult` was written and then cut for
+the same reason — it would have had to assume "vulnerable applies to both sides
+unless the director says otherwise" without saying so. 357 → 388 tests.
 
 ### How to test
 
@@ -381,7 +431,7 @@ Render with a scenario containing a known mix of calls and cards; assert each re
 | Task | Status | Commit |
 |---|---|---|
 | T1 seat order | **DONE** | `fix(bridge): turn order is counter-clockwise` |
-| T2 scoring | TODO | |
+| T2 scoring | **DONE** | `feat(bridge): duplicate scoring, checked against the ACBL tables` |
 | T3 trumps from contract | TODO | |
 | T4 follow suit | TODO | |
 | T5 hand lifecycle | TODO | |
