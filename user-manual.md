@@ -110,7 +110,20 @@ npm start          # serve the production build
 | `npm run build` | Production build |
 | `npm start` | Serve the build |
 | `npm run lint` | ESLint |
-| `npm run typecheck` | TypeScript, no emit |
+| `npm run typecheck` | `next typegen` then TypeScript, no emit. The codegen is required, not incidental — see the note below |
+
+**Why `typecheck` runs codegen first.** The `[id]` route handlers annotate their
+params with Next.js' global `RouteContext`, which is declared in
+`.next/types/routes.d.ts` — a *generated* file, gitignored along with
+`next-env.d.ts` (which imports it). A clean checkout has neither, so `tsc` alone
+fails with `Cannot find name 'RouteContext'`.
+
+This never shows up locally: anyone who has run `next dev` or `next build` once
+has the generated files sitting in `.next/`, so bare `tsc --noEmit` passes for
+them. It only bites a clean machine — a fresh CI runner, or a new contributor's
+first typecheck. `next typegen` writes both files without a full build, which is
+why it runs first in the script.
+
 | `npm test` | All unit + integration tests (Vitest) |
 | `npm run test:unit` | Unit tests only |
 | `npm run test:integration` | Integration tests only (needs PostgreSQL) |

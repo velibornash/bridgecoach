@@ -90,6 +90,17 @@ jobs:
       - name: Apply migrations to the test database
         run: npm run db:test:setup
 
+      # `npm run typecheck` runs `next typegen` first, and that is not optional.
+      # The `[id]` route handlers annotate their params with Next's global
+      # `RouteContext`, which is declared in `.next/types/routes.d.ts` - a
+      # generated, gitignored file, along with the gitignored `next-env.d.ts` that
+      # imports it. This step runs before `npm run build`, so on a clean checkout
+      # neither file exists and `tsc` fails with "Cannot find name
+      # 'RouteContext'". `next typegen` writes both without a full build.
+      #
+      # The failure is invisible locally: a developer who has run `next dev` or
+      # `next build` once has the generated files, so bare `tsc --noEmit` passes
+      # for them and fails only here.
       - name: Typecheck
         run: npm run typecheck
 
