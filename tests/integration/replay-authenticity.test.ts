@@ -15,7 +15,12 @@ import { describe, expect, it, beforeAll, afterAll, afterEach, vi } from "vitest
 import { prisma } from "@/lib/db";
 import * as sessionModule from "@/lib/session";
 import { hashPassword } from "@/lib/password";
-import { scenarioFromAuction, EMPTY_SCENARIO } from "@/components/replayEngine/HandReplayer";
+import {
+  scenarioFromAuction,
+  EMPTY_SCENARIO,
+  callVerb,
+  type ReplayAction,
+} from "@/components/replayEngine/HandReplayer";
 import type { AuctionRecord } from "@/services/auctionService";
 
 let stamp: number;
@@ -161,5 +166,56 @@ describe("a replay scenario is derived from a real auction", () => {
     const body = await (await GET(new Request("http://localhost/api/auctions"))).json();
     expect(body.auctions).toHaveLength(0);
     await prisma.user.delete({ where: { id: other.id } });
+  });
+});
+
+
+describe("a step's label matches the row it came from", () => {
+  /**
+   * The bug was a type confusion, so the test is about **correspondence**, not
+   * about how many steps there are: every recorded call must produce the verb for
+   * its own kind, and no call may ever be labelled as a card.
+   */
+  const MIXED: Array<[ReplayAction["kind"], string, string]> = [
+    ["bid", "3NT", "North"],
+    ["pass", "Pass", "East"],
+    ["double", "X", "South"],
+    ["redouble", "XX", "West"],
+    ["bid", "2H", "North"],
+  ];
+
+  it("uses the verb for the kind of call that was recorded", () => {
+    for (const [kind, action] of MIXED) {
+      const label = kind === "pass" ? callVerb(kind) : `${callVerb(kind)} ${action}`;
+      expect(label, `${kind} ${action}`).not.toMatch(/^Played/);
+      // A pass is a word; everything else carries its notation.
+      if (kind === "pass") expect(label).toBe("Passed");
+      if (kind === "bid") expect(label).toBe(`Bid ${action}`);
+      if (kind === "double") expect(label).toBe(`Doubled ${action}`);
+      if (kind === "redouble") expect(label).toBe(`Redoubled ${action}`);
+    }
+  });
+
+  it("maps a real auction's rows to actions of the right kind", () => {
+    const scenario = scenarioFromAuction(
+      asAuction({
+        actions: [
+          { sequence: 0, player: "N", type: "bid", level: 1, strain: "S", engineLegal: true, engineReason: null },
+          { sequence: 1, player: "E", type: "pass", level: null, strain: null, engineLegal: true, engineReason: null },
+          { sequence: 2, player: "S", type: "double", level: null, strain: null, engineLegal: true, engineReason: null },
+        ] as AuctionRecord["actions"],
+      }),
+    );
+    expect(scenario.actions.map((a) => a.kind)).toEqual(["bid", "pass", "double"]);
+    expect(scenario.actions.map((a) => a.action)).toEqual(["1S", "Pass", "X"]);
+  });
+
+  it("never produces a card from a call-only record", () => {
+    // The source table has no card column, so a card here could only come from
+    // the component inventing one.
+    const scenario = scenarioFromAuction(asAuction());
+    for (const action of scenario.actions) {
+      expect(callVerb(action.kind), action.action).not.toBe("Played");
+    }
   });
 });

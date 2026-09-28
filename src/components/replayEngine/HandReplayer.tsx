@@ -21,11 +21,42 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { useApiResource } from "@/hooks/useApiResource";
 import { fetchAuctions, type AuctionRecord } from "@/services/auctionService";
 
+/**
+ * One auction call.
+ *
+ * There is no card here, and `action` is not a card: the source is
+ * `AuctionAction`, which holds bid/pass/double/redouble and has no column for a
+ * played card. `kind` is carried so the label can be the verb the row actually
+ * represents.
+ */
 export interface ReplayAction {
   player: "North" | "East" | "South" | "West";
-  action: string; // e.g. "♠A" or "Pass"
+  /** What was called, in notation: "3NT", "Pass", "X", "XX". */
+  action: string;
+  kind: "bid" | "pass" | "double" | "redouble";
   explanation?: string;
   isBestPlay?: boolean;
+}
+
+/**
+ * The verb for a call, so a label matches the row it came from.
+ *
+ * A bid was previously rendered as "Played 3NT" - a card-play label on a call,
+ * inherited from a hardcoded version that really was replaying cards. The two
+ * readings are not interchangeable: a learner watching "Played 3NT" is being told
+ * someone played a three of notrumps, which is not a thing.
+ */
+export function callVerb(kind: ReplayAction["kind"]): string {
+  switch (kind) {
+    case "bid":
+      return "Bid";
+    case "pass":
+      return "Passed";
+    case "double":
+      return "Doubled";
+    case "redouble":
+      return "Redoubled";
+  }
 }
 
 export interface ReplayScenario {
@@ -60,6 +91,9 @@ const PLAYER_NAMES: Record<string, ReplayAction["player"]> = {
 export function scenarioFromAuction(auction: AuctionRecord): ReplayScenario {
   const actions: ReplayAction[] = auction.actions.map((a) => ({
     player: PLAYER_NAMES[a.player] ?? "South",
+    kind: (a.type === "bid" || a.type === "pass" || a.type === "double" || a.type === "redouble"
+      ? a.type
+      : "pass") as ReplayAction["kind"],
     action:
       a.type === "bid" && a.level != null
         ? `${a.level}${a.strain === "NT" ? "NT" : (a.strain ?? "")}`
@@ -280,7 +314,9 @@ export function HandReplayer({
                       isActive ? "bg-primary animate-ping" : isPast ? "bg-success" : "bg-border"
                     )} />
                     <span className="font-bold w-12">{act.player}:</span>
-                    <span>Played {act.action}</span>
+                    <span>
+                      {act.kind === "pass" ? callVerb(act.kind) : `${callVerb(act.kind)} ${act.action}`}
+                    </span>
                   </div>
                   {act.isBestPlay && isPast && (
                     <Icon icon={CheckCircle2} size={12} className="text-success" />

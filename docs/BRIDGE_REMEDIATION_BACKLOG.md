@@ -627,7 +627,7 @@ Unit test the acceptability rule with a known-equivalent alternative. If no alte
 
 ## T11 — The replayer steps through what it says it does
 
-**Audit refs:** S6 · **Status:** TODO
+**Audit refs:** S6 · **Status:** DONE (calls, per option 1)
 
 ### What
 
@@ -638,9 +638,32 @@ Unit test the acceptability rule with a known-equivalent alternative. If no alte
 
 ### Exit criteria
 
-- [ ] Every step's label matches the record it came from
-- [ ] No "Played" label on a call that is not a card
-- [ ] Full gate green
+- [x] Every step's label matches the record it came from
+- [x] No "Played" label on a call that is not a card
+- [x] Full gate green
+
+### Which way it goes, and why
+
+**Calls, not cards** (option 1). The data is `AuctionAction`, which holds
+bid/pass/double/redouble and has no column for a played card — so the replayer
+cannot play cards back without a source it does not have. The played cards go to
+`PracticeSession`, a different table, and joining the two here would mean
+inventing correspondence between them.
+
+The hardcoded version being replaced really *was* card play, which is how the
+mismatch was inherited: the labels said "Played ♥K" and kept saying it after the
+source became an auction. So a bid rendered as though someone had played it.
+
+- `ReplayAction` carries `kind`, and `callVerb` turns it into the verb the row
+  represents: Bid / Passed / Doubled / Redoubled. A pass renders as a word,
+  everything else with its notation.
+- **The test fixture was itself the bug.** It held `"♥K"`, *"Lead from the
+  King-Queen sequence"*, *"Wins the trick"* — card play in a call replayer. It is
+  now a real auction, which is what forced the type to be right.
+- The tests are about **correspondence**, as the type confusion requires: each
+  recorded call yields the verb for its own kind, a real auction's rows map to
+  actions of the right kind in the right order, and no call is ever labelled
+  "Played". Counting steps would have passed against the old code.
 
 ### How to test
 
@@ -677,5 +700,5 @@ says so before someone removes the guard believing it is one.
 | T8 AI hint vs judgement | **DONE** | `fix(bridge): keep the answer key away from the model that judges` |
 | T9 Hand type safety | **DONE** | `fix(bridge): a card that cannot be parsed is not worth zero points` |
 | T10 tactical judgement | TODO | |
-| T11 replayer | TODO | |
+| T11 replayer | **DONE** | `fix(bridge): the replayer steps through calls and says so` |
 | S2 document | **DONE** | `docs: record the doubling simplification where it lives` |
