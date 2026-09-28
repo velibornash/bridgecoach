@@ -602,7 +602,7 @@ unchanged, which is the regression net this task needed.
 
 ## T10 — `/tactical` tests judgement, not a memorised string
 
-**Audit refs:** S3 · **Status:** TODO
+**Audit refs:** S3 · **Status:** DONE
 
 ### What
 
@@ -614,10 +614,48 @@ unchanged, which is the regression net this task needed.
 
 ### Exit criteria
 
-- [ ] More than one auction can complete a scenario correctly
-- [ ] A defensible alternative to the book line is not scored wrong
-- [ ] The book line is still reachable and is still offered as a hint
-- [ ] Full gate green
+- [x] More than one auction can complete a scenario correctly
+- [x] A defensible alternative to the book line is not scored wrong
+- [x] The book line is still reachable and is still offered as a hint
+- [x] Full gate green
+
+### What actually happened
+
+`submitBid` was `bid === expectedAuction[currentBids.length]`, and the drill ended
+when the call *count* matched the book's length. A test of transcription, not of
+judgement.
+
+`src/bridge/drill.ts` replaces it with a rule the engine can actually decide:
+**is the call legal, and does it leave the drill's contract reachable?** A pass
+is always fine; a double is fine if legal; a bid is fine unless it *outranks* the
+target. The drill completes when the auction ends **at that contract**, however
+many calls it took — so a shorter correct auction now finishes, which the count
+comparison made impossible.
+
+The target contract is derived from the book line's highest bid rather than
+stored separately, so a scenario cannot declare a target that disagrees with the
+line it teaches.
+
+**Two kinds of drill exist and the engine cannot tell them apart**, which surfaced
+as a failing test rather than as an insight. A concept drill (Stayman,
+transfers) is about a partnership agreement, and any legal auction reaching the
+contract teaches it. An *exact* drill is about one specific call — "open 1NT with
+15-17" — where any legal call really is wrong, and a permissive rule would let a
+learner pass without learning the thing being taught. So a scenario declares
+`allowAlternatives`, defaulting to `true` because the common failure was marking
+a good alternative wrong.
+
+**What the rule deliberately does not judge:** whether a call is *good bidding*
+for a hand. "Is 1♣ right here" depends on conventions, relay versus board, and
+opponents' ranges. An engine answering that confidently would be inventing
+authority it does not have, so it reports on the rules and leaves hand-quality
+feedback to the coach — which is also what the page already does for an
+explanation.
+
+Two of my own test expectations were wrong and the tests said so: 4♥ does *not*
+overshoot 4♠ (spades outrank hearts, so 4♠ is still available), and "2NT over
+2NT" is not a legal auction. The first is a real trap in this rule and is now
+asserted directly.
 
 ### How to test
 
@@ -699,6 +737,6 @@ says so before someone removes the guard believing it is one.
 | T7 daily hand | **DONE** | `feat(bridge): the deal of the day is a hand` |
 | T8 AI hint vs judgement | **DONE** | `fix(bridge): keep the answer key away from the model that judges` |
 | T9 Hand type safety | **DONE** | `fix(bridge): a card that cannot be parsed is not worth zero points` |
-| T10 tactical judgement | TODO | |
+| T10 tactical judgement | **DONE** | `fix(bridge): the drill judges the contract, not the string` |
 | T11 replayer | **DONE** | `fix(bridge): the replayer steps through calls and says so` |
 | S2 document | **DONE** | `docs: record the doubling simplification where it lives` |
