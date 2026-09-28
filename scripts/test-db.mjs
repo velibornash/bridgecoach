@@ -11,7 +11,23 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 
-/** Minimal `.env` reader. Handles `KEY=value`, quotes, and `#` comments. */
+/**
+ * Minimal `.env` reader. Handles `KEY=value`, quotes, and `#` comments.
+ *
+ * The return type is declared rather than left to inference. `result` starts life
+ * as `const result = {}`, so an inferred return type is the empty object type,
+ * and `readEnvFile` - which returns either that or `{}` for a missing file -
+ * infers `{}` as well. An empty object type has no index signature, so
+ * assigning the result to `Record<string, string>` is an error: "Type '{}' is not
+ * assignable to type 'Record<string, string>'".
+ *
+ * Whether that inference is what TypeScript lands on depends on which files the
+ * program pulled in, so the same `vitest.config.ts` typechecked locally and failed
+ * on a clean CI checkout. The type is now stated, so it cannot vary.
+ *
+ * @param {string} text
+ * @returns {Record<string, string>}
+ */
 function parse(text) {
   const result = {};
   for (const rawLine of text.split("\n")) {
@@ -32,11 +48,26 @@ function parse(text) {
   return result;
 }
 
+/**
+ * Read a `.env` file into a plain object.
+ *
+ * @param {string} path
+ * @returns {Record<string, string>} empty when the file does not exist
+ */
 export function readEnvFile(path) {
   if (!existsSync(path)) return {};
   return parse(readFileSync(path, "utf8"));
 }
 
+/**
+ * The test database URL, or undefined when none can be worked out.
+ *
+ * Declared for the same reason as readEnvFile: the answer is used as a string by
+ * callers, and leaving the return type to inference makes that depend on which
+ * files the program happened to include.
+ *
+ * @returns {string | undefined}
+ */
 export function resolveTestDatabaseUrl() {
   // 1. Explicit, for CI.
   if (process.env.TEST_DATABASE_URL) return process.env.TEST_DATABASE_URL;
