@@ -728,7 +728,7 @@ says so before someone removes the guard believing it is one.
 
 | Task | Status | Commit |
 |---|---|---|
-| T1 seat order | **DONE** | `fix(bridge): turn order is counter-clockwise` |
+| T1 seat order | **DONE** (corrected) | `fix(bridge): seat order is clockwise, and the first T1 fix was a regression` |
 | T2 scoring | **DONE** | `feat(bridge): duplicate scoring, checked against the ACBL tables` |
 | T3 trumps from contract | **DONE** | `fix(bridge): trumps come from the contract, not a fixed spade` |
 | T4 follow suit | **DONE** | `fix(bridge): following suit is enforced by the engine` |
