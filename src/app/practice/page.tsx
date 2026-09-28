@@ -4,7 +4,6 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Container } from "@/components/ui/Container";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { BiddingBox, type Bid } from "@/components/biddingBox/BiddingBox";
 import { HandViewer } from "@/components/handViewer/HandViewer";
 import { BridgeTable, type BridgeTableHand } from "@/components/bridge/BridgeTable";
 import { createDeck, shuffleDeck, type BridgeCard, type Suit } from "@/components/cardEngine/CardEngine";
@@ -14,17 +13,23 @@ import { showToast } from "@/components/ui/Toast";
 import { recordPracticeSession, type PracticeActionInput } from "@/services/practiceService";
 
 export default function PracticePage() {
-  const [phase, setPhase] = useState<'menu' | 'dealing' | 'playing' | 'result'>('menu');
+  // No 'result' phase: nothing ever entered it. A hand played in the sandbox is
+  // not scored, so there was no result to show - the variable was a promise the
+  // page could not keep.
+  const [phase, setPhase] = useState<'menu' | 'dealing' | 'playing'>('menu');
   const [hands, setHands] = useState<Record<'north' | 'east' | 'south' | 'west', BridgeCard[]>>({
     north: [], east: [], south: [], west: [],
   });
+  /**
+   * Spades, and always spades.
+   *
+   * In the sandbox this is a stated choice, not a bridge fact: there is no
+   * auction here, so no contract and therefore no trumps. It is labelled in the
+   * UI so nobody mistakes it for a result of bidding.
+   */
   const [trumpSuit] = useState<Suit>('♠');
-  const [currentBid, setCurrentBid] = useState<string | null>(null);
-  const [contract, setContract] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<BridgeCard | null>(null);
   const [trickNumber, setTrickNumber] = useState(1);
-  const [tricksWon, setTricksWon] = useState(0);
-  const [tricksTotal, setTricksTotal] = useState(0);
   const [showHand, setShowHand] = useState(true);
 
   /**
@@ -113,26 +118,9 @@ export default function PracticePage() {
     });
     setPhase('playing');
     setTrickNumber(1);
-    setTricksWon(0);
-    setTricksTotal(0);
-    setContract(null);
-    setCurrentBid(null);
     setSelectedCard(null);
-    showToast('info', 'Practice mode started — explore freely!');
+    showToast('info', 'Sandbox deal — explore freely, nothing is scored.');
   };
-
-  const handleBid = useCallback((bid: { label: string; suit: string; level: number } | null) => {
-    if (bid) {
-      setContract(`${bid.label}`);
-      setCurrentBid(bid.label);
-      setTricksTotal(bid.level || 7);
-      // Recorded as an attempt, not a grade. This page is free play, so there is
-      // no correctness to assert here - the engine feedback on the tactical page
-      // is where judgement lives.
-      track({ phase: "bidding", player: "south", call: bid.label });
-      showToast('success', `Contract: ${bid.label}`);
-    }
-  }, []);
 
   const handlePlayCard = useCallback((card: BridgeCard) => {
     setSelectedCard(card);
@@ -152,10 +140,14 @@ export default function PracticePage() {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-2xl font-bold text-text-primary">Practice Mode</h1>
-                <p className="text-sm text-text-tertiary mt-1">
-                  No scoring, just explore bridge at your pace. Bids and cards are
-                  recorded so your practice history builds up.
+                <h1 className="text-2xl font-bold text-text-primary">Card play sandbox</h1>
+                <p className="text-sm text-text-tertiary mt-1 max-w-xl">
+                  Free play, and nothing more. There is <strong>no auction</strong>,
+                  so there is no contract, no declarer and no score; spades are trumps
+                  by choice, and following suit is not enforced. It used to offer a
+                  bidding box that set a label and affected nothing, which read as a
+                  bridge hand and was not one. For a real hand with a real auction,
+                  declarer, opening lead and a score, play a dealt hand.
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -164,7 +156,7 @@ export default function PracticePage() {
                     Save session ({actionCount})
                   </Button>
                 )}
-                <Badge variant="success">Free Play</Badge>
+                <Badge variant="success">Card play sandbox</Badge>
               </div>
             </div>
 
@@ -210,12 +202,11 @@ export default function PracticePage() {
                 <div className="flex items-center justify-between rounded-xl border border-border bg-bg-card px-4 py-2">
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-medium text-text-secondary">Trick {trickNumber}</span>
-                    {contract && (
-                      <Badge variant="primary" className="text-[10px]">Contract: {contract}</Badge>
-                    )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-text-tertiary">Trump: {trumpSuit}</span>
+                    <span className="text-xs text-text-tertiary">
+                      Trump: {trumpSuit} (sandbox choice — there is no auction here)
+                    </span>
                     <Badge variant="success" className="text-[10px]">♣ Practice</Badge>
                   </div>
                 </div>
@@ -228,7 +219,6 @@ export default function PracticePage() {
                     position: pos,
                     cards: hands[pos].map((c) => `${c.suit}${c.rank}`),
                   }))}
-                  contract={contract ?? undefined}
                   size="md"
                 />
 
@@ -256,13 +246,6 @@ export default function PracticePage() {
                   </motion.div>
                 )}
 
-                {/* Bidding box - simplified for practice */}
-                <BiddingBox
-                  yourHand="south"
-                  currentBid={currentBid ? { level: 0, suit: 'PASS' as Bid['suit'], label: currentBid, description: currentBid } : null}
-                  onBid={handleBid}
-                  disabled={!!contract}
-                />
               </div>
             )}
           </motion.div>

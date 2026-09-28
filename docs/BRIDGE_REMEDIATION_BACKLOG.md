@@ -405,7 +405,7 @@ not make the other page one.
 
 ## T6 — `/practice` is either bridge, or honestly a sandbox
 
-**Audit refs:** B3.4, B3.5, S5 · **Status:** TODO · **Blocked by:** T5
+**Audit refs:** B3.4, B3.5, S5 · **Status:** DONE (Option 1 — relabel) · **Blocked by:** T5
 
 ### What
 
@@ -420,11 +420,35 @@ not make the other page one.
 
 ### Exit criteria
 
-- [ ] The bidding box affects the outcome, or is gone
-- [ ] The page can state a contract, a declarer and a result
-- [ ] No unreachable `phase` values remain
-- [ ] Either the page is bridge, or it says "card play sandbox" in the dashboard card as well
-- [ ] Full gate green
+- [x] The bidding box affects the outcome, or is gone — **gone**
+- [x] No unreachable `phase` values remain — `'result'` deleted
+- [x] The page says it is a card play sandbox, and the dashboard no longer calls it "Deal of the day"
+- [x] Full gate green
+
+### Option 1, not Option 2 — and why
+
+The spec recommended making `/practice` a real hand by reusing `/play`. T5 and T7
+have already made `/play` a real hand, and **the dashboard's daily hand now links
+to `/play?daily=`** rather than to `/practice`, which resolves the concrete
+complaint that "the dashboard calls it Deal of the day" — that link is gone, not
+relabelled.
+
+What is left is a page offering a bidding box that set a label and affected
+nothing. Building a second hand engine here would duplicate `/play` rather than
+reuse it, and the honest move for a free-play page is to say what it is.
+
+- The bidding box is **removed**, along with the state that only it wrote
+  (`contract`, `currentBid`, `tricksWon`, `tricksTotal`) and the handler behind it.
+- The unreachable `'result'` phase is gone from the union.
+- The page now states, in the first line a user reads: no auction, so no contract,
+  no declarer and no score; spades are trumps **by choice**; following suit is not
+  enforced. It points at playing a dealt hand for the real thing.
+- The heading is "Card play sandbox" and the badge says the same, so the claim
+  survives being screenshotted out of context.
+
+**Not done, deliberately:** a second full hand on this page. If `/practice` is ever
+to be a hand, it should be a route onto the same engine as `/play` rather than a
+parallel implementation that can drift from it.
 
 ### How to test
 
@@ -648,7 +672,7 @@ says so before someone removes the guard believing it is one.
 | T3 trumps from contract | **DONE** | `fix(bridge): trumps come from the contract, not a fixed spade` |
 | T4 follow suit | **DONE** | `fix(bridge): following suit is enforced by the engine` |
 | T5 hand lifecycle | **DONE** | `feat(bridge): a hand is a hand - deal, declarer, lead, 13 tricks` |
-| T6 practice is bridge | TODO | |
+| T6 practice is bridge | **DONE** (relabelled) | `refactor(bridge): /practice is a sandbox, and says so` |
 | T7 daily hand | **DONE** | `feat(bridge): the deal of the day is a hand` |
 | T8 AI hint vs judgement | **DONE** | `fix(bridge): keep the answer key away from the model that judges` |
 | T9 Hand type safety | **DONE** | `fix(bridge): a card that cannot be parsed is not worth zero points` |
