@@ -48,7 +48,11 @@ export interface TacticalScenario {
    */
   allowAlternatives?: boolean;
   expectedPlaySequence?: string[]; // e.g. ["S2", "SA", "S5", "S3"]
-  alternativeLines?: Record<string, string[]>; // Map play or bid to alternatives
+  /**
+   * REMOVED: `alternativeLines`. It was declared and never read by anything, so
+   * it advertised support for alternative lines that did not exist. The real
+   * mechanism is `allowAlternatives` above.
+   */
   explanation: string;
 }
 
