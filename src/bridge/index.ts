@@ -8,6 +8,7 @@
  *     ├── Contract Calculator  (contract.ts)
  *     ├── Duplicate Scoring    (scoring.ts)
  *     ├── Card Play Rules      (play.ts)
+ *     ├── Daily Deal           (daily.ts)
  *     └── Bidding Evaluation   (strategy.ts → evaluation.ts + conventions.ts)
  *           ├── Conventions    (conventions.ts — Stayman, Jacoby transfers)
  *           ├── Rules          (evaluation.ts — deterministic)
@@ -22,6 +23,7 @@ export * from "./validator";
 export * from "./contract";
 export * from "./scoring";
 export * from "./play";
+export * from "./daily";
 export * from "./evaluation";
 export * from "./conventions";
 export * from "./strategy";

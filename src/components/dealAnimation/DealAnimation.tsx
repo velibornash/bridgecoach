@@ -10,12 +10,20 @@ import { Badge } from "@/components/ui/Badge";
 interface DealAnimationProps {
   onComplete?: (hands: Record<string, BridgeCard[]>) => void;
   size?: 'sm' | 'md' | 'lg';
+  /**
+   * A fixed deck to deal instead of shuffling a fresh one.
+   *
+   * This is how "play the deal of the day" opens *that* hand: the dashboard and
+   * the play page both ask the engine for the day's deal, so the cards shown are
+   * the cards dealt. Omit it for a normal random deal.
+   */
+  deck?: BridgeCard[];
 }
 
 const dealSpeed = 120;
 const positions = ['north', 'east', 'south', 'west'] as const;
 
-export function DealAnimation({ onComplete, size = 'md' }: DealAnimationProps) {
+export function DealAnimation({ onComplete, size = 'md', deck: fixedDeck }: DealAnimationProps) {
   const [dealIndex, setDealIndex] = useState(0);
   const [deck, setDeck] = useState<BridgeCard[]>([]);
 
@@ -30,8 +38,7 @@ export function DealAnimation({ onComplete, size = 'md' }: DealAnimationProps) {
   const isDealing = dealIndex > 0 && dealIndex < 52;
 
   const startDeal = () => {
-    const newDeck = shuffleDeck(createDeck());
-    setDeck(newDeck);
+    setDeck(fixedDeck ?? shuffleDeck(createDeck()));
     setDealIndex(0);
   };
 

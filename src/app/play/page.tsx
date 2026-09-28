@@ -17,6 +17,7 @@ import {
   type RecordedAction,
 } from "@/services/auctionService";
 import { recordPracticeSession, type PracticeActionInput } from "@/services/practiceService";
+import { dailyDeal, dailyCardOrder } from "@/bridge/daily";
 import {
   AuctionStateMachine,
   formatBid,
@@ -59,6 +60,33 @@ function toStrain(suit: string): Strain {
 }
 
 export default function PlayDemoPage() {
+  /**
+   * The deal of the day, when the dashboard links here with `?daily=YYYY-MM-DD`.
+   *
+   * Both pages call the engine's `dailyDeal` for the same date, so "Play this
+   * hand" opens the hand that was shown. Previously the dashboard drew a
+   * decoration and this page shuffled a new deck, so the two never matched.
+   */
+  const [dailyDate] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const param = new URLSearchParams(window.location.search).get("daily");
+    if (!param) return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(param)) return null;
+    return param;
+  });
+
+  const dailyDeck = useMemo<BridgeCard[] | undefined>(() => {
+    if (!dailyDate) return undefined;
+    const deal = dailyDeal(dailyDate);
+    // Engine notation -> display cards, keeping the engine's order. The symbol
+    // comes from the shared presentation table rather than a second suit map.
+    return dailyCardOrder(deal).map((code) => ({
+      id: code,
+      suit: getSuitPresentation(suitCodeFromSymbol(code.slice(0, 1))).symbol as BridgeCard["suit"],
+      rank: code.slice(1) as BridgeCard["rank"],
+      faceUp: true,
+    }));
+  }, [dailyDate]);
   const [phase, setPhase] = useState<'idle' | 'dealing' | 'bidding' | 'trick'>('idle');
   const [hands, setHands] = useState<Record<Player, BridgeCard[]>>({
     north: [], east: [], south: [], west: [],
@@ -486,7 +514,7 @@ export default function PlayDemoPage() {
             )}
 
             {tab === 'deal' && (
-              <DealAnimation onComplete={handleDealComplete} size="lg" />
+              <DealAnimation onComplete={handleDealComplete} size="lg" deck={dailyDeck} />
             )}
 
             {tab === 'bidding' && (

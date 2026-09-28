@@ -280,10 +280,22 @@ export function createDeck(): BridgeCard[] {
   return deck;
 }
 
-export function shuffleDeck(deck: BridgeCard[]): BridgeCard[] {
+/**
+ * Fisher-Yates shuffle.
+ *
+ * `rng` is injectable and defaults to `Math.random`, so ordinary dealing is
+ * unchanged. It exists because a *deal of the day* has to be the same hand every
+ * time it is loaded, and the only way to get that from a shuffle is to supply a
+ * repeatable source of randomness. It also means a test can assert a specific
+ * deal instead of stubbing the component that produced it.
+ */
+export function shuffleDeck(
+  deck: BridgeCard[],
+  rng: () => number = Math.random,
+): BridgeCard[] {
   const shuffled = [...deck];
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;

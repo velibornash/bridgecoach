@@ -434,7 +434,7 @@ End-to-end: deal, bid to a contract, play, see a score. If the bidding box can b
 
 ## T7 — The daily hand is a real hand
 
-**Audit refs:** B4 · **Status:** TODO
+**Audit refs:** B4 · **Status:** DONE
 
 ### What
 
@@ -447,11 +447,41 @@ End-to-end: deal, bid to a contract, play, see a score. If the bidding box can b
 
 ### Exit criteria
 
-- [ ] The same date yields the same four hands, verified across two separate loads
-- [ ] Two consecutive days yield different hands
-- [ ] "Play this hand" opens *that* hand
-- [ ] Or the card is deleted and nothing links to it
-- [ ] Full gate green
+- [x] The same date yields the same four hands, verified across two separate loads
+- [x] Two consecutive days yield different hands
+- [x] "Play this hand" opens *that* hand
+- [x] Full gate green
+
+### What actually happened
+
+`src/bridge/daily.ts` generates the hand from the date. The date string *is* the
+seed (FNV-1a), so there is no stored state and no server round-trip: the
+dashboard and the play page compute the same deal independently and cannot drift
+apart. The PRNG is mulberry32, seeded explicitly — seeding `Date.now()` inside the
+generator would have reintroduced the same bug one level down.
+
+The card now shows the real thing: the dealer, the contract, all 52 cards by
+seat, and the date. "Play this hand" goes to `/play?daily=YYYY-MM-DD`, and
+`DealAnimation` takes an optional fixed `deck`, so that link deals *that* hand
+instead of a fresh shuffle. The dealer comes off the same seeded stream, so it
+moves day to day rather than always being South.
+
+**The contract is derived from the cards, not chosen.** `contractFor` is a gross
+trick count — top honours plus reliable length, ignoring finesse and
+distribution. That is deliberately conservative: an optimistic estimate would
+hand out contracts that go down and read as the engine being wrong. When neither
+partnership has 7 tricks in anything it returns `null` and the card says so,
+rather than inventing a contract that cannot be made.
+
+**`shuffleDeck` now takes an `rng`.** This is the groundwork T4 recorded for
+exactly this reason: a deal of the day cannot be derived from a shuffle that
+reaches for `Math.random` internally. The default is unchanged, so ordinary
+dealing is untouched, and it also means the click-level test T4 declined to fake
+can now be written honestly.
+
+16 tests, none of which the old code would have failed: a card fan renders
+perfectly well, and a random deal is random in exactly the way it should be. The
+only way to catch this is to generate the same date twice and compare.
 
 ### How to test
 
@@ -619,7 +649,7 @@ says so before someone removes the guard believing it is one.
 | T4 follow suit | **DONE** | `fix(bridge): following suit is enforced by the engine` |
 | T5 hand lifecycle | **DONE** | `feat(bridge): a hand is a hand - deal, declarer, lead, 13 tricks` |
 | T6 practice is bridge | TODO | |
-| T7 daily hand | TODO | |
+| T7 daily hand | **DONE** | `feat(bridge): the deal of the day is a hand` |
 | T8 AI hint vs judgement | **DONE** | `fix(bridge): keep the answer key away from the model that judges` |
 | T9 Hand type safety | **DONE** | `fix(bridge): a card that cannot be parsed is not worth zero points` |
 | T10 tactical judgement | TODO | |
